@@ -1,0 +1,17 @@
+**/node_modules/
+**/dist/
+**/.env
+**/.env.*
+!**/.env.example
+**/*.tsbuildinfo
+**/__pycache__/
+**/*.pyc
+**/backup/
+DATABASE_DOCUMENTATION/backup/
+hydro_Hassan dakhil/outputs/
+hydro_Hassan dakhil/frontend/vite.svg
+hydro_hd.sql
+Données_Bge_Hassan_Addakhil/
+/package-lock.json
+scripts/swat-import/work/
+scripts/swat-import/logs/*.log

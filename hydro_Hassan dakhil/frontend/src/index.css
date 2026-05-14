@@ -1,0 +1,340 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Hydro-Data Intelligence Theme - Professional Water Management */
+    --background: 210 25% 97%;
+    --foreground: 210 40% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 40% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 40% 10%;
+
+    /* Primary - Deep Ocean Blue */
+    --primary: 200 80% 25%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - Teal Water */
+    --secondary: 180 60% 45%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Muted - Soft Gray Blue */
+    --muted: 210 20% 92%;
+    --muted-foreground: 210 15% 45%;
+
+    /* Accent - Cyan Highlight */
+    --accent: 185 80% 50%;
+    --accent-foreground: 210 40% 10%;
+
+    /* Destructive */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Border & Input */
+    --border: 210 20% 88%;
+    --input: 210 20% 88%;
+    --ring: 200 80% 35%;
+
+    --radius: 0.625rem;
+
+    /* Custom Hydro Colors */
+    --hydro-blue: 200 80% 25%;
+    --hydro-blue-light: 200 75% 40%;
+    --hydro-cyan: 185 80% 50%;
+    --hydro-green: 160 65% 40%;
+    --hydro-teal: 175 60% 45%;
+    --hydro-amber: 38 92% 50%;
+    --hydro-slate: 215 20% 25%;
+    --hydro-surface: 210 25% 98%;
+
+    /* Module Colors */
+    --climate-color: 200 80% 45%;
+    --hydraulic-color: 185 70% 40%;
+    --sediment-color: 35 85% 50%;
+    --comparison-color: 280 65% 50%;
+
+    /* Chart Colors */
+    --chart-1: 200 80% 45%;
+    --chart-2: 185 80% 50%;
+    --chart-3: 160 65% 45%;
+    --chart-4: 35 85% 55%;
+    --chart-5: 280 65% 55%;
+    --chart-6: 340 75% 55%;
+
+    /* Sidebar */
+    --sidebar-background: 210 30% 15%;
+    --sidebar-foreground: 210 15% 90%;
+    --sidebar-primary: 185 80% 50%;
+    --sidebar-primary-foreground: 210 40% 10%;
+    --sidebar-accent: 210 25% 22%;
+    --sidebar-accent-foreground: 210 15% 95%;
+    --sidebar-border: 210 20% 25%;
+    --sidebar-ring: 185 80% 50%;
+
+    /* Gradients */
+    --gradient-hydro: linear-gradient(135deg, hsl(200 80% 25%) 0%, hsl(185 80% 50%) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(210 25% 98%) 0%, hsl(210 25% 95%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(210 25% 98%) 100%);
+  }
+
+  .dark {
+    --background: 215 25% 8%;
+    --foreground: 210 15% 95%;
+
+    --card: 215 25% 12%;
+    --card-foreground: 210 15% 95%;
+
+    --popover: 215 25% 12%;
+    --popover-foreground: 210 15% 95%;
+
+    --primary: 185 80% 50%;
+    --primary-foreground: 215 25% 8%;
+
+    --secondary: 200 70% 35%;
+    --secondary-foreground: 210 15% 95%;
+
+    --muted: 215 20% 18%;
+    --muted-foreground: 210 15% 60%;
+
+    --accent: 185 75% 45%;
+    --accent-foreground: 215 25% 8%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 215 20% 22%;
+    --input: 215 20% 22%;
+    --ring: 185 80% 50%;
+
+    --hydro-surface: 215 25% 10%;
+
+    --sidebar-background: 215 30% 6%;
+    --sidebar-foreground: 210 15% 90%;
+    --sidebar-accent: 215 25% 14%;
+    --sidebar-border: 215 20% 18%;
+  }
+
+/* Force FilterBar en colonne quand il est dans .filterbar-stack */
+.filterbar-stack .grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+}
+.filterbar-stack .lg\:grid-cols-12,
+.filterbar-stack .lg\:grid-cols-6,
+.filterbar-stack .md\:grid-cols-2,
+.filterbar-stack .grid-cols-2,
+.filterbar-stack .grid-cols-3,
+.filterbar-stack .grid-cols-4 {
+  grid-template-columns: 1fr !important;
+}
+
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Geist', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+
+  code, pre {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+@layer components {
+  /* Hydro Card Styles */
+  .hydro-card {
+    @apply bg-card rounded-xl border border-border shadow-sm;
+    background: var(--gradient-card);
+  }
+
+  .hydro-card-header {
+    @apply px-4 py-3 border-b border-border flex items-center justify-between;
+  }
+
+  .hydro-card-body {
+    @apply p-4;
+  }
+
+  /* Module Button Styles */
+  .module-btn {
+    @apply px-3 py-2 rounded-lg font-medium text-sm transition-all duration-200;
+    @apply hover:shadow-md active:scale-[0.98];
+  }
+
+  .module-btn-climate {
+    @apply bg-[hsl(var(--climate-color))] text-white hover:bg-[hsl(var(--climate-color)/0.9)];
+  }
+
+  .module-btn-hydraulic {
+    @apply bg-[hsl(var(--hydraulic-color))] text-white hover:bg-[hsl(var(--hydraulic-color)/0.9)];
+  }
+
+  .module-btn-sediment {
+    @apply bg-[hsl(var(--sediment-color))] text-white hover:bg-[hsl(var(--sediment-color)/0.9)];
+  }
+
+  .module-btn-comparison {
+    @apply bg-[hsl(var(--comparison-color))] text-white hover:bg-[hsl(var(--comparison-color)/0.9)];
+  }
+
+  /* Stat Card */
+  .stat-card {
+    @apply p-3 rounded-xl bg-card border border-border;
+  }
+
+  .stat-value {
+    @apply text-lg font-bold text-foreground;
+  }
+
+  .stat-label {
+    @apply text-xs text-muted-foreground mt-0.5;
+  }
+
+  /* Data Table */
+  .data-table {
+    @apply w-full text-sm;
+  }
+
+  .data-table th {
+    @apply px-3 py-2 text-left font-medium text-muted-foreground bg-muted/50 border-b border-border text-sm;
+  }
+
+  .data-table td {
+    @apply px-3 py-2 border-b border-border text-sm;
+  }
+
+  .data-table tr:hover td {
+    @apply bg-muted/30;
+  }
+
+  /* Filter Controls */
+  .filter-group {
+    @apply space-y-2;
+  }
+
+  .filter-label {
+    @apply text-xs font-medium text-sidebar-foreground/70 uppercase tracking-wider;
+  }
+
+  /* Map Container */
+  .map-container {
+    @apply w-full h-full rounded-xl overflow-hidden border border-border;
+  }
+
+  /* Chart Container */
+  .chart-container {
+    @apply w-full h-[280px] md:h-[300px] xl:h-[320px];
+  }
+
+  /* Scrollbar Styling */
+  .custom-scrollbar::-webkit-scrollbar {
+    @apply w-1.5;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full hover:bg-muted-foreground/30;
+  }
+}
+
+@layer utilities {
+  /* Hydro Gradients */
+  .gradient-hydro {
+    background: var(--gradient-hydro);
+  }
+
+  .gradient-surface {
+    background: var(--gradient-surface);
+  }
+
+  /* Text Gradient */
+  .text-gradient-hydro {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-hydro);
+  }
+
+  /* Glass Effect */
+  .glass {
+    @apply bg-background/80 backdrop-blur-md;
+  }
+
+  /* Animation Classes */
+  .animate-slide-in {
+    animation: slideIn 0.3s ease-out;
+  }
+
+  .animate-fade-up {
+    animation: fadeUp 0.4s ease-out;
+  }
+
+  .animate-pulse-subtle {
+    animation: pulseSoft 2s ease-in-out infinite;
+  }
+}
+
+/* Keyframes */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseSoft {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* MapLibre Overrides */
+.maplibregl-ctrl-group {
+  @apply rounded-lg shadow-md border-none !important;
+}
+
+.maplibregl-ctrl-group button {
+  @apply bg-card hover:bg-muted !important;
+}
+
+.maplibregl-popup-content {
+  @apply bg-card text-foreground rounded-lg shadow-lg border border-border p-3 !important;
+}
+
+.maplibregl-popup-tip {
+  @apply border-t-card !important;
+}

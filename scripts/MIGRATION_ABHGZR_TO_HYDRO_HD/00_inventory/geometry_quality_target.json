@@ -1,0 +1,345 @@
+[
+  {
+    "schema_name": "api",
+    "table_name": "v_catalog_stations",
+    "geom_col": "geom",
+    "total_rows": "0",
+    "non_null_rows": "0",
+    "invalid_rows": "0",
+    "srid_min": null,
+    "srid_max": null,
+    "geom_type": null
+  },
+  {
+    "schema_name": "api",
+    "table_name": "v_erosion_subbasins_annual",
+    "geom_col": "geom",
+    "total_rows": "0",
+    "non_null_rows": "0",
+    "invalid_rows": "0",
+    "srid_min": null,
+    "srid_max": null,
+    "geom_type": null
+  },
+  {
+    "schema_name": "api",
+    "table_name": "v_map_catchments_annual",
+    "geom_col": "geom",
+    "total_rows": "0",
+    "non_null_rows": "0",
+    "invalid_rows": "0",
+    "srid_min": null,
+    "srid_max": null,
+    "geom_type": null
+  },
+  {
+    "schema_name": "api",
+    "table_name": "v_map_stations_latest",
+    "geom_col": "geom",
+    "total_rows": "0",
+    "non_null_rows": "0",
+    "invalid_rows": "0",
+    "srid_min": null,
+    "srid_max": null,
+    "geom_type": null
+  },
+  {
+    "schema_name": "core",
+    "table_name": "catchments",
+    "geom_col": "geom",
+    "total_rows": "0",
+    "non_null_rows": "0",
+    "invalid_rows": "0",
+    "srid_min": null,
+    "srid_max": null,
+    "geom_type": null
+  },
+  {
+    "schema_name": "core",
+    "table_name": "reaches",
+    "geom_col": "geom",
+    "total_rows": "0",
+    "non_null_rows": "0",
+    "invalid_rows": "0",
+    "srid_min": null,
+    "srid_max": null,
+    "geom_type": null
+  },
+  {
+    "schema_name": "core",
+    "table_name": "reservoirs",
+    "geom_col": "geom",
+    "total_rows": "0",
+    "non_null_rows": "0",
+    "invalid_rows": "0",
+    "srid_min": null,
+    "srid_max": null,
+    "geom_type": null
+  },
+  {
+    "schema_name": "core",
+    "table_name": "stations",
+    "geom_col": "geom",
+    "total_rows": "0",
+    "non_null_rows": "0",
+    "invalid_rows": "0",
+    "srid_min": null,
+    "srid_max": null,
+    "geom_type": null
+  },
+  {
+    "schema_name": "core",
+    "table_name": "subbasins",
+    "geom_col": "geom",
+    "total_rows": "0",
+    "non_null_rows": "0",
+    "invalid_rows": "0",
+    "srid_min": null,
+    "srid_max": null,
+    "geom_type": null
+  },
+  {
+    "schema_name": "geo",
+    "table_name": "landcover",
+    "geom_col": "geom",
+    "total_rows": "0",
+    "non_null_rows": "0",
+    "invalid_rows": "0",
+    "srid_min": null,
+    "srid_max": null,
+    "geom_type": null
+  },
+  {
+    "schema_name": "gis",
+    "table_name": "meteo_stations",
+    "geom_col": "geom",
+    "total_rows": "5",
+    "non_null_rows": "5",
+    "invalid_rows": "0",
+    "srid_min": 4326,
+    "srid_max": 4326,
+    "geom_type": "POINT"
+  },
+  {
+    "schema_name": "gis",
+    "table_name": "reach_shapes",
+    "geom_col": "geom",
+    "total_rows": "33",
+    "non_null_rows": "33",
+    "invalid_rows": "1",
+    "srid_min": 4326,
+    "srid_max": 4326,
+    "geom_type": "MULTILINESTRING"
+  },
+  {
+    "schema_name": "gis",
+    "table_name": "subbasin_shapes",
+    "geom_col": "geom",
+    "total_rows": "33",
+    "non_null_rows": "33",
+    "invalid_rows": "3",
+    "srid_min": 4326,
+    "srid_max": 4326,
+    "geom_type": "MULTIPOLYGON"
+  },
+  {
+    "schema_name": "old_hd",
+    "table_name": "adm_communes_abhgzr",
+    "geom_col": "geom",
+    "error": "could not connect to server \"old_hd_srv\""
+  },
+  {
+    "schema_name": "old_hd",
+    "table_name": "barrages_abhgzr",
+    "geom_col": "geom",
+    "error": "could not connect to server \"old_hd_srv\""
+  },
+  {
+    "schema_name": "old_hd",
+    "table_name": "bassin_abhgzr",
+    "geom_col": "geom",
+    "error": "could not connect to server \"old_hd_srv\""
+  },
+  {
+    "schema_name": "old_hd",
+    "table_name": "stations_abhgzr",
+    "geom_col": "geom",
+    "error": "could not connect to server \"old_hd_srv\""
+  },
+  {
+    "schema_name": "public",
+    "table_name": "catchments",
+    "geom_col": "geom",
+    "total_rows": "0",
+    "non_null_rows": "0",
+    "invalid_rows": "0",
+    "srid_min": null,
+    "srid_max": null,
+    "geom_type": null
+  },
+  {
+    "schema_name": "public",
+    "table_name": "communes",
+    "geom_col": "geom",
+    "total_rows": "0",
+    "non_null_rows": "0",
+    "invalid_rows": "0",
+    "srid_min": null,
+    "srid_max": null,
+    "geom_type": null
+  },
+  {
+    "schema_name": "public",
+    "table_name": "landcover",
+    "geom_col": "geom",
+    "total_rows": "0",
+    "non_null_rows": "0",
+    "invalid_rows": "0",
+    "srid_min": null,
+    "srid_max": null,
+    "geom_type": null
+  },
+  {
+    "schema_name": "public",
+    "table_name": "reaches",
+    "geom_col": "geom",
+    "total_rows": "0",
+    "non_null_rows": "0",
+    "invalid_rows": "0",
+    "srid_min": null,
+    "srid_max": null,
+    "geom_type": null
+  },
+  {
+    "schema_name": "public",
+    "table_name": "reservoirs",
+    "geom_col": "geom",
+    "total_rows": "0",
+    "non_null_rows": "0",
+    "invalid_rows": "0",
+    "srid_min": null,
+    "srid_max": null,
+    "geom_type": null
+  },
+  {
+    "schema_name": "public",
+    "table_name": "stations",
+    "geom_col": "geom",
+    "total_rows": "0",
+    "non_null_rows": "0",
+    "invalid_rows": "0",
+    "srid_min": null,
+    "srid_max": null,
+    "geom_type": null
+  },
+  {
+    "schema_name": "public",
+    "table_name": "subbasins",
+    "geom_col": "geom",
+    "total_rows": "0",
+    "non_null_rows": "0",
+    "invalid_rows": "0",
+    "srid_min": null,
+    "srid_max": null,
+    "geom_type": null
+  },
+  {
+    "schema_name": "public",
+    "table_name": "v_catchments_geo",
+    "geom_col": "geom",
+    "total_rows": "0",
+    "non_null_rows": "0",
+    "invalid_rows": "0",
+    "srid_min": null,
+    "srid_max": null,
+    "geom_type": null
+  },
+  {
+    "schema_name": "public",
+    "table_name": "v_reaches_geo",
+    "geom_col": "geom",
+    "total_rows": "0",
+    "non_null_rows": "0",
+    "invalid_rows": "0",
+    "srid_min": null,
+    "srid_max": null,
+    "geom_type": null
+  },
+  {
+    "schema_name": "public",
+    "table_name": "v_reservoirs_geo",
+    "geom_col": "geom",
+    "total_rows": "0",
+    "non_null_rows": "0",
+    "invalid_rows": "0",
+    "srid_min": null,
+    "srid_max": null,
+    "geom_type": null
+  },
+  {
+    "schema_name": "public",
+    "table_name": "v_stations_geo",
+    "geom_col": "geom",
+    "total_rows": "0",
+    "non_null_rows": "0",
+    "invalid_rows": "0",
+    "srid_min": null,
+    "srid_max": null,
+    "geom_type": null
+  },
+  {
+    "schema_name": "public",
+    "table_name": "v_subbasins_geo",
+    "geom_col": "geom",
+    "total_rows": "0",
+    "non_null_rows": "0",
+    "invalid_rows": "0",
+    "srid_min": null,
+    "srid_max": null,
+    "geom_type": null
+  },
+  {
+    "schema_name": "ref",
+    "table_name": "communes",
+    "geom_col": "geom",
+    "total_rows": "0",
+    "non_null_rows": "0",
+    "invalid_rows": "0",
+    "srid_min": null,
+    "srid_max": null,
+    "geom_type": null
+  },
+  {
+    "schema_name": "staging",
+    "table_name": "limite_raw",
+    "geom_col": "geom",
+    "total_rows": "33",
+    "non_null_rows": "33",
+    "invalid_rows": "3",
+    "srid_min": 4326,
+    "srid_max": 4326,
+    "geom_type": "MULTIPOLYGON"
+  },
+  {
+    "schema_name": "staging",
+    "table_name": "reseau_hydrologie_raw",
+    "geom_col": "geom",
+    "total_rows": "33",
+    "non_null_rows": "33",
+    "invalid_rows": "1",
+    "srid_min": 4326,
+    "srid_max": 4326,
+    "geom_type": "MULTILINESTRING"
+  },
+  {
+    "schema_name": "staging",
+    "table_name": "station_meteo_raw",
+    "geom_col": "geom",
+    "total_rows": "5",
+    "non_null_rows": "5",
+    "invalid_rows": "0",
+    "srid_min": 4326,
+    "srid_max": 4326,
+    "geom_type": "POINT"
+  }
+]

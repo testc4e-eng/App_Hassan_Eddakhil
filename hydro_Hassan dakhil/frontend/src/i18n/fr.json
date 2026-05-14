@@ -1,0 +1,265 @@
+{
+  "nav": {
+    "home": "Accueil",
+    "dashboard": "Dashboard",
+    "contact": "Contact",
+    "langFr": "FR",
+    "langEn": "EN"
+  },
+  "home": {
+    "hero": {
+      "title": "Barrage Hassan Addakhil",
+      "location": "Commune LKHENG - Province Errachidia, Maroc",
+      "description": "Ouvrage hydraulique majeur du sud-est marocain, jouant un role crucial dans la regulation des eaux, l'irrigation agricole et la protection contre les crues.",
+      "imageAlt": "Barrage Hassan Addakhil - Vue aerienne",
+      "capacityLabel": "Capacite",
+      "watershedLabel": "Bassin versant",
+      "inflowLabel": "Apports moyens",
+      "heightLabel": "Hauteur",
+      "temperature": "20.6°C Temperature moyenne",
+      "precipitation": "2.17 mm Precipitations",
+      "etp": "4 mm ETP"
+    },
+    "missions": {
+      "title": "Missions du Barrage",
+      "subtitle": "Le barrage Hassan Addakhil remplit plusieurs fonctions essentielles pour le developpement regional et la securite des populations.",
+      "items": {
+        "irrigation": {
+          "title": "Irrigation",
+          "description": "Irrigation des terres agricoles de la vallee de Ziz et Tafilalet"
+        },
+        "protection": {
+          "title": "Protection",
+          "description": "Protection contre les inondations a Errachidia et Tafilalet"
+        },
+        "waterSupply": {
+          "title": "Alimentation en Eau",
+          "description": "Approvisionnement en eau potable pour les populations locales"
+        },
+        "energy": {
+          "title": "Energie",
+          "description": "Production hydroelectrique pour la region"
+        }
+      }
+    },
+    "technical": {
+      "title": "Caracteristiques Techniques",
+      "subtitle": "Donnees hydrologiques et techniques du barrage Hassan Addakhil",
+      "items": {
+        "storageVolume": { "label": "Volume retenue" },
+        "watershed": { "label": "Bassin versant" },
+        "avgInflow": { "label": "Apports moyens" },
+        "damHeight": { "label": "Hauteur barrage" },
+        "commissioning": { "label": "Mise en service" },
+        "type": { "label": "Type", "value": "Terre" }
+      }
+    },
+    "cta": {
+      "title": "Explorez les Donnees Hydrologiques",
+      "description": "Accedez au dashboard pour visualiser les donnees en temps reel, les modelisations SWAT et les analyses detaillees du bassin versant.",
+      "button": "Acceder au Dashboard",
+      "kpi1": "Surveillance continue",
+      "kpi2": "Taux de disponibilite",
+      "kpi3": "Capteurs actifs"
+    },
+    "footer": {
+      "line1": "© 2024 Barrage Hassan Addakhil - Systeme de Monitoring Hydrologique",
+      "line2": "Donnees mises a jour en temps reel - Ministere de l'Equipement et de l'Eau"
+    }
+  },
+  "contact": {
+    "title": "Contactez-nous",
+    "subtitle": "Pour toute question concernant le dashboard hydrologique ou les donnees du barrage Hassan Addakhil, n'hesitez pas a nous contacter.",
+    "toast": {
+      "title": "Message envoye",
+      "description": "Nous vous repondrons dans les plus brefs delais."
+    },
+    "form": {
+      "title": "Envoyez-nous un message",
+      "fullName": "Nom complet",
+      "fullNamePlaceholder": "Votre nom",
+      "email": "Email",
+      "subject": "Sujet",
+      "subjectPlaceholder": "Sujet de votre message",
+      "message": "Message",
+      "messagePlaceholder": "Votre message...",
+      "send": "Envoyer le message"
+    },
+    "info": {
+      "agency": { "title": "Agence du Bassin Hydraulique", "line1": "Guir-Ziz-Rheris", "line2": "Errachidia, Maroc" },
+      "address": { "title": "Adresse", "line1": "Boulevard Mohammed V", "line2": "BP 234, Errachidia 52000" },
+      "phone": { "title": "Telephone" },
+      "email": { "title": "Email" }
+    },
+    "map": { "city": "Errachidia, Maroc" },
+    "footer": {
+      "line1": "© 2024 Barrage Hassan Addakhil - Systeme de Monitoring Hydrologique",
+      "line2": "Agence du Bassin Hydraulique Guir-Ziz-Rheris"
+    }
+  },
+  "notFound": {
+    "title": "Page non trouvee",
+    "subtitle": "La page que vous recherchez n'existe pas ou a ete deplacee.",
+    "backHome": "Retour a l'accueil",
+    "previousPage": "Page precedente"
+  },
+  "access": {
+    "title": "Sortie SWAT Access",
+    "subtitle": "Consultation des series importees depuis le fichier Microsoft Access."
+  },
+  "sidebar": {
+    "groupDashboard": "Dashboard",
+    "groupCarto": "Cartographie",
+    "groupData": "Data",
+    "groupReporting": "Reporting",
+    "climate": "Suivi Climat",
+    "hydraulic": "Suivi Hydrologique",
+    "erosion": "Suivi erosion",
+    "spatial": "Analyse Spatiale",
+    "simulatedData": "Gestion de donnée",
+    "scan": "Scan de donnees",
+    "reports": "Rapport & Export",
+    "footerTitle": "Dashboard Hydrologique",
+    "footerSubtitle": "Barrage Hassan Addakhil"
+  },
+  "dashboard": {
+    "climate": "Suivi Climat",
+    "hydro": "Suivi Hydrologique",
+    "erosion": "Suivi erosion",
+    "spatial": "Analyse Spatiale",
+    "maps": "Cartes Thématiques",
+    "simulatedData": "Data : Donnees simulees",
+    "scan": "Scan de donnees",
+    "reports": "Rapport & Export",
+    "projectName": "Barrage Hassan Addakhil",
+    "projectLocation": "Bassin versant Guir-Ziz-Rheris",
+    "loadingCatalog": "Chargement du catalog (runs/modules)…",
+    "loadError": "Erreur de chargement",
+    "retry": "Réessayer",
+    "runs": "Scénarios (runs):",
+    "variablesLoaded": "Variables chargées:",
+    "stationsCatalog": "Stations (catalog):",
+    "availabilityRowsCache": "Availability rows (cache):",
+    "apiOkRuns": "API OK • {{count}} runs"
+  },
+  "filters": {
+    "station": "Station",
+    "chooseStation": "Choisir une station",
+    "selectStation": "Sélectionnez une station",
+    "scenario": "Scénario",
+    "chooseScenario": "Choisir un scénario",
+    "selectScenario": "Sélectionnez un scénario",
+    "variable": "Variable",
+    "chooseVariable": "Choisir une variable",
+    "loadedVariables": "Variables chargées : {{count}}",
+    "period": "Période",
+    "autoPeriod": "Auto: {{min}} → {{max}}",
+    "aggregation": "Agrégation",
+    "instant": "Instant",
+    "instantLong": "Instantané",
+    "day": "Jour",
+    "month": "Mois",
+    "year": "Année",
+    "reset": "Réinitialiser",
+    "noSimulatedForStation": "Cette station n'a pas de série simulée disponible.",
+    "sourceObserved": "Observed",
+    "sourceSimulated": "Simulated"
+  },
+  "common": {
+    "loading": "Chargement…",
+    "calculating": "Calcul…",
+    "noData": "Aucune donnée.",
+    "unavailable": "indisponible"
+  },
+  "modes": {
+    "simple": "Mode simple",
+    "multi": "Mode multicouche"
+  },
+  "panels": {
+    "statistics": "Statistiques",
+    "table": "Tableau",
+    "tableMulti": "Tableau (multicouche)",
+    "chart": "Graphique",
+    "chartMulti": "Graphique (multicouche)",
+    "date": "Date",
+    "compareScenarios": "Scénarios à comparer",
+    "selectedScenarios": "Sélectionnés : {{count}} scénario(s)",
+    "temporalComparisonMode": "Mode de comparaison temporelle",
+    "compareFullPeriod": "Comparer sur toute la période",
+    "compareCommonPeriod": "Comparer sur la période commune",
+    "commonPeriod": "Période commune :",
+    "rowsPage": "{{rows}} lignes • Page {{page}}/{{total}}",
+    "noDataForSelection": "Aucune donnée trouvée pour cette station, variable, période et ces scénarios.",
+    "selectStationVariable": "Sélectionne une station et une variable.",
+    "selectAtLeastOneScenario": "Sélectionne au moins un scénario.",
+    "scenariosCount": "{{count}} scénario(s)",
+    "selectStationScenarioVariable": "Sélectionnez station + scénario + variable.",
+    "selectVariablesToDisplayData": "Sélectionnez des variables pour afficher les données",
+    "selectStationScenarioRunToDisplayData": "Sélectionnez une station et un scénario (run) pour afficher les données",
+    "selectStationAndScenario": "Sélectionnez une station et un scénario",
+    "selectVariables": "Sélectionnez des variables"
+  },
+  "erosion": {
+    "tabs": {
+      "sediments": "Sédiments",
+      "solidYield": "Apport solide"
+    }
+  },
+  "spatial": {
+    "title": "Analyse Spatiale",
+    "displayMode": "Mode d'affichage",
+    "displayModes": {
+      "raw_database": "Base de données brute",
+      "project_hassan_addakhil": "Projet Hassan Addakhil"
+    },
+    "projectBadge": "Projet : Hassan Addakhil",
+    "projectCounts": {
+      "stations": "{{count}} stations projet",
+      "subbasins": "{{count}} sous-bassins projet",
+      "basins": "{{count}} bassin projet",
+      "reaches": "{{count}} reach projet",
+      "barrages": "{{count}} barrage projet"
+    },
+    "filters": {
+      "basin": "Bassin",
+      "chooseBasin": "Choisir un bassin",
+      "allBasins": "Tous les bassins",
+      "barrageFilter": "Filtre Barrage",
+      "filterByBarrage": "Filtrer par barrage",
+      "allBarrages": "Tous les barrages",
+      "subbasin": "Sous-bassin",
+      "chooseSubbasin": "Choisir un sous-bassin",
+      "allSubbasins": "Tous les sous-bassins",
+      "subbasinsShown": "Sous-bassins affichés : {{count}}"
+    },
+    "layers": {
+      "title": "Couches",
+      "barrages": "Barrages",
+      "basins": "Bassins",
+      "subbasins": "Sous-bassins",
+      "reach": "Reach",
+      "stations": "Stations"
+    },
+    "tools": {
+      "title": "Outils d'analyse",
+      "navigation": "Navigation",
+      "zoom": "Zoom",
+      "basemap": "Fond de carte",
+      "chooseBasemap": "Choisir un fond",
+      "measure": "Mesure",
+      "distance": "Distance",
+      "surface": "Surface",
+      "debugMode": "Mode debug carto",
+      "layersOpacity": "Opacité des couches",
+      "exportPng": "Export PNG"
+    },
+    "legend": {
+      "title": "Légende",
+      "stations": "Stations",
+      "barrages": "Barrages / reservoirs",
+      "basinOutline": "Contour bassin versant",
+      "subbasins": "Sous-bassins",
+      "reach": "Reach / reseau hydro"
+    }
+  }
+}

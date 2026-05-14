@@ -1,0 +1,265 @@
+{
+  "nav": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "contact": "Contact",
+    "langFr": "FR",
+    "langEn": "EN"
+  },
+  "home": {
+    "hero": {
+      "title": "Hassan Addakhil Dam",
+      "location": "LKHENG Commune - Errachidia Province, Morocco",
+      "description": "Major hydraulic infrastructure in south-east Morocco, playing a key role in water regulation, agricultural irrigation and flood protection.",
+      "imageAlt": "Hassan Addakhil Dam - Aerial view",
+      "capacityLabel": "Capacity",
+      "watershedLabel": "Watershed",
+      "inflowLabel": "Average inflow",
+      "heightLabel": "Height",
+      "temperature": "20.6°C Average temperature",
+      "precipitation": "2.17 mm Precipitation",
+      "etp": "4 mm PET"
+    },
+    "missions": {
+      "title": "Dam Missions",
+      "subtitle": "Hassan Addakhil dam fulfills several essential functions for regional development and population safety.",
+      "items": {
+        "irrigation": {
+          "title": "Irrigation",
+          "description": "Irrigation of agricultural lands in the Ziz and Tafilalet valley"
+        },
+        "protection": {
+          "title": "Protection",
+          "description": "Flood protection for Errachidia and Tafilalet"
+        },
+        "waterSupply": {
+          "title": "Water Supply",
+          "description": "Drinking water supply for local populations"
+        },
+        "energy": {
+          "title": "Energy",
+          "description": "Hydroelectric power generation for the region"
+        }
+      }
+    },
+    "technical": {
+      "title": "Technical Characteristics",
+      "subtitle": "Hydrological and technical data for Hassan Addakhil dam",
+      "items": {
+        "storageVolume": { "label": "Storage volume" },
+        "watershed": { "label": "Watershed" },
+        "avgInflow": { "label": "Average inflow" },
+        "damHeight": { "label": "Dam height" },
+        "commissioning": { "label": "Commissioning" },
+        "type": { "label": "Type", "value": "Earthfill" }
+      }
+    },
+    "cta": {
+      "title": "Explore Hydrological Data",
+      "description": "Access the dashboard to visualize real-time data, SWAT simulations and detailed watershed analyses.",
+      "button": "Go to Dashboard",
+      "kpi1": "Continuous monitoring",
+      "kpi2": "Availability rate",
+      "kpi3": "Active sensors"
+    },
+    "footer": {
+      "line1": "© 2024 Hassan Addakhil Dam - Hydrological Monitoring System",
+      "line2": "Real-time updated data - Ministry of Equipment and Water"
+    }
+  },
+  "contact": {
+    "title": "Contact us",
+    "subtitle": "For any question about the hydrological dashboard or Hassan Addakhil dam data, feel free to contact us.",
+    "toast": {
+      "title": "Message sent",
+      "description": "We will reply as soon as possible."
+    },
+    "form": {
+      "title": "Send us a message",
+      "fullName": "Full name",
+      "fullNamePlaceholder": "Your name",
+      "email": "Email",
+      "subject": "Subject",
+      "subjectPlaceholder": "Your message subject",
+      "message": "Message",
+      "messagePlaceholder": "Your message...",
+      "send": "Send message"
+    },
+    "info": {
+      "agency": { "title": "Hydraulic Basin Agency", "line1": "Guir-Ziz-Rheris", "line2": "Errachidia, Morocco" },
+      "address": { "title": "Address", "line1": "Mohammed V Boulevard", "line2": "BP 234, Errachidia 52000" },
+      "phone": { "title": "Phone" },
+      "email": { "title": "Email" }
+    },
+    "map": { "city": "Errachidia, Morocco" },
+    "footer": {
+      "line1": "© 2024 Hassan Addakhil Dam - Hydrological Monitoring System",
+      "line2": "Guir-Ziz-Rheris Hydraulic Basin Agency"
+    }
+  },
+  "notFound": {
+    "title": "Page not found",
+    "subtitle": "The page you are looking for does not exist or has been moved.",
+    "backHome": "Back to home",
+    "previousPage": "Previous page"
+  },
+  "access": {
+    "title": "SWAT Access Output",
+    "subtitle": "Browse series imported from the Microsoft Access file."
+  },
+  "sidebar": {
+    "groupDashboard": "Dashboard",
+    "groupCarto": "Mapping",
+    "groupData": "Data",
+    "groupReporting": "Reporting",
+    "climate": "Climate Monitoring",
+    "hydraulic": "Hydrological Monitoring",
+    "erosion": "Erosion Monitoring",
+    "spatial": "Spatial Analysis",
+    "simulatedData": "Data Management",
+    "scan": "Data Scan",
+    "reports": "Reports & Export",
+    "footerTitle": "Hydrological Dashboard",
+    "footerSubtitle": "Hassan Addakhil Dam"
+  },
+  "dashboard": {
+    "climate": "Climate Monitoring",
+    "hydro": "Hydrological Monitoring",
+    "erosion": "Erosion Monitoring",
+    "spatial": "Spatial Analysis",
+    "maps": "Thematic Maps",
+    "simulatedData": "Data: Simulated Data",
+    "scan": "Data Scan",
+    "reports": "Reports & Export",
+    "projectName": "Hassan Addakhil Dam",
+    "projectLocation": "Guir-Ziz-Rheris Watershed",
+    "loadingCatalog": "Loading catalog (runs/modules)…",
+    "loadError": "Loading error",
+    "retry": "Retry",
+    "runs": "Scenarios (runs):",
+    "variablesLoaded": "Loaded variables:",
+    "stationsCatalog": "Stations (catalog):",
+    "availabilityRowsCache": "Availability rows (cache):",
+    "apiOkRuns": "API OK • {{count}} runs"
+  },
+  "filters": {
+    "station": "Station",
+    "chooseStation": "Choose a station",
+    "selectStation": "Select a station",
+    "scenario": "Scenario",
+    "chooseScenario": "Choose a scenario",
+    "selectScenario": "Select a scenario",
+    "variable": "Variable",
+    "chooseVariable": "Choose a variable",
+    "loadedVariables": "Loaded variables: {{count}}",
+    "period": "Period",
+    "autoPeriod": "Auto: {{min}} → {{max}}",
+    "aggregation": "Aggregation",
+    "instant": "Instant",
+    "instantLong": "Instantaneous",
+    "day": "Day",
+    "month": "Month",
+    "year": "Year",
+    "reset": "Reset",
+    "noSimulatedForStation": "No simulated series available for this station.",
+    "sourceObserved": "Observed",
+    "sourceSimulated": "Simulated"
+  },
+  "common": {
+    "loading": "Loading…",
+    "calculating": "Calculating…",
+    "noData": "No data.",
+    "unavailable": "unavailable"
+  },
+  "modes": {
+    "simple": "Simple mode",
+    "multi": "Multi-layer mode"
+  },
+  "panels": {
+    "statistics": "Statistics",
+    "table": "Table",
+    "tableMulti": "Table (multi-layer)",
+    "chart": "Chart",
+    "chartMulti": "Chart (multi-layer)",
+    "date": "Date",
+    "compareScenarios": "Scenarios to compare",
+    "selectedScenarios": "Selected: {{count}} scenario(s)",
+    "temporalComparisonMode": "Temporal comparison mode",
+    "compareFullPeriod": "Compare over full period",
+    "compareCommonPeriod": "Compare over common period",
+    "commonPeriod": "Common period:",
+    "rowsPage": "{{rows}} rows • Page {{page}}/{{total}}",
+    "noDataForSelection": "No data found for this station, variable, period and scenarios.",
+    "selectStationVariable": "Select a station and a variable.",
+    "selectAtLeastOneScenario": "Select at least one scenario.",
+    "scenariosCount": "{{count}} scenario(s)",
+    "selectStationScenarioVariable": "Select station + scenario + variable.",
+    "selectVariablesToDisplayData": "Select variables to display data",
+    "selectStationScenarioRunToDisplayData": "Select a station and a scenario (run) to display data",
+    "selectStationAndScenario": "Select a station and a scenario",
+    "selectVariables": "Select variables"
+  },
+  "erosion": {
+    "tabs": {
+      "sediments": "Sediments",
+      "solidYield": "Solid yield"
+    }
+  },
+  "spatial": {
+    "title": "Spatial Analysis",
+    "displayMode": "Display mode",
+    "displayModes": {
+      "raw_database": "Raw database",
+      "project_hassan_addakhil": "Hassan Addakhil project"
+    },
+    "projectBadge": "Project: Hassan Addakhil",
+    "projectCounts": {
+      "stations": "{{count}} project stations",
+      "subbasins": "{{count}} project subbasins",
+      "basins": "{{count}} project basin",
+      "reaches": "{{count}} project reaches",
+      "barrages": "{{count}} project dam"
+    },
+    "filters": {
+      "basin": "Basin",
+      "chooseBasin": "Choose a basin",
+      "allBasins": "All basins",
+      "barrageFilter": "Dam filter",
+      "filterByBarrage": "Filter by dam",
+      "allBarrages": "All dams",
+      "subbasin": "Subbasin",
+      "chooseSubbasin": "Choose a subbasin",
+      "allSubbasins": "All subbasins",
+      "subbasinsShown": "Displayed subbasins: {{count}}"
+    },
+    "layers": {
+      "title": "Layers",
+      "barrages": "Dams",
+      "basins": "Basins",
+      "subbasins": "Subbasins",
+      "reach": "Reach",
+      "stations": "Stations"
+    },
+    "tools": {
+      "title": "Analysis tools",
+      "navigation": "Navigation",
+      "zoom": "Zoom",
+      "basemap": "Basemap",
+      "chooseBasemap": "Choose a basemap",
+      "measure": "Measure",
+      "distance": "Distance",
+      "surface": "Area",
+      "debugMode": "Map debug mode",
+      "layersOpacity": "Layer opacity",
+      "exportPng": "Export PNG"
+    },
+    "legend": {
+      "title": "Legend",
+      "stations": "Stations",
+      "barrages": "Dams / reservoirs",
+      "basinOutline": "Watershed boundary",
+      "subbasins": "Subbasins",
+      "reach": "Reach / hydro network"
+    }
+  }
+}

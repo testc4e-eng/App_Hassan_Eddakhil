@@ -1,0 +1,46 @@
+[
+  {
+    "schema_name": "public",
+    "table_name": "adm_communes_abhgzr",
+    "geom_col": "geom",
+    "total_rows": "86",
+    "non_null_rows": "86",
+    "invalid_rows": "1",
+    "srid_min": 26191,
+    "srid_max": 26191,
+    "geom_type": "MULTIPOLYGON"
+  },
+  {
+    "schema_name": "public",
+    "table_name": "barrages_abhgzr",
+    "geom_col": "geom",
+    "total_rows": "12",
+    "non_null_rows": "12",
+    "invalid_rows": "0",
+    "srid_min": 26191,
+    "srid_max": 26191,
+    "geom_type": "POINT"
+  },
+  {
+    "schema_name": "public",
+    "table_name": "bassin_abhgzr",
+    "geom_col": "geom",
+    "total_rows": "1",
+    "non_null_rows": "1",
+    "invalid_rows": "0",
+    "srid_min": 26191,
+    "srid_max": 26191,
+    "geom_type": "MULTIPOLYGON"
+  },
+  {
+    "schema_name": "public",
+    "table_name": "stations_abhgzr",
+    "geom_col": "geom",
+    "total_rows": "35",
+    "non_null_rows": "34",
+    "invalid_rows": "0",
+    "srid_min": 26191,
+    "srid_max": 26191,
+    "geom_type": "POINT"
+  }
+]

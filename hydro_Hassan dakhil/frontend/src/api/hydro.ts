@@ -1,0 +1,138 @@
+﻿// frontend/src/api/hydro.ts
+import { apiGet, qs } from "./client";
+import type { Station, Catchment, Reservoir, ModelRun } from "../types/hydro";
+
+// Types manquants: on les définit ici pour ne pas bloquer le build.
+// Tu pourras ensuite les déplacer dans ../types/hydro.ts si tu veux.
+
+export type HealthResponse = {
+  success?: boolean;
+  status?: string;
+  message?: string;
+};
+
+export type DashboardStats = Record<string, any>;
+
+export type FilterOptions = {
+  limit?: number;
+  stationIds?: number[];
+  catchmentIds?: number[];
+};
+
+export type TimeseriesCatalogItem = {
+  ts_id: number;
+  station_id: number;
+  station_code?: string;
+  station_name?: string;
+  station_label?: string;
+
+  property_id: number;
+  property_name: string;
+  unit?: string | null;
+
+  run_id: number;
+  scenario_code?: string;
+  scenario_name?: string;
+
+  source_type?: string;
+  time_step?: string;
+
+  n_measures?: number;
+  dt_min?: string;
+  dt_max?: string;
+  v_min?: number;
+  v_max?: number;
+};
+
+export type TimeseriesAggPoint = {
+  period: string;
+  avg_value: number;
+  min_value: number;
+  max_value: number;
+  n: number;
+};
+
+export type TimeseriesDateRange = {
+  minDate: string | null;
+  maxDate: string | null;
+  nPoints: number;
+};
+
+export type TimeseriesBundleResponse = {
+  stationId: number;
+  runId: number;
+  module: string;
+  catalog: TimeseriesCatalogItem[];
+  aggregated: Record<string, TimeseriesAggPoint[]>;
+};
+
+export const hydroApi = {
+  health: () => apiGet<HealthResponse>("/hydro/health"),
+
+  getStations: (filter?: FilterOptions) => {
+    const query = qs({
+      limit: filter?.limit,
+      stationIds: filter?.stationIds?.length
+        ? JSON.stringify(filter.stationIds)
+        : undefined,
+    });
+    return apiGet<Station[]>(`/hydro/stations${query}`);
+  },
+
+  getCatchments: (filter?: FilterOptions) => {
+    const query = qs({
+      catchmentIds: filter?.catchmentIds?.length
+        ? JSON.stringify(filter.catchmentIds)
+        : undefined,
+    });
+    return apiGet<Catchment[]>(`/hydro/catchments${query}`);
+  },
+
+  getReservoirs: () => apiGet<Reservoir[]>("/hydro/reservoirs"),
+
+  getModelRuns: (isObserved?: boolean) => {
+    const query = qs({ isObserved });
+    return apiGet<ModelRun[]>(`/hydro/model-runs${query}`);
+  },
+
+  getDashboardStats: () => apiGet<DashboardStats>("/hydro/stats"),
+
+  getTimeseriesCatalog: (p: {
+    stationId: number;
+    runId: number;
+    module: string;
+  }) => {
+    const query = qs(p);
+    return apiGet<TimeseriesCatalogItem[]>(`/timeseries/catalog${query}`);
+  },
+
+  getTimeseriesDateRange: (p: {
+    stationId: number;
+    runId?: number;
+    propertyId?: number;
+    module: string;
+  }) => {
+    const query = qs(p);
+    return apiGet<TimeseriesDateRange>(`/timeseries/date-range${query}`);
+  },
+
+  getTimeseriesBundle: (p: {
+    stationId: number;
+    runId: number;
+    module: string;
+    agg: "day" | "month" | "year";
+  }) => {
+    const query = qs(p);
+    return apiGet<TimeseriesBundleResponse>(`/timeseries/bundle${query}`);
+  },
+};
+
+export async function getDashboardData() {
+  const [stations, catchments, reservoirs] = await Promise.all([
+    hydroApi.getStations({ limit: 50 }),
+    hydroApi.getCatchments(),
+    hydroApi.getReservoirs(),
+  ]);
+
+  return { stations, catchments, timeseries: [], reservoirs };
+}

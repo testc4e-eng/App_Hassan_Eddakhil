@@ -1,0 +1,2391 @@
+//scripts/diagnose.js
+const { Pool } = require("pg");
+require("dotenv").config();
+
+async function diagnoseDatabase() {
+  console.log("🔍 Diagnostic de la base de données hydro_hd\n");
+
+  const pool = new Pool({
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    database: process.env.DB_NAME,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+  });
+
+  try {
+    const client = await pool.connect();
+
+    console.log("1. 📊 Tables disponibles:");
+    const tables = await client.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public'
+      ORDER BY table_name
+    `);
+
+    tables.rows.forEach((row, i) => {
+      console.log(`   ${i + 1}. ${row.table_name}`);
+    });
+
+    console.log("\n2. 🔍 Structure des tables principales:");
+
+    // Stations
+    console.log('\n   Table "stations":');
+    const stationsCols = await client.query(`
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_name = 'stations'
+      ORDER BY ordinal_position
+    `);
+    stationsCols.rows.forEach((col) => {
+      console.log(`     - ${col.column_name} (${col.data_type})`);
+    });
+
+    // Timeseries
+    console.log('\n   Table "timeseries":');
+    const timeseriesCols = await client.query(`
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_name = 'timeseries'
+      ORDER BY ordinal_position
+    `);
+    timeseriesCols.rows.forEach((col) => {
+      console.log(`     - ${col.column_name} (${col.data_type})`);
+    });
+
+    // Données d'exemple
+    console.log("\n3. 🎯 Données d'exemple:");
+
+    console.log("\n   Stations (première ligne):");
+    const stationExample = await client.query("SELECT * FROM stations LIMIT 1");
+    if (stationExample.rows.length > 0) {
+      Object.entries(stationExample.rows[0]).forEach(([key, value]) => {
+        console.log(`     ${key}: ${value}`);
+      });
+    }
+
+    console.log("\n   Timeseries (première ligne):");
+    const tsExample = await client.query("SELECT * FROM timeseries LIMIT 1");
+    if (tsExample.rows.length > 0) {
+      Object.entries(tsExample.rows[0]).forEach(([key, value]) => {
+        console.log(`     ${key}: ${value}`);
+      });
+    }
+
+    console.log("\n4. ✅ Test des requêtes de base:");
+
+    // Test requête stations
+    try {
+      const stationsCount = await client.query("SELECT COUNT(*) FROM stations");
+      console.log(`   - Nombre de stations: ${stationsCount.rows[0].count}`);
+    } catch (err) {
+      console.log(`   - ❌ Erreur stations: ${err.message}`);
+    }
+
+    // Test requête timeseries avec JOIN
+    try {
+      const tsQuery = await client.query(`
+        SELECT ts.ts_id, s.name as station_name, op.property_name
+        FROM timeseries ts
+        LEFT JOIN stations s ON ts.station_id = s.station_id
+        LEFT JOIN observed_properties op ON ts.property_id = op.property_id
+        LIMIT 1
+      `);
+      if (tsQuery.rows.length > 0) {
+        console.log("   - ✅ Timeseries JOIN fonctionne");
+      }
+    } catch (err) {
+      console.log(`   - ❌ Erreur timeseries JOIN: ${err.message}`);
+    }
+
+    client.release();
+    await pool.end();
+
+    console.log("\n🎉 Diagnostic terminé!");
+  } catch (error) {
+    console.error("\n❌ Erreur de connexion:", error.message);
+  }
+}
+
+diagnoseDatabase();
+------------------------------------------------------------------------
+//src/config/database.config.ts
+
+import { Pool, PoolConfig } from "pg";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const dbConfig: PoolConfig = {
+  host: process.env.DB_HOST || "localhost",
+  port: parseInt(process.env.DB_PORT || "5432"),
+  database: process.env.DB_NAME || "hydro_hd",
+  user: process.env.DB_USER || "postgres",
+  password: process.env.DB_PASSWORD || "",
+  ssl: process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : false,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+};
+
+class Database {
+  private static instance: Database;
+  private pool: Pool;
+
+  private constructor() {
+    this.pool = new Pool(dbConfig);
+
+    this.pool.on("connect", () => {
+      console.log("✅ Database connected successfully");
+    });
+
+    this.pool.on("error", (err) => {
+      console.error("❌ Unexpected database error:", err);
+    });
+  }
+
+  public static getInstance(): Database {
+    if (!Database.instance) {
+      Database.instance = new Database();
+    }
+    return Database.instance;
+  }
+
+  public getPool(): Pool {
+    return this.pool;
+  }
+
+  public async testConnection(): Promise<boolean> {
+    try {
+      const client = await this.pool.connect();
+      const result = await client.query("SELECT NOW()");
+      client.release();
+      console.log("📊 Database connection test successful:", result.rows[0]);
+      return true;
+    } catch (error) {
+      console.error("❌ Database connection test failed:", error);
+      return false;
+    }
+  }
+}
+
+export default Database.getInstance();
+------------------------------------------------------------
+//src/controllers/hydroController.ts
+import { Request, Response, NextFunction } from "express";
+import { hydroService } from "../services/hydro.service";
+import { AdaptiveHydroService } from "../services/adaptive.service";
+import { FilterOptions } from "../types/hydro.types";
+
+// Créer une instance du service adaptatif
+const adaptiveService = new AdaptiveHydroService();
+
+export class HydroController {
+  // ================ HEALTH CHECK ADAPTATIF ================
+  async healthCheck(req: Request, res: Response, next: NextFunction) {
+    try {
+      const health = await adaptiveService.checkDatabaseHealth();
+
+      res.json({
+        success: true,
+        timestamp: new Date().toISOString(),
+        service: "Hydro API",
+        version: "1.0.0",
+        database: health.connected ? "connected" : "disconnected",
+        tables: health.tables,
+        uptime: process.uptime(),
+        ...(health.connected && { structures: health.structures }),
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ================ STATIONS ADAPTATIVES ================
+  async getStations(req: Request, res: Response, next: NextFunction) {
+    try {
+      const filter: FilterOptions = {
+        stationIds: req.query.stationIds
+          ? JSON.parse(req.query.stationIds as string)
+          : undefined,
+        limit: req.query.limit
+          ? parseInt(req.query.limit as string)
+          : undefined,
+      };
+
+      // Utiliser la version adaptative
+      const stations = await adaptiveService.getStationsAdaptive(filter);
+      res.json({ success: true, data: stations, count: stations.length });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ================ TIMESERIES CATALOG (station + run + module) ================
+  async getTimeseriesCatalog(req: Request, res: Response, next: NextFunction) {
+    try {
+      const stationId = req.query.stationId
+        ? parseInt(req.query.stationId as string)
+        : undefined;
+      const runId = req.query.runId
+        ? parseInt(req.query.runId as string)
+        : undefined;
+      const moduleCode = (req.query.moduleCode as string) || undefined;
+
+      if (!stationId || !runId || !moduleCode) {
+        return res.status(400).json({
+          success: false,
+          error: "stationId, runId, moduleCode sont requis",
+        });
+      }
+
+      const result = await hydroService.getTimeseriesCatalogByModule(
+        stationId,
+        runId,
+        moduleCode
+      );
+
+      res.json({
+        success: true,
+        stationId,
+        runId,
+        moduleCode,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ================ GET STATION BY ID ================
+  async getStationById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = parseInt(req.params.id);
+
+      // Pour l'instant, récupérer toutes les stations et filtrer
+      const stations = await adaptiveService.getStationsAdaptive({});
+      const station = stations.find((s) => s.station_id === id);
+
+      if (!station) {
+        return res.status(404).json({
+          success: false,
+          error: "Station not found",
+        });
+      }
+
+      res.json({ success: true, data: station });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ================ CATCHMENTS ================
+  async getCatchments(req: Request, res: Response, next: NextFunction) {
+    try {
+      const filter: FilterOptions = {
+        catchmentIds: req.query.catchmentIds
+          ? JSON.parse(req.query.catchmentIds as string)
+          : undefined,
+      };
+
+      const catchments = await hydroService.getCatchments(filter);
+      res.json({ success: true, data: catchments, count: catchments.length });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getCatchmentById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = parseInt(req.params.id);
+      const catchment = await hydroService.getCatchmentById(id);
+
+      if (!catchment) {
+        return res.status(404).json({
+          success: false,
+          error: "Catchment not found",
+        });
+      }
+
+      res.json({ success: true, data: catchment });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ================ TIMESERIES ================
+  async getTimeseries(req: Request, res: Response, next: NextFunction) {
+    try {
+      const stationId = req.query.stationId
+        ? parseInt(req.query.stationId as string)
+        : undefined;
+      const propertyId = req.query.propertyId
+        ? parseInt(req.query.propertyId as string)
+        : undefined;
+
+      // Utiliser la version adaptative
+      const timeseries = await adaptiveService.getTimeseriesAdaptive(
+        stationId,
+        propertyId
+      );
+      res.json({ success: true, data: timeseries, count: timeseries.length });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ================ MEASUREMENTS ================
+  async getMeasurements(req: Request, res: Response, next: NextFunction) {
+    try {
+      const tsId = parseInt(req.params.tsId);
+      const filter: FilterOptions = {
+        startDate: req.query.startDate as string,
+        endDate: req.query.endDate as string,
+        limit: req.query.limit ? parseInt(req.query.limit as string) : 1000,
+      };
+
+      const measurements = await hydroService.getMeasurements(tsId, filter);
+      res.json({
+        success: true,
+        data: measurements,
+        count: measurements.length,
+        tsId,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getAggregatedMeasurements(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const tsId = parseInt(req.params.tsId);
+      const { interval, startDate, endDate } = req.query;
+
+      if (!interval || !startDate || !endDate) {
+        return res.status(400).json({
+          success: false,
+          error: "interval, startDate, and endDate are required",
+        });
+      }
+
+      const data = await hydroService.getAggregatedMeasurements(
+        tsId,
+        interval as any,
+        startDate as string,
+        endDate as string
+      );
+
+      res.json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ================ LANDCOVER ================
+  async getLandcover(req: Request, res: Response, next: NextFunction) {
+    try {
+      const periodId = req.query.periodId
+        ? parseInt(req.query.periodId as string)
+        : undefined;
+      const catchmentId = req.query.catchmentId
+        ? parseInt(req.query.catchmentId as string)
+        : undefined;
+
+      const landcover = await hydroService.getLandcover(periodId, catchmentId);
+      res.json({ success: true, data: landcover, count: landcover.length });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getLandcoverSummary(req: Request, res: Response, next: NextFunction) {
+    try {
+      const catchmentId = parseInt(req.params.catchmentId);
+      const periodId = req.query.periodId
+        ? parseInt(req.query.periodId as string)
+        : undefined;
+
+      const summary = await hydroService.getLandcoverSummary(
+        catchmentId,
+        periodId
+      );
+      res.json({ success: true, data: summary });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ================ RESERVOIRS ================
+  async getReservoirs(req: Request, res: Response, next: NextFunction) {
+    try {
+      const reservoirs = await hydroService.getReservoirs();
+      res.json({ success: true, data: reservoirs, count: reservoirs.length });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ================ MODEL RUNS ================
+  async getModelRuns(req: Request, res: Response, next: NextFunction) {
+    try {
+      const isObserved = req.query.isObserved
+        ? req.query.isObserved === "true"
+        : undefined;
+
+      const modelRuns = await hydroService.getModelRuns(isObserved);
+      res.json({ success: true, data: modelRuns, count: modelRuns.length });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ================ SPATIAL ================
+  async getFeaturesInBounds(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { minLng, minLat, maxLng, maxLat } = req.query;
+
+      if (!minLng || !minLat || !maxLng || !maxLat) {
+        return res.status(400).json({
+          success: false,
+          error: "Bounds parameters are required",
+        });
+      }
+
+      const bounds = {
+        minLng: parseFloat(minLng as string),
+        minLat: parseFloat(minLat as string),
+        maxLng: parseFloat(maxLng as string),
+        maxLat: parseFloat(maxLat as string),
+      };
+
+      const features = await hydroService.getFeaturesInBounds(bounds);
+      res.json({ success: true, data: features });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ================ DASHBOARD ================
+  async getDashboardStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      const stats = await hydroService.getDashboardStats();
+      res.json({ success: true, data: stats });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ================ HEALTH CHECK SIMPLE ================
+  async healthCheckSimple(req: Request, res: Response, next: NextFunction) {
+    try {
+      res.json({
+        success: true,
+        timestamp: new Date().toISOString(),
+        service: "Hydro API",
+        version: "1.0.0",
+        database: "connected",
+        uptime: process.uptime(),
+        message: "API is running",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ================ STATIONS SIMPLE ================
+  async getStationsSimple(req: Request, res: Response, next: NextFunction) {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+
+      // Version simple qui fonctionne toujours
+      const stations = await adaptiveService.getStationsAdaptive({ limit });
+      res.json({ success: true, data: stations, count: stations.length });
+    } catch (error) {
+      next(error);
+    }
+  }
+}
+
+export const hydroController = new HydroController();
+-------------------------------------------------------------------
+// src/controllers/timeseriesController.ts
+import { Request, Response, NextFunction } from "express";
+import { timeseriesService } from "../services/timeseries.service";
+import { Grain, ModuleCode } from "../types/timeseries.types";
+import { AppError } from "../middleware/errorHandler";
+
+function asInt(v: any, name: string): number {
+  const n = Number(v);
+  if (!Number.isFinite(n) || n <= 0) throw new AppError(`Invalid ${name}`, 400);
+  return n;
+}
+
+function asModule(v: any): ModuleCode {
+  const m = String(v || "").toLowerCase();
+  if (m === "climat" || m === "hydro" || m === "erosion") return m;
+  throw new AppError(`Invalid module. Use climat|hydro|erosion`, 400);
+}
+
+function asGrain(v: any): Grain {
+  const g = String(v || "").toLowerCase();
+  if (g === "daily" || g === "monthly" || g === "annual") return g;
+  throw new AppError(`Invalid grain. Use daily|monthly|annual`, 400);
+}
+
+export class TimeseriesController {
+  async health(req: Request, res: Response) {
+    res.json({
+      success: true,
+      service: "Timeseries API",
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  async getCatalog(req: Request, res: Response, next: NextFunction) {
+    try {
+      const stationId = asInt(req.query.stationId, "stationId");
+      const runId = asInt(req.query.runId, "runId");
+      const module = asModule(req.query.module);
+      const sourceType = req.query.sourceType
+        ? String(req.query.sourceType)
+        : undefined;
+
+      const catalog = await timeseriesService.getCatalog({
+        stationId,
+        runId,
+        module,
+        sourceType,
+      });
+
+      res.json({ success: true, data: catalog, count: catalog.length });
+    } catch (e) {
+      next(e);
+    }
+  }
+
+  async getAggregates(req: Request, res: Response, next: NextFunction) {
+    try {
+      const stationId = asInt(req.query.stationId, "stationId");
+      const runId = asInt(req.query.runId, "runId");
+      const module = asModule(req.query.module);
+      const grain = asGrain(req.query.grain);
+
+      const startDate = req.query.startDate
+        ? String(req.query.startDate)
+        : undefined;
+      const endDate = req.query.endDate ? String(req.query.endDate) : undefined;
+      const sourceType = req.query.sourceType
+        ? String(req.query.sourceType)
+        : undefined;
+
+      const aggregates = await timeseriesService.getAggregates({
+        stationId,
+        runId,
+        module,
+        grain,
+        startDate,
+        endDate,
+        sourceType,
+      });
+
+      res.json({ success: true, data: aggregates });
+    } catch (e) {
+      next(e);
+    }
+  }
+
+  async getBundle(req: Request, res: Response, next: NextFunction) {
+    try {
+      const stationId = asInt(req.query.stationId, "stationId");
+      const runId = asInt(req.query.runId, "runId");
+      const module = asModule(req.query.module);
+      const grain = asGrain(req.query.grain);
+
+      const startDate = req.query.startDate
+        ? String(req.query.startDate)
+        : undefined;
+      const endDate = req.query.endDate ? String(req.query.endDate) : undefined;
+      const sourceType = req.query.sourceType
+        ? String(req.query.sourceType)
+        : undefined;
+
+      const bundle = await timeseriesService.getBundle({
+        stationId,
+        runId,
+        module,
+        grain,
+        startDate,
+        endDate,
+        sourceType,
+      });
+
+      res.json({ success: true, data: bundle });
+    } catch (e) {
+      next(e);
+    }
+  }
+}
+
+export const timeseriesController = new TimeseriesController();
+---------------------------------------------------------------------------
+//src/middleware/errorHandler.ts
+import { Request, Response, NextFunction } from "express";
+
+export interface AppError extends Error {
+  statusCode?: number;
+  isOperational?: boolean;
+}
+
+export class AppError extends Error {
+  constructor(message: string, statusCode: number) {
+    super(message);
+    this.statusCode = statusCode;
+    this.isOperational = true;
+    // Pour TypeScript, on doit utiliser une approche différente
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor);
+    }
+  }
+}
+
+export const errorHandler = (
+  err: AppError,
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const statusCode = err.statusCode || 500;
+  const message = err.message || "Internal Server Error";
+
+  // Log en développement
+  if (process.env.NODE_ENV === "development") {
+    console.error("❌ Error:", {
+      message: err.message,
+      stack: err.stack,
+      path: req.path,
+      method: req.method,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  res.status(statusCode).json({
+    success: false,
+    error: message,
+    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
+  });
+};
+------------------------------------------------------------
+//src/middleware/validateRequests.ts
+import { Request, Response, NextFunction } from "express";
+import { z, ZodError } from "zod";
+
+// Schémas de validation
+export const stationFilterSchema = z.object({
+  stationIds: z.array(z.number()).optional(),
+  limit: z.number().min(1).max(1000).optional(),
+});
+
+export const measurementFilterSchema = z.object({
+  startDate: z.string().datetime().optional(),
+  endDate: z.string().datetime().optional(),
+  limit: z.number().min(1).max(10000).optional(),
+});
+
+export const spatialBoundsSchema = z.object({
+  minLng: z.number().min(-180).max(180),
+  minLat: z.number().min(-90).max(90),
+  maxLng: z.number().min(-180).max(180),
+  maxLat: z.number().min(-90).max(90),
+});
+
+// Middleware de validation
+export const validate = (schema: z.ZodSchema<any>) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    try {
+      schema.parse(req.query);
+      next();
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({
+          success: false,
+          error: "Validation failed",
+          details: error.errors,
+        });
+      }
+      next(error);
+    }
+  };
+};
+----------------------------------------------------------
+//src/models/hydro.models.ts
+// le fichie est vide
+-----------------------------------------------------------
+//src/models/spatial.models.ts
+// le fichie est vide
+----------------------------------------------------------
+// src/routes/hydroRoutes.ts
+import { Router } from "express";
+import { hydroController } from "../controllers/hydroController";
+
+const router = Router();
+
+// ================ HEALTH & INFO ================
+router.get("/health", hydroController.healthCheck.bind(hydroController));
+router.get("/stats", hydroController.getDashboardStats.bind(hydroController));
+
+// ================ STATIONS ================
+router.get("/stations", hydroController.getStations.bind(hydroController));
+router.get(
+  "/stations/:id",
+  hydroController.getStationById.bind(hydroController)
+);
+
+// ================ CATCHMENTS ================
+router.get("/catchments", hydroController.getCatchments.bind(hydroController));
+router.get(
+  "/catchments/:id",
+  hydroController.getCatchmentById.bind(hydroController)
+);
+
+// ================ TIMESERIES ================
+router.get("/timeseries", hydroController.getTimeseries.bind(hydroController));
+
+// ✅ NOUVEAU : CATALOG (station + run + module)
+router.get(
+  "/timeseries/catalog",
+  hydroController.getTimeseriesCatalog.bind(hydroController)
+);
+
+// ================ MEASUREMENTS ================
+router.get(
+  "/timeseries/:tsId/measurements",
+  hydroController.getMeasurements.bind(hydroController)
+);
+router.get(
+  "/timeseries/:tsId/measurements/aggregated",
+  hydroController.getAggregatedMeasurements.bind(hydroController)
+);
+
+// ================ LANDCOVER ================
+router.get("/landcover", hydroController.getLandcover.bind(hydroController));
+router.get(
+  "/catchments/:catchmentId/landcover-summary",
+  hydroController.getLandcoverSummary.bind(hydroController)
+);
+
+// ================ RESERVOIRS ================
+router.get("/reservoirs", hydroController.getReservoirs.bind(hydroController));
+
+// ================ MODEL RUNS ================
+router.get("/model-runs", hydroController.getModelRuns.bind(hydroController));
+
+// ================ SPATIAL ================
+router.get(
+  "/spatial/features",
+  hydroController.getFeaturesInBounds.bind(hydroController)
+);
+
+// ================ ROUTES DE TEST SIMPLES ================
+router.get(
+  "/test/health",
+  hydroController.healthCheckSimple.bind(hydroController)
+);
+router.get(
+  "/test/stations",
+  hydroController.getStationsSimple.bind(hydroController)
+);
+
+export default router;
+----------------------------------------------------------
+// src/routes/timeseriesRoutes.ts
+import { Router } from "express";
+import { timeseriesController } from "../controllers/timeseriesController";
+
+const router = Router();
+
+router.get("/health", timeseriesController.health.bind(timeseriesController));
+
+router.get(
+  "/catalog",
+  timeseriesController.getCatalog.bind(timeseriesController)
+);
+router.get(
+  "/agg",
+  timeseriesController.getAggregates.bind(timeseriesController)
+);
+router.get(
+  "/bundle",
+  timeseriesController.getBundle.bind(timeseriesController)
+);
+
+export default router;
+---------------------------------------------------------------
+//src/services/adaptive.services.ts
+import { DatabaseService } from "./database.service";
+
+export class AdaptiveHydroService {
+  private db = new DatabaseService();
+  private tableColumns: Record<string, string[]> = {};
+
+  // Méthode pour détecter les colonnes d'une table
+  private async detectTableColumns(tableName: string): Promise<string[]> {
+    if (this.tableColumns[tableName]) {
+      return this.tableColumns[tableName];
+    }
+
+    try {
+      const query = `
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = $1 
+        ORDER BY ordinal_position
+      `;
+      const result = await this.db.query<{ column_name: string }>(query, [
+        tableName,
+      ]);
+      const columns = result.map((row) => row.column_name);
+
+      this.tableColumns[tableName] = columns;
+      console.log(`📊 Colonnes détectées pour ${tableName}:`, columns);
+
+      return columns;
+    } catch (error) {
+      console.error(`Erreur détection colonnes ${tableName}:`, error);
+      return [];
+    }
+  }
+
+  // Stations adaptative
+  async getStationsAdaptive(filter?: any): Promise<any[]> {
+    const columns = await this.detectTableColumns("stations");
+
+    // Colonnes minimales requises
+    let selectColumns = ["station_id", "name"];
+
+    // Ajouter les colonnes si elles existent
+    if (columns.includes("geom")) {
+      selectColumns.push("ST_AsGeoJSON(geom) as geom");
+    }
+    if (columns.includes("station_type")) {
+      selectColumns.push("station_type as type");
+    } else if (columns.includes("type")) {
+      selectColumns.push("type");
+    } else {
+      selectColumns.push("'station' as type");
+    }
+    if (columns.includes("created_at")) {
+      selectColumns.push("created_at");
+    }
+    if (columns.includes("code")) {
+      selectColumns.push("code");
+    }
+
+    let query = `SELECT ${selectColumns.join(", ")} FROM stations WHERE 1=1`;
+    const params: any[] = [];
+
+    if (filter?.stationIds?.length) {
+      query += ` AND station_id = ANY($${params.length + 1})`;
+      params.push(filter.stationIds);
+    }
+
+    query += " ORDER BY name";
+
+    if (filter?.limit) {
+      query += ` LIMIT $${params.length + 1}`;
+      params.push(filter.limit);
+    }
+
+    return this.db.query(query, params);
+  }
+
+  // Timeseries adaptative
+  async getTimeseriesAdaptive(
+    stationId?: number,
+    propertyId?: number
+  ): Promise<any[]> {
+    const tsColumns = await this.detectTableColumns("timeseries");
+    const opColumns = await this.detectTableColumns("observed_properties");
+
+    // Construction de la requête SELECT
+    const selectParts: string[] = [
+      "ts.ts_id",
+      "ts.station_id",
+      "ts.property_id",
+    ];
+
+    // Gérer la colonne unit
+    if (tsColumns.includes("unit")) {
+      selectParts.push("ts.unit");
+    } else if (opColumns.includes("unit")) {
+      selectParts.push("op.unit");
+    } else {
+      selectParts.push("'N/A' as unit");
+    }
+
+    // Ajouter autres colonnes si elles existent
+    if (tsColumns.includes("model_run_id")) selectParts.push("ts.model_run_id");
+    if (tsColumns.includes("catchment_id")) selectParts.push("ts.catchment_id");
+    if (tsColumns.includes("created_at")) selectParts.push("ts.created_at");
+
+    // Informations des tables liées
+    selectParts.push("s.name as station_name");
+    if (opColumns.includes("property_name"))
+      selectParts.push("op.property_name");
+    if (opColumns.includes("property_code"))
+      selectParts.push("op.property_code");
+
+    let query = `
+      SELECT ${selectParts.join(", ")}
+      FROM timeseries ts
+      LEFT JOIN stations s ON ts.station_id = s.station_id
+      LEFT JOIN observed_properties op ON ts.property_id = op.property_id
+      WHERE 1=1
+    `;
+
+    const params: any[] = [];
+
+    if (stationId) {
+      query += ` AND ts.station_id = $${params.length + 1}`;
+      params.push(stationId);
+    }
+
+    if (propertyId) {
+      query += ` AND ts.property_id = $${params.length + 1}`;
+      params.push(propertyId);
+    }
+
+    query += " ORDER BY ts.created_at DESC";
+
+    return this.db.query(query, params);
+  }
+
+  // Méthode pour vérifier la santé avec détection
+  async checkDatabaseHealth(): Promise<any> {
+    try {
+      // Test de connexion basique
+      await this.db.query("SELECT NOW()");
+
+      // Détecter les tables disponibles
+      const tablesResult = await this.db.query<{ table_name: string }>(`
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public'
+        ORDER BY table_name
+      `);
+
+      // CORRECTION ICI : utiliser tablesResult directement (c'est déjà un tableau)
+      const tables = tablesResult.map((row) => row.table_name);
+
+      // Détecter la structure de chaque table importante
+      const tableStructures: Record<string, string[]> = {};
+      const importantTables = [
+        "stations",
+        "timeseries",
+        "catchments",
+        "observed_properties",
+      ];
+
+      for (const table of importantTables) {
+        const columns = await this.detectTableColumns(table);
+        tableStructures[table] = columns;
+      }
+
+      return {
+        connected: true,
+        tables: tables,
+        structures: tableStructures,
+        message: "Database connected successfully",
+      };
+    } catch (error) {
+      return {
+        connected: false,
+        tables: [],
+        structures: {},
+        error: error instanceof Error ? error.message : "Unknown error",
+        message: "Database connection failed",
+      };
+    }
+  }
+}
+---------------------------------------------------------------------------
+// src/services/database.service.ts
+import db from "../config/database.config";
+import { PoolClient } from "pg";
+
+export class DatabaseService {
+  private pool = db.getPool();
+
+  async query<T = any>(text: string, params?: any[]): Promise<T[]> {
+    try {
+      const result = await this.pool.query(text, params);
+      return result.rows;
+    } catch (error) {
+      console.error("Database query error:", error);
+
+      // Gestion type-safe de l'erreur
+      if (error instanceof Error) {
+        throw new Error(`Database error: ${error.message}`);
+      } else {
+        throw new Error("Unknown database error occurred");
+      }
+    }
+  }
+
+  async queryOne<T = any>(text: string, params?: any[]): Promise<T | null> {
+    const results = await this.query<T>(text, params);
+    return results.length > 0 ? results[0] : null;
+  }
+
+  async execute(text: string, params?: any[]): Promise<number> {
+    try {
+      const result = await this.pool.query(text, params);
+      return result.rowCount || 0;
+    } catch (error) {
+      console.error("Database execute error:", error);
+
+      // Gestion type-safe
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error("Unknown database execution error");
+      }
+    }
+  }
+
+  async beginTransaction(): Promise<PoolClient> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      return client;
+    } catch (error) {
+      client.release();
+      throw error;
+    }
+  }
+
+  async commitTransaction(client: PoolClient): Promise<void> {
+    try {
+      await client.query("COMMIT");
+    } finally {
+      client.release();
+    }
+  }
+
+  async rollbackTransaction(client: PoolClient): Promise<void> {
+    try {
+      await client.query("ROLLBACK");
+    } finally {
+      client.release();
+    }
+  }
+}
+
+export const databaseService = new DatabaseService();
+--------------------------------------------------------------
+//src/services/hydro.service.ts
+
+import { DatabaseService } from "./database.service";
+import {
+  FilterOptions,
+  Station,
+  Catchment,
+  Measurement,
+  Landcover,
+  Timeseries,
+} from "../types/hydro.types";
+
+export class HydroService {
+  private db = new DatabaseService();
+
+  // ================ STATIONS ================
+  async getStations(filter?: FilterOptions): Promise<Station[]> {
+    let query = `
+    SELECT 
+      station_id, 
+      name, 
+      ST_AsGeoJSON(geom) as geom,
+      -- Utilisez le nom de colonne réel de votre table
+      -- Si pas de type, on met une valeur par défaut
+      COALESCE(station_type, 'station') as type,
+      created_at
+    FROM stations
+    WHERE 1=1
+  `;
+    const params: any[] = [];
+
+    if (filter?.stationIds?.length) {
+      query += ` AND station_id = ANY($${params.length + 1})`;
+      params.push(filter.stationIds);
+    }
+
+    query += " ORDER BY name";
+
+    if (filter?.limit) {
+      query += ` LIMIT $${params.length + 1}`;
+      params.push(filter.limit);
+    }
+
+    return this.db.query<Station>(query, params);
+  }
+
+  async getStationById(id: number): Promise<Station | null> {
+    const query = `
+      SELECT 
+        station_id, 
+        name, 
+        ST_AsGeoJSON(geom) as geom, 
+        type,
+        created_at
+      FROM stations 
+      WHERE station_id = $1
+    `;
+    return this.db.queryOne<Station>(query, [id]);
+  }
+
+  // ================ CATCHMENTS ================
+  async getCatchments(filter?: FilterOptions): Promise<Catchment[]> {
+    let query = `
+      SELECT 
+        catchment_id, 
+        name, 
+        dam_name, 
+        area_m2,
+        ST_AsGeoJSON(geom) as geom
+      FROM catchments
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+
+    if (filter?.catchmentIds?.length) {
+      query += ` AND catchment_id = ANY($${params.length + 1})`;
+      params.push(filter.catchmentIds);
+    }
+
+    query += " ORDER BY name";
+
+    return this.db.query<Catchment>(query, params);
+  }
+
+  async getCatchmentById(id: number): Promise<Catchment | null> {
+    const query = `
+      SELECT 
+        catchment_id, 
+        name, 
+        dam_name, 
+        area_m2,
+        ST_AsGeoJSON(geom) as geom
+      FROM catchments 
+      WHERE catchment_id = $1
+    `;
+    return this.db.queryOne<Catchment>(query, [id]);
+  }
+
+  // ================ TIMESERIES ================
+  async getTimeseries(
+    stationId?: number,
+    propertyId?: number
+  ): Promise<Timeseries[]> {
+    let query = `
+    SELECT 
+      ts.ts_id,
+      ts.station_id,
+      ts.property_id,
+      -- Si pas de colonne unit dans timeseries, récupérez-la depuis observed_properties
+      COALESCE(ts.unit, op.unit, 'N/A') as unit,
+      ts.model_run_id,
+      ts.catchment_id,
+      ts.created_at,
+      s.name as station_name,
+      op.property_name,
+      op.property_code
+    FROM timeseries ts
+    LEFT JOIN stations s ON ts.station_id = s.station_id
+    LEFT JOIN observed_properties op ON ts.property_id = op.property_id
+    WHERE 1=1
+  `;
+    const params: any[] = [];
+
+    if (stationId) {
+      query += ` AND ts.station_id = $${params.length + 1}`;
+      params.push(stationId);
+    }
+
+    if (propertyId) {
+      query += ` AND ts.property_id = $${params.length + 1}`;
+      params.push(propertyId);
+    }
+
+    query += " ORDER BY ts.created_at DESC";
+
+    return this.db.query<Timeseries>(query, params);
+  }
+
+  // ================ MEASUREMENTS ================
+  async getMeasurements(
+    tsId: number,
+    filter: FilterOptions
+  ): Promise<Measurement[]> {
+    const { startDate, endDate, limit } = filter;
+
+    let query = `
+      SELECT 
+        ts_id,
+        datetime,
+        value,
+        quality_flag
+      FROM measurements
+      WHERE ts_id = $1
+    `;
+    const params: any[] = [tsId];
+    let paramIndex = 2;
+
+    if (startDate) {
+      query += ` AND datetime >= $${paramIndex}`;
+      params.push(startDate);
+      paramIndex++;
+    }
+
+    if (endDate) {
+      query += ` AND datetime <= $${paramIndex}`;
+      params.push(endDate);
+      paramIndex++;
+    }
+
+    query += " ORDER BY datetime ASC";
+
+    if (limit) {
+      query += ` LIMIT $${paramIndex}`;
+      params.push(limit);
+    }
+
+    return this.db.query<Measurement>(query, params);
+  }
+
+  async getAggregatedMeasurements(
+    tsId: number,
+    interval: "hour" | "day" | "month" | "year",
+    startDate: string,
+    endDate: string
+  ): Promise<any[]> {
+    const query = `
+      SELECT 
+        date_trunc($2, datetime) as period,
+        AVG(value) as avg_value,
+        MIN(value) as min_value,
+        MAX(value) as max_value,
+        COUNT(*) as count
+      FROM measurements
+      WHERE ts_id = $1 
+        AND datetime >= $3 
+        AND datetime <= $4
+      GROUP BY date_trunc($2, datetime)
+      ORDER BY period ASC
+    `;
+
+    return this.db.query(query, [tsId, interval, startDate, endDate]);
+  }
+
+  // ================ LANDCOVER ================
+  async getLandcover(
+    periodId?: number,
+    catchmentId?: number
+  ): Promise<Landcover[]> {
+    let query = `
+      SELECT 
+        lc.lc_id,
+        lc.lc_period_id,
+        lc.class_id,
+        ST_AsGeoJSON(lc.geom) as geom,
+        ST_Area(lc.geom) as area_m2,
+        lp.year,
+        lp.scenario_code,
+        lc_class.code as class_code,
+        lc_class.name_fr,
+        lc_class.color_hex
+      FROM landcover lc
+      JOIN landcover_periods lp ON lc.lc_period_id = lp.lc_period_id
+      JOIN landcover_classes lc_class ON lc.class_id = lc_class.class_id
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+
+    if (periodId) {
+      query += ` AND lc.lc_period_id = $${params.length + 1}`;
+      params.push(periodId);
+    }
+
+    // Si catchmentId est fourni, filtrer par intersection spatiale
+    if (catchmentId) {
+      query += `
+        AND EXISTS (
+          SELECT 1 FROM catchments c
+          WHERE c.catchment_id = $${params.length + 1}
+          AND ST_Intersects(lc.geom, c.geom)
+        )
+      `;
+      params.push(catchmentId);
+    }
+
+    query += " ORDER BY lp.year DESC, lc_class.code";
+
+    return this.db.query<Landcover>(query, params);
+  }
+
+  async getLandcoverSummary(
+    catchmentId: number,
+    periodId?: number
+  ): Promise<any[]> {
+    const query = `
+      SELECT 
+        lc_class.code,
+        lc_class.name_fr,
+        lc_class.color_hex,
+        SUM(ST_Area(ST_Intersection(lc.geom, c.geom))) as area_m2,
+        (SUM(ST_Area(ST_Intersection(lc.geom, c.geom))) / ST_Area(c.geom)) * 100 as percentage
+      FROM catchments c
+      CROSS JOIN landcover lc
+      JOIN landcover_classes lc_class ON lc.class_id = lc_class.class_id
+      WHERE c.catchment_id = $1
+        AND ST_Intersects(lc.geom, c.geom)
+        ${periodId ? "AND lc.lc_period_id = $2" : ""}
+      GROUP BY lc_class.code, lc_class.name_fr, lc_class.color_hex, c.geom
+      ORDER BY area_m2 DESC
+    `;
+
+    return periodId
+      ? this.db.query(query, [catchmentId, periodId])
+      : this.db.query(query, [catchmentId]);
+  }
+
+  // ================ RESERVOIRS ================
+  async getReservoirs(): Promise<any[]> {
+    const query = `
+      SELECT 
+        reservoir_id,
+        name,
+        ST_AsGeoJSON(geom) as geom,
+        created_at
+      FROM reservoirs
+      ORDER BY name
+    `;
+    return this.db.query(query);
+  }
+
+  // ================ MODEL RUNS ================
+  async getModelRuns(isObserved?: boolean): Promise<any[]> {
+    let query = `
+      SELECT 
+        run_id,
+        scenario_code,
+        scenario_name,
+        description,
+        is_observed,
+        created_at
+      FROM model_runs
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+
+    if (isObserved !== undefined) {
+      query += ` AND is_observed = $${params.length + 1}`;
+      params.push(isObserved);
+    }
+
+    query += " ORDER BY created_at DESC";
+
+    return this.db.query(query, params);
+  }
+
+  // ================ SPATIAL QUERIES ================
+  async getFeaturesInBounds(bounds: any): Promise<any> {
+    const { minLng, minLat, maxLng, maxLat } = bounds;
+    const bbox = `ST_MakeEnvelope(${minLng}, ${minLat}, ${maxLng}, ${maxLat}, 4326)`;
+
+    const stationsQuery = `
+      SELECT 
+        'station' as type,
+        station_id as id,
+        name,
+        ST_AsGeoJSON(geom) as geom,
+        type as subtype
+      FROM stations
+      WHERE ST_Intersects(geom, ${bbox})
+    `;
+
+    const catchmentsQuery = `
+      SELECT 
+        'catchment' as type,
+        catchment_id as id,
+        name,
+        ST_AsGeoJSON(geom) as geom,
+        dam_name as subtitle
+      FROM catchments
+      WHERE ST_Intersects(geom, ${bbox})
+    `;
+
+    const reservoirsQuery = `
+      SELECT 
+        'reservoir' as type,
+        reservoir_id as id,
+        name,
+        ST_AsGeoJSON(geom) as geom
+      FROM reservoirs
+      WHERE ST_Intersects(geom, ${bbox})
+    `;
+
+    // Exécuter toutes les requêtes en parallèle
+    const [stations, catchments, reservoirs] = await Promise.all([
+      this.db.query(stationsQuery),
+      this.db.query(catchmentsQuery),
+      this.db.query(reservoirsQuery),
+    ]);
+
+    return {
+      stations,
+      catchments,
+      reservoirs,
+      bounds,
+    };
+  }
+
+  // ================ TIMESERIES CATALOG BY MODULE (property_id mapping) ================
+  async getTimeseriesCatalogByModule(
+    stationId: number,
+    runId: number,
+    moduleCode: string
+  ): Promise<any> {
+    // 1) Liste des TS (via v_ts_catalog) filtrées par station+run+module(property_id)
+    const tsListQuery = `
+      SELECT
+        c.ts_id,
+        c.station_id,
+        c.station_code,
+        c.station_name,
+        c.property_id,
+        c.property_name,
+        c.unit,
+        c.standard_name,
+        c.run_id,
+        c.scenario_code,
+        c.scenario_name,
+        c.source_type,
+        c.time_step,
+        c.start_date,
+        c.end_date,
+        c.ts_created_at,
+        mp.sort_order
+      FROM public.v_ts_catalog c
+      JOIN public.module_properties mp
+        ON mp.property_id = c.property_id
+       AND mp.module_code = $3
+       AND mp.is_enabled = true
+      WHERE c.station_id = $1
+        AND c.run_id = $2
+      ORDER BY mp.sort_order ASC, c.property_id ASC, c.ts_id ASC
+    `;
+
+    const tsList = await this.db.query(tsListQuery, [
+      stationId,
+      runId,
+      moduleCode,
+    ]);
+
+    // 2) Stats globales par ts_id (nb points, min/max) depuis measurements
+    const statsQuery = `
+      SELECT
+        m.ts_id,
+        COUNT(*)::bigint AS n_points,
+        MIN(m.datetime)  AS min_datetime,
+        MAX(m.datetime)  AS max_datetime
+      FROM public.measurements m
+      WHERE m.ts_id = ANY($1)
+      GROUP BY m.ts_id
+    `;
+
+    const tsIds = tsList.map((r: any) => r.ts_id);
+    const stats = tsIds.length ? await this.db.query(statsQuery, [tsIds]) : [];
+
+    const statsByTs = new Map<number, any>();
+    for (const s of stats) statsByTs.set(Number(s.ts_id), s);
+
+    // 3) Agrégations (monthly + annual) — on renvoie des arrays, prêts pour charts
+    const monthlyQuery = `
+      SELECT
+        m.ts_id,
+        date_trunc('month', m.datetime) AS period,
+        AVG(m.value) AS avg_value,
+        MIN(m.value) AS min_value,
+        MAX(m.value) AS max_value,
+        COUNT(*)::bigint AS n_points
+      FROM public.measurements m
+      WHERE m.ts_id = ANY($1)
+      GROUP BY m.ts_id, date_trunc('month', m.datetime)
+      ORDER BY m.ts_id, period
+    `;
+
+    const annualQuery = `
+      SELECT
+        m.ts_id,
+        date_trunc('year', m.datetime) AS period,
+        AVG(m.value) AS avg_value,
+        MIN(m.value) AS min_value,
+        MAX(m.value) AS max_value,
+        COUNT(*)::bigint AS n_points
+      FROM public.measurements m
+      WHERE m.ts_id = ANY($1)
+      GROUP BY m.ts_id, date_trunc('year', m.datetime)
+      ORDER BY m.ts_id, period
+    `;
+
+    const monthly = tsIds.length
+      ? await this.db.query(monthlyQuery, [tsIds])
+      : [];
+    const annual = tsIds.length
+      ? await this.db.query(annualQuery, [tsIds])
+      : [];
+
+    const monthlyByTs = new Map<number, any[]>();
+    for (const r of monthly) {
+      const id = Number(r.ts_id);
+      if (!monthlyByTs.has(id)) monthlyByTs.set(id, []);
+      monthlyByTs.get(id)!.push(r);
+    }
+
+    const annualByTs = new Map<number, any[]>();
+    for (const r of annual) {
+      const id = Number(r.ts_id);
+      if (!annualByTs.has(id)) annualByTs.set(id, []);
+      annualByTs.get(id)!.push(r);
+    }
+
+    // 4) Assembly final par série
+    const series = tsList.map((t: any) => {
+      const s = statsByTs.get(Number(t.ts_id));
+      return {
+        ...t,
+        n_points: s ? Number(s.n_points) : 0,
+        min_datetime: s?.min_datetime ?? null,
+        max_datetime: s?.max_datetime ?? null,
+        aggregated: {
+          monthly: monthlyByTs.get(Number(t.ts_id)) ?? [],
+          annual: annualByTs.get(Number(t.ts_id)) ?? [],
+        },
+      };
+    });
+
+    return {
+      series_count: series.length,
+      series,
+    };
+  }
+
+  // ================ STATISTICS ================
+  async getDashboardStats(): Promise<any> {
+    const queries = {
+      totalStations: "SELECT COUNT(*) FROM stations",
+      totalCatchments: "SELECT COUNT(*) FROM catchments",
+      totalMeasurements: "SELECT COUNT(*) FROM measurements",
+      totalReservoirs: "SELECT COUNT(*) FROM reservoirs",
+      latestMeasurement: `
+        SELECT MAX(datetime) as latest_date 
+        FROM measurements
+      `,
+      activeStations: `
+        SELECT COUNT(DISTINCT station_id) 
+        FROM timeseries 
+        WHERE created_at > NOW() - INTERVAL '30 days'
+      `,
+    };
+
+    const results = await Promise.all(
+      Object.values(queries).map((query) => this.db.queryOne(query))
+    );
+
+    const keys = Object.keys(queries);
+    const stats: any = {};
+    keys.forEach((key, index) => {
+      stats[key] = results[index];
+    });
+
+    return stats;
+  }
+}
+
+export const hydroService = new HydroService();
+-------------------------------------------------------------
+// src/services/spatial.services.ts
+// fichier vide 
+-------------------------------------------------------------
+// src/services/timeseries.service.ts
+import { DatabaseService } from "./database.service";
+import {
+  Grain,
+  ModuleCode,
+  TsAggRow,
+  TsCatalogRow,
+} from "../types/timeseries.types";
+import { AppError } from "../middleware/errorHandler";
+
+function moduleToStandardNames(module: ModuleCode): string[] {
+  // Basé sur tes "observed_properties" (standard_name) + besoins métier
+  // Ajustable facilement si tu ajoutes de nouvelles propriétés.
+  switch (module) {
+    case "climat":
+      return [
+        "air_temperature", // min/max/mean (même standard_name parfois)
+        "relative_humidity",
+        "wind_speed",
+        "precipitation_amount",
+        "evaporation",
+      ];
+    case "hydro":
+      return [
+        "water_volume_transport_in_river_channel", // débit
+        "outflow_from_reservoir", // lâcher
+        "reservoir_bathymetry", // bathy (si timeseries)
+      ];
+    case "erosion":
+      return ["suspended_sediment_load"];
+    default:
+      return [];
+  }
+}
+
+function grainToDateTrunc(grain: Grain): "day" | "month" | "year" {
+  if (grain === "daily") return "day";
+  if (grain === "monthly") return "month";
+  return "year";
+}
+
+export class TimeseriesService {
+  private db = new DatabaseService();
+
+  /**
+   * Catalogue TS filtré: station + run + module
+   * + stats: nb points + min/max datetime
+   */
+  async getCatalog(params: {
+    stationId: number;
+    runId: number;
+    module: ModuleCode;
+    sourceType?: string;
+  }): Promise<TsCatalogRow[]> {
+    const { stationId, runId, module, sourceType } = params;
+
+    const stdNames = moduleToStandardNames(module);
+
+    // Filtrage: on privilégie standard_name si dispo, sinon property_name fallback (case-insensitive)
+    // NB: v_ts_catalog doit contenir standard_name + property_name.
+    const sql = `
+      WITH cat AS (
+        SELECT
+          ts_id,
+          station_id,
+          station_code,
+          station_name,
+          property_id,
+          property_name,
+          unit,
+          standard_name,
+          run_id,
+          scenario_code,
+          scenario_name,
+          is_observed,
+          source_type,
+          time_step,
+          ts_created_at
+        FROM v_ts_catalog
+        WHERE station_id = $1
+          AND run_id = $2
+          AND (
+            (standard_name IS NOT NULL AND standard_name = ANY($3))
+            OR
+            (standard_name IS NULL AND lower(property_name) = ANY($4))
+          )
+          ${sourceType ? "AND source_type = $5" : ""}
+      ),
+      stats AS (
+        SELECT
+          m.ts_id,
+          COUNT(*)::int AS n_points,
+          MIN(m.datetime) AS start_date,
+          MAX(m.datetime) AS end_date
+        FROM measurements m
+        JOIN cat ON cat.ts_id = m.ts_id
+        GROUP BY m.ts_id
+      )
+      SELECT
+        cat.*,
+        COALESCE(stats.n_points, 0) AS n_points,
+        stats.start_date,
+        stats.end_date
+      FROM cat
+      LEFT JOIN stats ON stats.ts_id = cat.ts_id
+      ORDER BY cat.property_name, cat.ts_id;
+    `;
+
+    const stdNamesLower = stdNames.map((s) => s.toLowerCase());
+    const fallbackPropNamesLower = stdNamesLower; // fallback simple (à améliorer si tu veux mapping exact)
+
+    const args: any[] = [stationId, runId, stdNames, fallbackPropNamesLower];
+    if (sourceType) args.push(sourceType);
+
+    return this.db.query<TsCatalogRow>(sql, args);
+  }
+
+  /**
+   * Agrégations par ts_id pour un station+run+module
+   * Retourne un dictionnaire { ts_id: rows[] }
+   */
+  async getAggregates(params: {
+    stationId: number;
+    runId: number;
+    module: ModuleCode;
+    grain: Grain;
+    startDate?: string;
+    endDate?: string;
+    sourceType?: string;
+  }): Promise<Record<string, TsAggRow[]>> {
+    const { stationId, runId, module, grain, startDate, endDate, sourceType } =
+      params;
+
+    const catalog = await this.getCatalog({
+      stationId,
+      runId,
+      module,
+      sourceType,
+    });
+    if (!catalog.length) return {};
+
+    const trunc = grainToDateTrunc(grain);
+
+    // On agrège TS par TS (plus simple et robuste)
+    const result: Record<string, TsAggRow[]> = {};
+
+    for (const ts of catalog) {
+      const sql = `
+        SELECT
+          $1::int as ts_id,
+          date_trunc($2, m.datetime) AS period,
+          AVG(m.value) AS value_avg,
+          MIN(m.value) AS value_min,
+          MAX(m.value) AS value_max,
+          COUNT(*)::int AS n_points
+        FROM measurements m
+        WHERE m.ts_id = $1
+          ${startDate ? "AND m.datetime >= $3" : ""}
+          ${endDate ? `AND m.datetime <= $${startDate ? 4 : 3}` : ""}
+        GROUP BY date_trunc($2, m.datetime)
+        ORDER BY period ASC;
+      `;
+
+      const args: any[] = [ts.ts_id, trunc];
+      if (startDate) args.push(startDate);
+      if (endDate) args.push(endDate);
+
+      const rows = await this.db.query<TsAggRow>(sql, args);
+      result[String(ts.ts_id)] = rows;
+    }
+
+    return result;
+  }
+
+  async getBundle(params: {
+    stationId: number;
+    runId: number;
+    module: ModuleCode;
+    grain: Grain;
+    startDate?: string;
+    endDate?: string;
+    sourceType?: string;
+  }) {
+    const catalog = await this.getCatalog({
+      stationId: params.stationId,
+      runId: params.runId,
+      module: params.module,
+      sourceType: params.sourceType,
+    });
+
+    const aggregates = await this.getAggregates(params);
+
+    return { catalog, aggregates };
+  }
+}
+
+export const timeseriesService = new TimeseriesService();
+----------------------------------------------------------
+//src/types/hydro.types.ts
+
+export interface Station {
+  station_id: number;
+  name: string;
+  geom: string; // WKT ou GeoJSON
+  type: string;
+  created_at?: Date;
+}
+
+export interface Catchment {
+  catchment_id: number;
+  name: string;
+  dam_name: string;
+  area_m2: number;
+  geom: string;
+}
+
+export interface Reservoir {
+  reservoir_id: number;
+  name: string;
+  geom: string;
+  created_at: Date;
+}
+
+export interface Timeseries {
+  ts_id: number;
+  station_id: number;
+  property_id: number;
+  unit: string;
+  model_run_id?: number;
+  catchment_id?: number;
+  created_at: Date;
+}
+
+export interface Measurement {
+  ts_id: number;
+  datetime: Date;
+  value: number;
+  quality_flag?: string;
+}
+
+export interface LandcoverPeriod {
+  lc_period_id: number;
+  year: number;
+  scenario_code: string;
+  description?: string;
+  source_data?: string;
+}
+
+export interface LandcoverClass {
+  class_id: number;
+  code: string;
+  name_fr: string;
+  name_en: string;
+  color_hex: string;
+}
+
+export interface Landcover {
+  lc_id: number;
+  lc_period_id: number;
+  class_id: number;
+  geom: string;
+  area_m2?: number;
+}
+
+export interface ModelRun {
+  run_id: number;
+  scenario_code: string;
+  scenario_name: string;
+  description?: string;
+  is_observed: boolean;
+  created_at: Date;
+}
+
+export interface ObservedProperty {
+  property_id: number;
+  property_code: string;
+  property_name: string;
+}
+
+export interface FilterOptions {
+  startDate?: string;
+  endDate?: string;
+  stationIds?: number[];
+  catchmentIds?: number[];
+  scenarioCode?: string;
+  periodId?: number;
+  limit?: number;
+  offset?: number;
+}
+
+export interface SpatialBounds {
+  minLat: number;
+  maxLat: number;
+  minLng: number;
+  maxLng: number;
+}
+-------------------------------------------
+// src/types/timeseries.types.ts
+
+export type ModuleCode = "climat" | "hydro" | "erosion";
+export type Grain = "daily" | "monthly" | "annual";
+
+export interface TsCatalogRow {
+  ts_id: number;
+  station_id: number;
+  station_code?: string;
+  station_name?: string;
+
+  property_id: number;
+  property_name: string;
+  unit?: string;
+  standard_name?: string;
+
+  run_id: number;
+  scenario_code?: string;
+  scenario_name?: string;
+
+  source_type?: string;
+  time_step?: string;
+
+  ts_created_at?: Date;
+
+  // enrichis via stats measurements
+  n_points?: number;
+  start_date?: string; // ISO
+  end_date?: string; // ISO
+}
+
+export interface TsAggRow {
+  ts_id: number;
+  period: string; // ISO date string (date_trunc)
+  value_avg: number | null;
+  value_min: number | null;
+  value_max: number | null;
+  n_points: number;
+}
+
+export interface TimeseriesBundleResponse {
+  catalog: TsCatalogRow[];
+  aggregates: Record<string, TsAggRow[]>; // key = ts_id
+}
+---------------------------------------------------------
+//src/utils/logger.ts
+// fichier vide 
+---------------------------------------------------------
+//src/utils/querybuilder.ts
+//fichier vide
+---------------------------------------------------------
+// src/app.ts
+import express, { Request, Response } from "express";
+import cors from "cors";
+import helmet from "helmet";
+import compression from "compression";
+import rateLimit from "express-rate-limit";
+import dotenv from "dotenv";
+
+import hydroRoutes from "./routes/hydroRoutes";
+import { errorHandler } from "./middleware/errorHandler";
+
+dotenv.config();
+
+const app = express();
+
+const CORS_ORIGIN =
+  process.env.CORS_ORIGIN || "http://localhost:5173,http://localhost:8080";
+
+// ================= MIDDLEWARE =================
+app.use(helmet());
+app.use(compression());
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+
+      const allowedOrigins = CORS_ORIGIN.split(",");
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number(process.env.API_RATE_LIMIT_MAX || 100),
+});
+app.use("/api", limiter);
+
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// ================= ROUTES API =================
+app.use("/api/v1/hydro", hydroRoutes);
+
+// Route racine
+app.get("/", (req: Request, res: Response) => {
+  res.json({
+    message: "🌊 Hydro HD API",
+    version: "1.0.0",
+    documentation: "/api/v1/hydro/health",
+  });
+});
+
+// ================= 404 =================
+app.use("*", (req: Request, res: Response) => {
+  res.status(404).json({
+    success: false,
+    error: `Route ${req.originalUrl} not found`,
+  });
+});
+
+// ================= ERROR HANDLER =================
+app.use(errorHandler);
+
+export default app;
+------------------------------------------------------
+//package.json
+
+{
+  "name": "hydro-backend",
+  "version": "1.0.0",
+  "description": "Backend API pour dashboard hydro",
+  "main": "dist/server.js",
+  "scripts": {
+    "start": "node dist/server.js",
+    "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
+    "build": "tsc",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "migrate": "node dist/migrations/initDB.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "pg": "^8.11.3",
+    "dotenv": "^16.3.1",
+    "helmet": "^7.0.0",
+    "compression": "^1.7.4",
+    "express-rate-limit": "^6.10.0",
+    "wkt": "^0.1.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.10",
+    "@types/express": "^4.17.20",
+    "@types/cors": "^2.8.17",
+    "@types/pg": "^8.10.7",
+    "@types/compression": "^1.7.5",
+    "typescript": "^5.2.2",
+    "ts-node-dev": "^2.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.7.5",
+    "@typescript-eslint/parser": "^6.7.5",
+    "eslint": "^8.51.0"
+  }
+}
+---------------------------------------------------
+//check-structure.js 
+
+const { Pool } = require('pg');
+require('dotenv').config();
+
+async function checkStructure() {
+  console.log('🔍 Vérification de la structure de la base de données...\n');
+  
+  const pool = new Pool({
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    database: process.env.DB_NAME,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+  });
+
+  try {
+    const client = await pool.connect();
+    
+    console.log('1. Colonnes de la table "stations":');
+    const stationCols = await client.query(`
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_name = 'stations'
+      ORDER BY ordinal_position
+    `);
+    
+    stationCols.rows.forEach(col => {
+      console.log(`   - ${col.column_name} (${col.data_type})`);
+    });
+    
+    console.log('\n2. Exemple de données "stations":');
+    const stationData = await client.query('SELECT * FROM stations LIMIT 1');
+    if (stationData.rows.length > 0) {
+      const row = stationData.rows[0];
+      Object.keys(row).forEach(key => {
+        console.log(`   ${key}: ${row[key]}`);
+      });
+    }
+    
+    console.log('\n3. Colonnes de la table "timeseries":');
+    const tsCols = await client.query(`
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_name = 'timeseries'
+      ORDER BY ordinal_position
+    `);
+    
+    tsCols.rows.forEach(col => {
+      console.log(`   - ${col.column_name} (${col.data_type})`);
+    });
+    
+    console.log('\n✅ Structure vérifiée. Le service adaptatif va s\'ajuster automatiquement.');
+    
+    client.release();
+    await pool.end();
+    
+  } catch (error) {
+    console.error('❌ Erreur:', error.message);
+  }
+}
+
+checkStructure();
+---------------------------------------------------------------
+//server.js 
+const express = require('express');
+const cors = require('cors');
+require('dotenv').config();
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+app.use(cors());
+app.use(express.json());
+
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Hydro Data API v1.0',
+    database: process.env.DB_NAME,
+    endpoints: ['/health', '/stations', '/timeseries', '/test-db']
+  });
+});
+
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Test database connection
+app.get('/test-db', async (req, res) => {
+  try {
+    const { Pool } = require('pg');
+    const pool = new Pool({
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      database: process.env.DB_NAME,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD
+    });
+    
+    const client = await pool.connect();
+    const result = await client.query('SELECT NOW() as time, version() as version');
+    client.release();
+    await pool.end();
+    
+    res.json({
+      success: true,
+      database: 'connected',
+      time: result.rows[0].time,
+      version: result.rows[0].version
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      config: {
+        host: process.env.DB_HOST,
+        database: process.env.DB_NAME,
+        user: process.env.DB_USER
+      }
+    });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+});
+-----------------------------------------------------------------------
+//server.ts
+// server.ts
+import dotenv from "dotenv";
+dotenv.config();
+
+import app from "./src/app";
+
+const PORT = process.env.PORT || 5000;
+
+process.on("SIGTERM", () => {
+  console.log("SIGTERM received. Shutting down gracefully...");
+  process.exit(0);
+});
+
+process.on("SIGINT", () => {
+  console.log("SIGINT received. Shutting down gracefully...");
+  process.exit(0);
+});
+
+app.listen(PORT, () => {
+  console.log(`🌊 Hydro HD Backend started on port ${PORT}`);
+  console.log(`🌐 API: http://localhost:${PORT}/api/v1/hydro`);
+});
+----------------------------------------------------------------------
+//test-db.js
+
+const { Pool } = require('pg');
+require('dotenv').config();
+
+async function testDatabase() {
+  console.log('🧪 Test de connexion à la base de données...\n');
+  
+  const config = {
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    database: process.env.DB_NAME,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+  };
+  
+  console.log('Configuration:');
+  console.log('- Host:', config.host);
+  console.log('- Port:', config.port);
+  console.log('- Database:', config.database);
+  console.log('- User:', config.user);
+  console.log('- Password:', config.password ? '******' : 'vide');
+  
+  const pool = new Pool(config);
+  
+  try {
+    console.log('\n🔗 Tentative de connexion...');
+    const client = await pool.connect();
+    
+    console.log('✅ Connexion réussie!');
+    
+    // Test 1: Vérifier la version de PostgreSQL
+    const versionResult = await client.query('SELECT version()');
+    console.log('\n📊 Version PostgreSQL:', versionResult.rows[0].version.split(',')[0]);
+    
+    // Test 2: Lister les tables
+    const tablesResult = await client.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public'
+      ORDER BY table_name
+    `);
+    
+    console.log('\n🗃️  Tables disponibles:');
+    if (tablesResult.rows.length === 0) {
+      console.log('   ❌ Aucune table trouvée!');
+    } else {
+      tablesResult.rows.forEach(row => {
+        console.log(`   ✓ ${row.table_name}`);
+      });
+    }
+    
+    // Test 3: Compter les stations
+    try {
+      const stationsResult = await client.query('SELECT COUNT(*) as count FROM stations');
+      console.log(`\n👷 Nombre de stations: ${stationsResult.rows[0].count}`);
+    } catch (err) {
+      console.log('\n⚠️  Table "stations" non trouvée');
+    }
+    
+    // Test 4: Compter les bassins
+    try {
+      const catchmentsResult = await client.query('SELECT COUNT(*) as count FROM catchments');
+      console.log(`🏞️  Nombre de bassins versants: ${catchmentsResult.rows[0].count}`);
+    } catch (err) {
+      console.log('⚠️  Table "catchments" non trouvée');
+    }
+    
+    client.release();
+    await pool.end();
+    
+    console.log('\n🎉 Tous les tests terminés avec succès!');
+    
+  } catch (error) {
+    console.error('\n❌ Erreur de connexion:', error.message);
+    console.log('\n🔧 Solutions possibles:');
+    console.log('1. Vérifiez que PostgreSQL est démarré');
+    console.log('2. Vérifiez le mot de passe dans .env');
+    console.log('3. Vérifiez que la base "hydro_hd" existe');
+    console.log('4. Essayez: psql -U postgres -c "CREATE DATABASE hydro_hd;"');
+  }
+}
+
+testDatabase();
+-----------------------------------------------------------------------
+//test-simple.js
+const http = require('http');
+
+console.log('🔧 Test simple du backend...');
+
+const options = {
+  hostname: 'localhost',
+  port: 5000,
+  path: '/api/v1/hydro/health',
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+};
+
+const req = http.request(options, (res) => {
+  console.log(`Status: ${res.statusCode}`);
+  
+  let data = '';
+  res.on('data', (chunk) => {
+    data += chunk;
+  });
+  
+  res.on('end', () => {
+    try {
+      const json = JSON.parse(data);
+      console.log('Réponse JSON:', JSON.stringify(json, null, 2));
+    } catch (e) {
+      console.log('Réponse brute:', data);
+    }
+  });
+});
+
+req.on('error', (error) => {
+  console.error('❌ Erreur de connexion:', error.message);
+  console.log('Vérifiez que le backend tourne: npm run dev dans le dossier backend');
+});
+
+req.end();
+---------------------------------------------------------------------
+//tsconfig.json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "lib": ["ES2020"],
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+}
