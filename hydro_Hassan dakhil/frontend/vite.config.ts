@@ -1,0 +1,63 @@
+// vite.config.ts
+import { defineConfig, loadEnv } from "vite";
+import react from "@vitejs/plugin-react";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+  const backendProxyTarget = env.VITE_BACKEND_PROXY || "http://127.0.0.1:5000";
+  const hmrClientPort = Number(env.VITE_HMR_CLIENT_PORT || 5173);
+  const hmrHost = env.VITE_HMR_HOST || undefined;
+
+  return {
+    plugins: [react()],
+    resolve: {
+      alias: { "@": path.resolve(__dirname, "./src") },
+    },
+
+    server: {
+      host: true,
+      port: 5173,
+      strictPort: false,
+
+      hmr: {
+        protocol: "ws",
+        clientPort: hmrClientPort,
+        host: hmrHost,
+      },
+
+      proxy: {
+        // ✅ proxy explicite pour ton base "/api/v1"
+        "/api/v1": {
+          target: backendProxyTarget,
+          changeOrigin: true,
+        },
+        // ✅ optionnel: si d’autres routes utilisent "/api"
+        "/api": {
+          target: backendProxyTarget,
+          changeOrigin: true,
+        },
+      },
+    },
+
+    build: {
+      target: "es2020",
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            "react-vendor": ["react", "react-dom", "react-router-dom"],
+            "ui-vendor": ["recharts", "leaflet", "react-leaflet"],
+          },
+        },
+      },
+    },
+
+    optimizeDeps: {
+      esbuildOptions: { target: "es2020" },
+    },
+  };
+});

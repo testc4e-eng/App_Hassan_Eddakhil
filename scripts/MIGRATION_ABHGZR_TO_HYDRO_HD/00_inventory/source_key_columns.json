@@ -1,0 +1,827 @@
+[
+  {
+    "schema": "public",
+    "table": "adm_communes_abhgzr",
+    "columns": [
+      {
+        "table_schema": "public",
+        "table_name": "adm_communes_abhgzr",
+        "ordinal_position": 1,
+        "column_name": "id_com",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "adm_communes_abhgzr",
+        "ordinal_position": 2,
+        "column_name": "code_region",
+        "data_type": "character varying",
+        "udt_name": "varchar",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "adm_communes_abhgzr",
+        "ordinal_position": 3,
+        "column_name": "nom_region",
+        "data_type": "character varying",
+        "udt_name": "varchar",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "adm_communes_abhgzr",
+        "ordinal_position": 4,
+        "column_name": "code_province",
+        "data_type": "character varying",
+        "udt_name": "varchar",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "adm_communes_abhgzr",
+        "ordinal_position": 5,
+        "column_name": "nom_province",
+        "data_type": "character varying",
+        "udt_name": "varchar",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "adm_communes_abhgzr",
+        "ordinal_position": 6,
+        "column_name": "code_cercle",
+        "data_type": "character varying",
+        "udt_name": "varchar",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "adm_communes_abhgzr",
+        "ordinal_position": 7,
+        "column_name": "cercle_fr",
+        "data_type": "character varying",
+        "udt_name": "varchar",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "adm_communes_abhgzr",
+        "ordinal_position": 8,
+        "column_name": "cercle_ar",
+        "data_type": "character varying",
+        "udt_name": "varchar",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "adm_communes_abhgzr",
+        "ordinal_position": 9,
+        "column_name": "code_commune",
+        "data_type": "character varying",
+        "udt_name": "varchar",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "adm_communes_abhgzr",
+        "ordinal_position": 10,
+        "column_name": "commune_fr",
+        "data_type": "character varying",
+        "udt_name": "varchar",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "adm_communes_abhgzr",
+        "ordinal_position": 11,
+        "column_name": "commune_ar",
+        "data_type": "character varying",
+        "udt_name": "varchar",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "adm_communes_abhgzr",
+        "ordinal_position": 12,
+        "column_name": "milieu",
+        "data_type": "character varying",
+        "udt_name": "varchar",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "adm_communes_abhgzr",
+        "ordinal_position": 13,
+        "column_name": "geom",
+        "data_type": "USER-DEFINED",
+        "udt_name": "geometry",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  {
+    "schema": "public",
+    "table": "bassin_abhgzr",
+    "columns": [
+      {
+        "table_schema": "public",
+        "table_name": "bassin_abhgzr",
+        "ordinal_position": 1,
+        "column_name": "id_bassin",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "bassin_abhgzr",
+        "ordinal_position": 2,
+        "column_name": "nom_bassin",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "bassin_abhgzr",
+        "ordinal_position": 3,
+        "column_name": "geom",
+        "data_type": "USER-DEFINED",
+        "udt_name": "geometry",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  {
+    "schema": "public",
+    "table": "barrages_abhgzr",
+    "columns": [
+      {
+        "table_schema": "public",
+        "table_name": "barrages_abhgzr",
+        "ordinal_position": 1,
+        "column_name": "id_brg",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "barrages_abhgzr",
+        "ordinal_position": 2,
+        "column_name": "code_commune",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "barrages_abhgzr",
+        "ordinal_position": 3,
+        "column_name": "ire_barrage",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "barrages_abhgzr",
+        "ordinal_position": 4,
+        "column_name": "nom_barrage",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "barrages_abhgzr",
+        "ordinal_position": 5,
+        "column_name": "type_barrage",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "barrages_abhgzr",
+        "ordinal_position": 6,
+        "column_name": "coord_x",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "barrages_abhgzr",
+        "ordinal_position": 7,
+        "column_name": "coord_y",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "barrages_abhgzr",
+        "ordinal_position": 8,
+        "column_name": "geom",
+        "data_type": "USER-DEFINED",
+        "udt_name": "geometry",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  {
+    "schema": "public",
+    "table": "stations_abhgzr",
+    "columns": [
+      {
+        "table_schema": "public",
+        "table_name": "stations_abhgzr",
+        "ordinal_position": 1,
+        "column_name": "id_station",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "stations_abhgzr",
+        "ordinal_position": 2,
+        "column_name": "code_commune",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "stations_abhgzr",
+        "ordinal_position": 3,
+        "column_name": "ire_station",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "stations_abhgzr",
+        "ordinal_position": 4,
+        "column_name": "num_poste",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "stations_abhgzr",
+        "ordinal_position": 5,
+        "column_name": "nom_station_fr",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "stations_abhgzr",
+        "ordinal_position": 6,
+        "column_name": "nom_station_ar",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "stations_abhgzr",
+        "ordinal_position": 7,
+        "column_name": "oued",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "stations_abhgzr",
+        "ordinal_position": 8,
+        "column_name": "date_m_s",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "stations_abhgzr",
+        "ordinal_position": 9,
+        "column_name": "etat_fonct",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "stations_abhgzr",
+        "ordinal_position": 10,
+        "column_name": "mode_fonct",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "stations_abhgzr",
+        "ordinal_position": 11,
+        "column_name": "type_station",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "stations_abhgzr",
+        "ordinal_position": 12,
+        "column_name": "mesures_station",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "stations_abhgzr",
+        "ordinal_position": 13,
+        "column_name": "coord_x",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "stations_abhgzr",
+        "ordinal_position": 14,
+        "column_name": "coord_y",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "stations_abhgzr",
+        "ordinal_position": 15,
+        "column_name": "coord_z",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "stations_abhgzr",
+        "ordinal_position": 16,
+        "column_name": "observation",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "stations_abhgzr",
+        "ordinal_position": 17,
+        "column_name": "geom",
+        "data_type": "USER-DEFINED",
+        "udt_name": "geometry",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  {
+    "schema": "public",
+    "table": "mesures_precipitations_jr",
+    "columns": [
+      {
+        "table_schema": "public",
+        "table_name": "mesures_precipitations_jr",
+        "ordinal_position": 1,
+        "column_name": "id_precipitation",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_precipitations_jr",
+        "ordinal_position": 2,
+        "column_name": "ire_station",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_precipitations_jr",
+        "ordinal_position": 3,
+        "column_name": "date_jr",
+        "data_type": "date",
+        "udt_name": "date",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_precipitations_jr",
+        "ordinal_position": 4,
+        "column_name": "precipitation_jr",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  {
+    "schema": "public",
+    "table": "mesures_debits_jr",
+    "columns": [
+      {
+        "table_schema": "public",
+        "table_name": "mesures_debits_jr",
+        "ordinal_position": 1,
+        "column_name": "id_debit",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_debits_jr",
+        "ordinal_position": 2,
+        "column_name": "ire_station",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_debits_jr",
+        "ordinal_position": 3,
+        "column_name": "date_jr",
+        "data_type": "date",
+        "udt_name": "date",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_debits_jr",
+        "ordinal_position": 4,
+        "column_name": "debit_jr",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  {
+    "schema": "public",
+    "table": "mesures_temperature_jr_pn",
+    "columns": [
+      {
+        "table_schema": "public",
+        "table_name": "mesures_temperature_jr_pn",
+        "ordinal_position": 1,
+        "column_name": "id_temp",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_temperature_jr_pn",
+        "ordinal_position": 2,
+        "column_name": "ire_station",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_temperature_jr_pn",
+        "ordinal_position": 3,
+        "column_name": "date_jr",
+        "data_type": "date",
+        "udt_name": "date",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_temperature_jr_pn",
+        "ordinal_position": 4,
+        "column_name": "temp_jr_max",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_temperature_jr_pn",
+        "ordinal_position": 5,
+        "column_name": "temp_jr_min",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_temperature_jr_pn",
+        "ordinal_position": 6,
+        "column_name": "temp_jr_moy",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  {
+    "schema": "public",
+    "table": "mesures_lachers_barrages",
+    "columns": [
+      {
+        "table_schema": "public",
+        "table_name": "mesures_lachers_barrages",
+        "ordinal_position": 1,
+        "column_name": "id_lachers",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_lachers_barrages",
+        "ordinal_position": 2,
+        "column_name": "ire_barrage",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_lachers_barrages",
+        "ordinal_position": 3,
+        "column_name": "date_jr",
+        "data_type": "date",
+        "udt_name": "date",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_lachers_barrages",
+        "ordinal_position": 4,
+        "column_name": "apports_m3",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_lachers_barrages",
+        "ordinal_position": 5,
+        "column_name": "restitution_m3",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  {
+    "schema": "public",
+    "table": "mesures_temperature_m",
+    "columns": [
+      {
+        "table_schema": "public",
+        "table_name": "mesures_temperature_m",
+        "ordinal_position": 1,
+        "column_name": "id_temp_m",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_temperature_m",
+        "ordinal_position": 2,
+        "column_name": "ire_station",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_temperature_m",
+        "ordinal_position": 3,
+        "column_name": "date_m",
+        "data_type": "date",
+        "udt_name": "date",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_temperature_m",
+        "ordinal_position": 4,
+        "column_name": "temperature_min",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_temperature_m",
+        "ordinal_position": 5,
+        "column_name": "temperature_max",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_temperature_m",
+        "ordinal_position": 6,
+        "column_name": "temperature_moy",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  {
+    "schema": "public",
+    "table": "mesures_evaporation_m",
+    "columns": [
+      {
+        "table_schema": "public",
+        "table_name": "mesures_evaporation_m",
+        "ordinal_position": 1,
+        "column_name": "id_evapo_m",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_evaporation_m",
+        "ordinal_position": 2,
+        "column_name": "ire_station",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_evaporation_m",
+        "ordinal_position": 3,
+        "column_name": "date_m",
+        "data_type": "date",
+        "udt_name": "date",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_evaporation_m",
+        "ordinal_position": 4,
+        "column_name": "evaporation_m",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  {
+    "schema": "public",
+    "table": "mesures_humidite_relative_m",
+    "columns": [
+      {
+        "table_schema": "public",
+        "table_name": "mesures_humidite_relative_m",
+        "ordinal_position": 1,
+        "column_name": "id_hum_m",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_humidite_relative_m",
+        "ordinal_position": 2,
+        "column_name": "ire_station",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_humidite_relative_m",
+        "ordinal_position": 3,
+        "column_name": "date_m",
+        "data_type": "date",
+        "udt_name": "date",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_humidite_relative_m",
+        "ordinal_position": 4,
+        "column_name": "humidite_relative_m",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  {
+    "schema": "public",
+    "table": "mesures_vitesse_vent_m",
+    "columns": [
+      {
+        "table_schema": "public",
+        "table_name": "mesures_vitesse_vent_m",
+        "ordinal_position": 1,
+        "column_name": "id_vent_m",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_vitesse_vent_m",
+        "ordinal_position": 2,
+        "column_name": "ire_station",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_vitesse_vent_m",
+        "ordinal_position": 3,
+        "column_name": "date_m",
+        "data_type": "date",
+        "udt_name": "date",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "mesures_vitesse_vent_m",
+        "ordinal_position": 4,
+        "column_name": "vitesse_moy_m",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  {
+    "schema": "public",
+    "table": "bathymetries_barrages_abhgzr",
+    "columns": [
+      {
+        "table_schema": "public",
+        "table_name": "bathymetries_barrages_abhgzr",
+        "ordinal_position": 1,
+        "column_name": "id_cote",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "bathymetries_barrages_abhgzr",
+        "ordinal_position": 2,
+        "column_name": "ire_barrage",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "bathymetries_barrages_abhgzr",
+        "ordinal_position": 3,
+        "column_name": "cote_mngm",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "bathymetries_barrages_abhgzr",
+        "ordinal_position": 4,
+        "column_name": "volumr_mm3",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "bathymetries_barrages_abhgzr",
+        "ordinal_position": 5,
+        "column_name": "surface_km2",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      }
+    ]
+  }
+]

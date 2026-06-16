@@ -1,0 +1,99 @@
+# Relations PK/FK
+
+## Clés primaires
+- access.import_runs: PRIMARY KEY (import_id)
+- access.rch_results: PRIMARY KEY (scenario_code, sub_code, period_date)
+- access.sub_results: PRIMARY KEY (scenario_code, sub_code, period_date)
+- access.variable_dictionary: PRIMARY KEY (source_table, variable_code)
+- audit.qc_issues: PRIMARY KEY (qc_issue_id)
+- audit.qc_runs: PRIMARY KEY (qc_run_id)
+- auth.audit_log: PRIMARY KEY (audit_id)
+- auth.permissions: PRIMARY KEY (permission_id)
+- auth.role_permissions: PRIMARY KEY (role_id, permission_id)
+- auth.roles: PRIMARY KEY (role_id)
+- auth.user_roles: PRIMARY KEY (user_id, role_id)
+- auth.users: PRIMARY KEY (user_id)
+- core.catchments: PRIMARY KEY (catchment_id)
+- core.data_batches: PRIMARY KEY (batch_id)
+- core.measurement_batches: PRIMARY KEY (ts_id, datetime, batch_id)
+- core.measurements: PRIMARY KEY (ts_id, datetime)
+- core.model_runs: PRIMARY KEY (run_id)
+- core.reaches: PRIMARY KEY (reach_id)
+- core.reservoir_bathymetry: PRIMARY KEY (bathy_id)
+- core.reservoirs: PRIMARY KEY (reservoir_id)
+- core.rivers: PRIMARY KEY (river_id)
+- core.station_reach_map: PRIMARY KEY (id)
+- core.stations: PRIMARY KEY (station_id)
+- core.subbasin_metrics_annual: PRIMARY KEY (subbasin_id, property_id, run_id, year)
+- core.subbasins: PRIMARY KEY (subbasin_id)
+- core.swat_entity_map: PRIMARY KEY (entity_type, swat_code)
+- core.timeseries: PRIMARY KEY (ts_id)
+- geo.landcover: PRIMARY KEY (lc_id)
+- gis.meteo_stations: PRIMARY KEY (station_id)
+- gis.reach_shapes: PRIMARY KEY (reach_id)
+- gis.subbasin_shapes: PRIMARY KEY (subbasin_id)
+- public.module_properties: PRIMARY KEY (module_code, property_id)
+- public.property_module_override: PRIMARY KEY (property_id)
+- public.spatial_ref_sys: PRIMARY KEY (srid)
+- public.users: PRIMARY KEY (id)
+- ref.communes: PRIMARY KEY (commune_id)
+- ref.landcover_classes: PRIMARY KEY (class_id)
+- ref.landcover_periods: PRIMARY KEY (lc_period_id)
+- ref.observed_properties: PRIMARY KEY (property_id)
+- ref.property_domain_membership: PRIMARY KEY (property_id, domain_code)
+- ref.property_domains: PRIMARY KEY (domain_code)
+- staging.limite_raw: PRIMARY KEY (gid)
+- staging.migration_batches: PRIMARY KEY (load_batch_id)
+- staging.migration_events: PRIMARY KEY (event_id)
+- staging.reseau_hydro_import_raw: PRIMARY KEY (gid)
+- staging.reseau_hydrologie_raw: PRIMARY KEY (gid)
+- staging.station_meteo_raw: PRIMARY KEY (gid)
+- staging.swat_rch_norm: PRIMARY KEY (norm_id)
+- staging.swat_rch_raw: PRIMARY KEY (raw_id)
+- staging.swat_sub_norm: PRIMARY KEY (norm_id)
+- staging.swat_sub_raw: PRIMARY KEY (raw_id)
+
+## Clés étrangères
+- access.rch_results: FOREIGN KEY (import_id) REFERENCES access.import_runs(import_id) ON DELETE CASCADE
+- access.sub_results: FOREIGN KEY (import_id) REFERENCES access.import_runs(import_id) ON DELETE CASCADE
+- audit.qc_issues: FOREIGN KEY (qc_run_id) REFERENCES audit.qc_runs(qc_run_id) ON DELETE SET NULL
+- auth.audit_log: FOREIGN KEY (user_id) REFERENCES auth.users(user_id) ON DELETE SET NULL
+- auth.role_permissions: FOREIGN KEY (permission_id) REFERENCES auth.permissions(permission_id) ON DELETE CASCADE
+- auth.role_permissions: FOREIGN KEY (role_id) REFERENCES auth.roles(role_id) ON DELETE CASCADE
+- auth.user_roles: FOREIGN KEY (role_id) REFERENCES auth.roles(role_id) ON DELETE CASCADE
+- auth.user_roles: FOREIGN KEY (user_id) REFERENCES auth.users(user_id) ON DELETE CASCADE
+- core.data_batches: FOREIGN KEY (run_id) REFERENCES core.model_runs(run_id)
+- core.measurement_batches: FOREIGN KEY (batch_id) REFERENCES core.data_batches(batch_id) ON DELETE CASCADE
+- core.measurement_batches: FOREIGN KEY (ts_id, datetime) REFERENCES core.measurements(ts_id, datetime) ON DELETE CASCADE
+- core.measurements: FOREIGN KEY (ts_id) REFERENCES core.timeseries(ts_id)
+- core.reaches: FOREIGN KEY (catchment_id) REFERENCES core.catchments(catchment_id)
+- core.reaches: FOREIGN KEY (river_id) REFERENCES core.rivers(river_id)
+- core.reaches: FOREIGN KEY (subbasin_id) REFERENCES core.subbasins(subbasin_id)
+- core.reservoir_bathymetry: FOREIGN KEY (reservoir_id) REFERENCES core.reservoirs(reservoir_id)
+- core.reservoirs: FOREIGN KEY (catchment_id) REFERENCES core.catchments(catchment_id)
+- core.reservoirs: FOREIGN KEY (reach_id) REFERENCES core.reaches(reach_id)
+- core.station_reach_map: FOREIGN KEY (simulated_station_id) REFERENCES core.stations(station_id)
+- core.station_reach_map: FOREIGN KEY (station_id) REFERENCES core.stations(station_id)
+- core.stations: FOREIGN KEY (catchment_id) REFERENCES core.catchments(catchment_id)
+- core.stations: FOREIGN KEY (reach_id) REFERENCES core.reaches(reach_id)
+- core.subbasin_metrics_annual: FOREIGN KEY (property_id) REFERENCES ref.observed_properties(property_id) ON DELETE RESTRICT
+- core.subbasin_metrics_annual: FOREIGN KEY (run_id) REFERENCES core.model_runs(run_id) ON DELETE SET NULL
+- core.subbasin_metrics_annual: FOREIGN KEY (subbasin_id) REFERENCES core.subbasins(subbasin_id) ON DELETE CASCADE
+- core.subbasins: FOREIGN KEY (catchment_id) REFERENCES core.catchments(catchment_id)
+- core.swat_entity_map: FOREIGN KEY (station_id) REFERENCES core.stations(station_id)
+- core.timeseries: FOREIGN KEY (property_id) REFERENCES ref.observed_properties(property_id)
+- core.timeseries: FOREIGN KEY (run_id) REFERENCES core.model_runs(run_id)
+- core.timeseries: FOREIGN KEY (station_id) REFERENCES core.stations(station_id)
+- geo.landcover: FOREIGN KEY (class_id) REFERENCES ref.landcover_classes(class_id)
+- geo.landcover: FOREIGN KEY (lc_period_id) REFERENCES ref.landcover_periods(lc_period_id)
+- public.module_properties: FOREIGN KEY (property_id) REFERENCES ref.observed_properties(property_id) ON UPDATE CASCADE ON DELETE RESTRICT
+- public.property_module_override: FOREIGN KEY (property_id) REFERENCES ref.observed_properties(property_id) ON DELETE CASCADE
+- ref.landcover_periods: FOREIGN KEY (scenario_code) REFERENCES core.model_runs(scenario_code)
+- ref.property_domain_membership: FOREIGN KEY (domain_code) REFERENCES ref.property_domains(domain_code) ON DELETE CASCADE
+- ref.property_domain_membership: FOREIGN KEY (property_id) REFERENCES ref.observed_properties(property_id) ON DELETE CASCADE
+
+## Dépendances fortes
+- `ref` alimente `core` et `api` via les propriétés et domaines.
+- `core.timeseries` et `core.measurements` sont les pivots temporels.
+- `api` dépend de vues et d'agrégations construites sur `core` et `public`.
+- `old_hd` est un ensemble de tables étrangères, donc dépend du serveur FDW `old_hd_srv`.

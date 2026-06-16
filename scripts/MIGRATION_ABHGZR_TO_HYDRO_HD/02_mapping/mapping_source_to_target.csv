@@ -1,0 +1,28 @@
+source_table,source_column,business_meaning,target_table,target_column,transformation,quality_rule,risk_note
+public.adm_communes_abhgzr,code_commune,commune code,ref.communes,code_commune,trim+upper,not null unique,code collision
+public.adm_communes_abhgzr,commune_fr,commune name fr,ref.communes,name_fr,direct,not empty recommended,encoding
+public.adm_communes_abhgzr,geom,commune polygon,ref.communes,geom,EWKT->SRID4326,geometry valid,srid mismatch
+public.bassin_abhgzr,nom_bassin,catchment name,core.catchments,name,direct,not null,name duplication
+public.bassin_abhgzr,geom,catchment geometry,core.catchments,geom,EWKT->SRID4326,geometry valid,geometry null
+public.barrages_abhgzr,ire_barrage,reservoir code,core.reservoirs,reservoir_code,trim,not null unique,reservoir code duplicates
+public.barrages_abhgzr,nom_barrage,reservoir name,core.reservoirs,name,direct,not null recommended,name variants
+public.barrages_abhgzr,code_commune,commune relation,core.reservoirs,commune_code,direct,exists in ref.communes,orphan commune
+public.stations_abhgzr,ire_station,station code,core.stations,station_code,trim,not null unique,duplicate station code
+public.stations_abhgzr,nom_station_fr,station name,core.stations,name,coalesce fr/ar,not null recommended,empty names
+public.stations_abhgzr,type_station,station type,core.stations,type_station,direct,domain check,heterogeneous labels
+public.stations_abhgzr,coord_z,altitude,core.stations,altitude_m,numeric cast,reasonable range,null-heavy
+public.stations_abhgzr,geom,station point,core.stations,geom,EWKT->SRID4326,point valid,srid mismatch
+public.bathymetries_barrages_abhgzr,ire_barrage,reservoir relation,core.reservoir_bathymetry,reservoir_id,join reservoir_code,fk exists,reservoir not found
+public.bathymetries_barrages_abhgzr,cote_mngm,water level,core.reservoir_bathymetry,level_m,direct numeric,>=0,outliers
+public.bathymetries_barrages_abhgzr,volumr_mm3,stored volume,core.reservoir_bathymetry,volume_hm3,unit review + cast,>0,unit ambiguity
+public.mesures_precipitations_jr,precipitation_jr,daily precipitation,core.measurements,value,numeric cast,date+value not null,outliers
+public.mesures_debits_jr,debit_jr,daily discharge,core.measurements,value,numeric cast,date+value not null,unit ambiguity
+public.mesures_temperature_jr_pn,temp_jr_max,daily tmax,core.measurements,value,numeric cast,plausible bounds,extreme values
+public.mesures_temperature_jr_pn,temp_jr_min,daily tmin,core.measurements,value,numeric cast,plausible bounds,extreme values
+public.mesures_temperature_jr_pn,temp_jr_moy,daily tmean,core.measurements,value,numeric cast,plausible bounds,extreme values
+public.mesures_temperature_m,temperature_moy,monthly tmean,core.measurements,value,text->numeric,parse success,invalid text
+public.mesures_evaporation_m,evaporation_m,monthly evaporation,core.measurements,value,text->numeric,parse success,invalid text
+public.mesures_humidite_relative_m,humidite_relative_m,monthly humidity,core.measurements,value,text->numeric,0..100 recommended,outliers
+public.mesures_vitesse_vent_m,vitesse_moy_m,monthly wind speed,core.measurements,value,text->numeric,>=0,invalid text
+public.mesures_lachers_barrages,apports_m3,daily inflow release metric,core.measurements,value,text->numeric,parse success,entity mapping ambiguity
+public.mesures_lachers_barrages,restitution_m3,daily restitution metric,core.measurements,value,text->numeric,parse success,entity mapping ambiguity

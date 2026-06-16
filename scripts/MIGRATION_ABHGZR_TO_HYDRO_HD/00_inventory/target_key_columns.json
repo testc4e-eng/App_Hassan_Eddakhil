@@ -1,0 +1,1751 @@
+[
+  {
+    "schema": "core",
+    "table": "catchments",
+    "columns": [
+      {
+        "table_schema": "core",
+        "table_name": "catchments",
+        "ordinal_position": 1,
+        "column_name": "catchment_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "catchments",
+        "ordinal_position": 2,
+        "column_name": "name",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "catchments",
+        "ordinal_position": 3,
+        "column_name": "dam_name",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "catchments",
+        "ordinal_position": 4,
+        "column_name": "area_m2",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "catchments",
+        "ordinal_position": 5,
+        "column_name": "geom",
+        "data_type": "USER-DEFINED",
+        "udt_name": "geometry",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  {
+    "schema": "core",
+    "table": "subbasins",
+    "columns": [
+      {
+        "table_schema": "core",
+        "table_name": "subbasins",
+        "ordinal_position": 1,
+        "column_name": "subbasin_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "subbasins",
+        "ordinal_position": 2,
+        "column_name": "catchment_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "subbasins",
+        "ordinal_position": 3,
+        "column_name": "subbasin_code",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "subbasins",
+        "ordinal_position": 4,
+        "column_name": "name",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "subbasins",
+        "ordinal_position": 5,
+        "column_name": "area_m2",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "subbasins",
+        "ordinal_position": 6,
+        "column_name": "spec_deg_base_t_ha_yr",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "subbasins",
+        "ordinal_position": 7,
+        "column_name": "spec_deg_slope1_t_ha_yr",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "subbasins",
+        "ordinal_position": 8,
+        "column_name": "spec_deg_slope2_t_ha_yr",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "subbasins",
+        "ordinal_position": 9,
+        "column_name": "spec_deg_slope3_t_ha_yr",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "subbasins",
+        "ordinal_position": 10,
+        "column_name": "spec_deg_buffer_t_ha_yr",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "subbasins",
+        "ordinal_position": 11,
+        "column_name": "sediment_yield_tot_t_ha",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "subbasins",
+        "ordinal_position": 12,
+        "column_name": "geom",
+        "data_type": "USER-DEFINED",
+        "udt_name": "geometry",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "subbasins",
+        "ordinal_position": 13,
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO"
+      }
+    ]
+  },
+  {
+    "schema": "core",
+    "table": "reaches",
+    "columns": [
+      {
+        "table_schema": "core",
+        "table_name": "reaches",
+        "ordinal_position": 1,
+        "column_name": "reach_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reaches",
+        "ordinal_position": 2,
+        "column_name": "reach_code",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reaches",
+        "ordinal_position": 3,
+        "column_name": "subbasin_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reaches",
+        "ordinal_position": 4,
+        "column_name": "catchment_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reaches",
+        "ordinal_position": 5,
+        "column_name": "length_m",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reaches",
+        "ordinal_position": 6,
+        "column_name": "slope_pct",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reaches",
+        "ordinal_position": 7,
+        "column_name": "width_m",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reaches",
+        "ordinal_position": 8,
+        "column_name": "depth_m",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reaches",
+        "ordinal_position": 9,
+        "column_name": "min_elev_m",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reaches",
+        "ordinal_position": 10,
+        "column_name": "max_elev_m",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reaches",
+        "ordinal_position": 11,
+        "column_name": "qm_annual_mean_m3s",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reaches",
+        "ordinal_position": 12,
+        "column_name": "sedout_annual_mean_t_yr",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reaches",
+        "ordinal_position": 13,
+        "column_name": "geom",
+        "data_type": "USER-DEFINED",
+        "udt_name": "geometry",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reaches",
+        "ordinal_position": 14,
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reaches",
+        "ordinal_position": 15,
+        "column_name": "river_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  {
+    "schema": "core",
+    "table": "stations",
+    "columns": [
+      {
+        "table_schema": "core",
+        "table_name": "stations",
+        "ordinal_position": 1,
+        "column_name": "station_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "stations",
+        "ordinal_position": 2,
+        "column_name": "station_code",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "stations",
+        "ordinal_position": 3,
+        "column_name": "name",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "stations",
+        "ordinal_position": 4,
+        "column_name": "type_station",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "stations",
+        "ordinal_position": 5,
+        "column_name": "station_type_code",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "stations",
+        "ordinal_position": 6,
+        "column_name": "commune_code",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "stations",
+        "ordinal_position": 7,
+        "column_name": "geom",
+        "data_type": "USER-DEFINED",
+        "udt_name": "geometry",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "stations",
+        "ordinal_position": 8,
+        "column_name": "altitude_m",
+        "data_type": "numeric",
+        "udt_name": "numeric",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "stations",
+        "ordinal_position": 9,
+        "column_name": "start_date",
+        "data_type": "date",
+        "udt_name": "date",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "stations",
+        "ordinal_position": 10,
+        "column_name": "end_date",
+        "data_type": "date",
+        "udt_name": "date",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "stations",
+        "ordinal_position": 11,
+        "column_name": "catchment_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "stations",
+        "ordinal_position": 12,
+        "column_name": "reach_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  {
+    "schema": "core",
+    "table": "reservoirs",
+    "columns": [
+      {
+        "table_schema": "core",
+        "table_name": "reservoirs",
+        "ordinal_position": 1,
+        "column_name": "reservoir_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reservoirs",
+        "ordinal_position": 2,
+        "column_name": "name",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reservoirs",
+        "ordinal_position": 3,
+        "column_name": "geom",
+        "data_type": "USER-DEFINED",
+        "udt_name": "geometry",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reservoirs",
+        "ordinal_position": 4,
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reservoirs",
+        "ordinal_position": 5,
+        "column_name": "catchment_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reservoirs",
+        "ordinal_position": 6,
+        "column_name": "reach_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reservoirs",
+        "ordinal_position": 7,
+        "column_name": "reservoir_code",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reservoirs",
+        "ordinal_position": 8,
+        "column_name": "commune_code",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  {
+    "schema": "core",
+    "table": "reservoir_bathymetry",
+    "columns": [
+      {
+        "table_schema": "core",
+        "table_name": "reservoir_bathymetry",
+        "ordinal_position": 1,
+        "column_name": "bathy_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reservoir_bathymetry",
+        "ordinal_position": 2,
+        "column_name": "reservoir_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reservoir_bathymetry",
+        "ordinal_position": 3,
+        "column_name": "level_m",
+        "data_type": "numeric",
+        "udt_name": "numeric",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reservoir_bathymetry",
+        "ordinal_position": 4,
+        "column_name": "volume_hm3",
+        "data_type": "numeric",
+        "udt_name": "numeric",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reservoir_bathymetry",
+        "ordinal_position": 5,
+        "column_name": "area_km2",
+        "data_type": "numeric",
+        "udt_name": "numeric",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reservoir_bathymetry",
+        "ordinal_position": 6,
+        "column_name": "source",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "reservoir_bathymetry",
+        "ordinal_position": 7,
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  {
+    "schema": "core",
+    "table": "timeseries",
+    "columns": [
+      {
+        "table_schema": "core",
+        "table_name": "timeseries",
+        "ordinal_position": 1,
+        "column_name": "ts_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "timeseries",
+        "ordinal_position": 2,
+        "column_name": "station_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "timeseries",
+        "ordinal_position": 3,
+        "column_name": "property_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "timeseries",
+        "ordinal_position": 4,
+        "column_name": "run_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "timeseries",
+        "ordinal_position": 5,
+        "column_name": "source_type",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "timeseries",
+        "ordinal_position": 6,
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "timeseries",
+        "ordinal_position": 7,
+        "column_name": "time_step",
+        "data_type": "USER-DEFINED",
+        "udt_name": "time_step",
+        "is_nullable": "NO"
+      }
+    ]
+  },
+  {
+    "schema": "core",
+    "table": "measurements",
+    "columns": [
+      {
+        "table_schema": "core",
+        "table_name": "measurements",
+        "ordinal_position": 1,
+        "column_name": "ts_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "measurements",
+        "ordinal_position": 2,
+        "column_name": "datetime",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "measurements",
+        "ordinal_position": 3,
+        "column_name": "value",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "measurements",
+        "ordinal_position": 4,
+        "column_name": "quality_flag",
+        "data_type": "smallint",
+        "udt_name": "int2",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  {
+    "schema": "core",
+    "table": "model_runs",
+    "columns": [
+      {
+        "table_schema": "core",
+        "table_name": "model_runs",
+        "ordinal_position": 1,
+        "column_name": "run_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "model_runs",
+        "ordinal_position": 2,
+        "column_name": "scenario_code",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "model_runs",
+        "ordinal_position": 3,
+        "column_name": "scenario_name",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "model_runs",
+        "ordinal_position": 4,
+        "column_name": "description",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "model_runs",
+        "ordinal_position": 5,
+        "column_name": "is_observed",
+        "data_type": "boolean",
+        "udt_name": "bool",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "model_runs",
+        "ordinal_position": 6,
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO"
+      }
+    ]
+  },
+  {
+    "schema": "core",
+    "table": "subbasin_metrics_annual",
+    "columns": [
+      {
+        "table_schema": "core",
+        "table_name": "subbasin_metrics_annual",
+        "ordinal_position": 1,
+        "column_name": "subbasin_id",
+        "data_type": "bigint",
+        "udt_name": "int8",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "subbasin_metrics_annual",
+        "ordinal_position": 2,
+        "column_name": "property_id",
+        "data_type": "bigint",
+        "udt_name": "int8",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "subbasin_metrics_annual",
+        "ordinal_position": 3,
+        "column_name": "run_id",
+        "data_type": "bigint",
+        "udt_name": "int8",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "subbasin_metrics_annual",
+        "ordinal_position": 4,
+        "column_name": "year",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "subbasin_metrics_annual",
+        "ordinal_position": 5,
+        "column_name": "value",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "subbasin_metrics_annual",
+        "ordinal_position": 6,
+        "column_name": "quality_flag",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "core",
+        "table_name": "subbasin_metrics_annual",
+        "ordinal_position": 7,
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO"
+      }
+    ]
+  },
+  {
+    "schema": "ref",
+    "table": "observed_properties",
+    "columns": [
+      {
+        "table_schema": "ref",
+        "table_name": "observed_properties",
+        "ordinal_position": 1,
+        "column_name": "property_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "observed_properties",
+        "ordinal_position": 2,
+        "column_name": "name",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "observed_properties",
+        "ordinal_position": 3,
+        "column_name": "unit",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "observed_properties",
+        "ordinal_position": 4,
+        "column_name": "standard_name",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "observed_properties",
+        "ordinal_position": 5,
+        "column_name": "description",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  {
+    "schema": "ref",
+    "table": "property_domains",
+    "columns": [
+      {
+        "table_schema": "ref",
+        "table_name": "property_domains",
+        "ordinal_position": 1,
+        "column_name": "domain_code",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "property_domains",
+        "ordinal_position": 2,
+        "column_name": "label",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "property_domains",
+        "ordinal_position": 3,
+        "column_name": "description",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  {
+    "schema": "ref",
+    "table": "property_domain_membership",
+    "columns": [
+      {
+        "table_schema": "ref",
+        "table_name": "property_domain_membership",
+        "ordinal_position": 1,
+        "column_name": "property_id",
+        "data_type": "bigint",
+        "udt_name": "int8",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "property_domain_membership",
+        "ordinal_position": 2,
+        "column_name": "domain_code",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "property_domain_membership",
+        "ordinal_position": 3,
+        "column_name": "display_order",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "property_domain_membership",
+        "ordinal_position": 4,
+        "column_name": "is_enabled",
+        "data_type": "boolean",
+        "udt_name": "bool",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "property_domain_membership",
+        "ordinal_position": 5,
+        "column_name": "allow_observed",
+        "data_type": "boolean",
+        "udt_name": "bool",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "property_domain_membership",
+        "ordinal_position": 6,
+        "column_name": "allow_simulated",
+        "data_type": "boolean",
+        "udt_name": "bool",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "property_domain_membership",
+        "ordinal_position": 7,
+        "column_name": "default_agg",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO"
+      }
+    ]
+  },
+  {
+    "schema": "ref",
+    "table": "communes",
+    "columns": [
+      {
+        "table_schema": "ref",
+        "table_name": "communes",
+        "ordinal_position": 1,
+        "column_name": "commune_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "communes",
+        "ordinal_position": 2,
+        "column_name": "code_commune",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "communes",
+        "ordinal_position": 3,
+        "column_name": "name_fr",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "communes",
+        "ordinal_position": 4,
+        "column_name": "name_ar",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "communes",
+        "ordinal_position": 5,
+        "column_name": "milieu",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "communes",
+        "ordinal_position": 6,
+        "column_name": "code_region",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "communes",
+        "ordinal_position": 7,
+        "column_name": "region_name_fr",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "communes",
+        "ordinal_position": 8,
+        "column_name": "code_province",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "communes",
+        "ordinal_position": 9,
+        "column_name": "province_name_fr",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "communes",
+        "ordinal_position": 10,
+        "column_name": "code_cercle",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "communes",
+        "ordinal_position": 11,
+        "column_name": "cercle_name_fr",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "communes",
+        "ordinal_position": 12,
+        "column_name": "cercle_name_ar",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "communes",
+        "ordinal_position": 13,
+        "column_name": "area_m2",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "communes",
+        "ordinal_position": 14,
+        "column_name": "geom",
+        "data_type": "USER-DEFINED",
+        "udt_name": "geometry",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "communes",
+        "ordinal_position": 15,
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  {
+    "schema": "ref",
+    "table": "landcover_classes",
+    "columns": [
+      {
+        "table_schema": "ref",
+        "table_name": "landcover_classes",
+        "ordinal_position": 1,
+        "column_name": "class_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "landcover_classes",
+        "ordinal_position": 2,
+        "column_name": "code",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "landcover_classes",
+        "ordinal_position": 3,
+        "column_name": "name_fr",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "landcover_classes",
+        "ordinal_position": 4,
+        "column_name": "name_en",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "landcover_classes",
+        "ordinal_position": 5,
+        "column_name": "color_hex",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  {
+    "schema": "ref",
+    "table": "landcover_periods",
+    "columns": [
+      {
+        "table_schema": "ref",
+        "table_name": "landcover_periods",
+        "ordinal_position": 1,
+        "column_name": "lc_period_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "landcover_periods",
+        "ordinal_position": 2,
+        "column_name": "year",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "landcover_periods",
+        "ordinal_position": 3,
+        "column_name": "scenario_code",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "landcover_periods",
+        "ordinal_position": 4,
+        "column_name": "description",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "ref",
+        "table_name": "landcover_periods",
+        "ordinal_position": 5,
+        "column_name": "source_data",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  {
+    "schema": "geo",
+    "table": "landcover",
+    "columns": [
+      {
+        "table_schema": "geo",
+        "table_name": "landcover",
+        "ordinal_position": 1,
+        "column_name": "lc_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "geo",
+        "table_name": "landcover",
+        "ordinal_position": 2,
+        "column_name": "lc_period_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "geo",
+        "table_name": "landcover",
+        "ordinal_position": 3,
+        "column_name": "class_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "geo",
+        "table_name": "landcover",
+        "ordinal_position": 4,
+        "column_name": "geom",
+        "data_type": "USER-DEFINED",
+        "udt_name": "geometry",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  {
+    "schema": "gis",
+    "table": "meteo_stations",
+    "columns": [
+      {
+        "table_schema": "gis",
+        "table_name": "meteo_stations",
+        "ordinal_position": 1,
+        "column_name": "station_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "gis",
+        "table_name": "meteo_stations",
+        "ordinal_position": 2,
+        "column_name": "station_code",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "gis",
+        "table_name": "meteo_stations",
+        "ordinal_position": 3,
+        "column_name": "name",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "gis",
+        "table_name": "meteo_stations",
+        "ordinal_position": 4,
+        "column_name": "type_station",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "gis",
+        "table_name": "meteo_stations",
+        "ordinal_position": 5,
+        "column_name": "station_type_code",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "gis",
+        "table_name": "meteo_stations",
+        "ordinal_position": 6,
+        "column_name": "catchment_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "gis",
+        "table_name": "meteo_stations",
+        "ordinal_position": 7,
+        "column_name": "source_attrs",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "gis",
+        "table_name": "meteo_stations",
+        "ordinal_position": 8,
+        "column_name": "geom",
+        "data_type": "USER-DEFINED",
+        "udt_name": "geometry",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "gis",
+        "table_name": "meteo_stations",
+        "ordinal_position": 9,
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO"
+      }
+    ]
+  },
+  {
+    "schema": "gis",
+    "table": "subbasin_shapes",
+    "columns": [
+      {
+        "table_schema": "gis",
+        "table_name": "subbasin_shapes",
+        "ordinal_position": 1,
+        "column_name": "subbasin_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "gis",
+        "table_name": "subbasin_shapes",
+        "ordinal_position": 2,
+        "column_name": "catchment_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "gis",
+        "table_name": "subbasin_shapes",
+        "ordinal_position": 3,
+        "column_name": "subbasin_code",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "gis",
+        "table_name": "subbasin_shapes",
+        "ordinal_position": 4,
+        "column_name": "name",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "gis",
+        "table_name": "subbasin_shapes",
+        "ordinal_position": 5,
+        "column_name": "area_m2",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "gis",
+        "table_name": "subbasin_shapes",
+        "ordinal_position": 6,
+        "column_name": "source_attrs",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "gis",
+        "table_name": "subbasin_shapes",
+        "ordinal_position": 7,
+        "column_name": "geom",
+        "data_type": "USER-DEFINED",
+        "udt_name": "geometry",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "gis",
+        "table_name": "subbasin_shapes",
+        "ordinal_position": 8,
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO"
+      }
+    ]
+  },
+  {
+    "schema": "gis",
+    "table": "reach_shapes",
+    "columns": [
+      {
+        "table_schema": "gis",
+        "table_name": "reach_shapes",
+        "ordinal_position": 1,
+        "column_name": "reach_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "gis",
+        "table_name": "reach_shapes",
+        "ordinal_position": 2,
+        "column_name": "reach_code",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "gis",
+        "table_name": "reach_shapes",
+        "ordinal_position": 3,
+        "column_name": "subbasin_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "gis",
+        "table_name": "reach_shapes",
+        "ordinal_position": 4,
+        "column_name": "catchment_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "gis",
+        "table_name": "reach_shapes",
+        "ordinal_position": 5,
+        "column_name": "length_m",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "gis",
+        "table_name": "reach_shapes",
+        "ordinal_position": 6,
+        "column_name": "slope_pct",
+        "data_type": "double precision",
+        "udt_name": "float8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "gis",
+        "table_name": "reach_shapes",
+        "ordinal_position": 7,
+        "column_name": "source_attrs",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "gis",
+        "table_name": "reach_shapes",
+        "ordinal_position": 8,
+        "column_name": "geom",
+        "data_type": "USER-DEFINED",
+        "udt_name": "geometry",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "gis",
+        "table_name": "reach_shapes",
+        "ordinal_position": 9,
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO"
+      }
+    ]
+  },
+  {
+    "schema": "public",
+    "table": "module_properties",
+    "columns": [
+      {
+        "table_schema": "public",
+        "table_name": "module_properties",
+        "ordinal_position": 1,
+        "column_name": "module_code",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "module_properties",
+        "ordinal_position": 2,
+        "column_name": "property_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "module_properties",
+        "ordinal_position": 3,
+        "column_name": "is_enabled",
+        "data_type": "boolean",
+        "udt_name": "bool",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "module_properties",
+        "ordinal_position": 4,
+        "column_name": "sort_order",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "module_properties",
+        "ordinal_position": 5,
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO"
+      }
+    ]
+  },
+  {
+    "schema": "public",
+    "table": "property_module_override",
+    "columns": [
+      {
+        "table_schema": "public",
+        "table_name": "property_module_override",
+        "ordinal_position": 1,
+        "column_name": "property_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "property_module_override",
+        "ordinal_position": 2,
+        "column_name": "module",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "property_module_override",
+        "ordinal_position": 3,
+        "column_name": "submodule",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  {
+    "schema": "public",
+    "table": "v_ts_catalog_enriched",
+    "columns": [
+      {
+        "table_schema": "public",
+        "table_name": "v_ts_catalog_enriched",
+        "ordinal_position": 1,
+        "column_name": "ts_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "v_ts_catalog_enriched",
+        "ordinal_position": 2,
+        "column_name": "station_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "v_ts_catalog_enriched",
+        "ordinal_position": 3,
+        "column_name": "station_code",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "v_ts_catalog_enriched",
+        "ordinal_position": 4,
+        "column_name": "station_name",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "v_ts_catalog_enriched",
+        "ordinal_position": 5,
+        "column_name": "property_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "v_ts_catalog_enriched",
+        "ordinal_position": 6,
+        "column_name": "property_name",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "v_ts_catalog_enriched",
+        "ordinal_position": 7,
+        "column_name": "unit",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "v_ts_catalog_enriched",
+        "ordinal_position": 8,
+        "column_name": "standard_name",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "v_ts_catalog_enriched",
+        "ordinal_position": 9,
+        "column_name": "run_id",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "v_ts_catalog_enriched",
+        "ordinal_position": 10,
+        "column_name": "scenario_code",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "v_ts_catalog_enriched",
+        "ordinal_position": 11,
+        "column_name": "scenario_name",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "v_ts_catalog_enriched",
+        "ordinal_position": 12,
+        "column_name": "source_type",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "v_ts_catalog_enriched",
+        "ordinal_position": 13,
+        "column_name": "time_step",
+        "data_type": "USER-DEFINED",
+        "udt_name": "time_step",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "v_ts_catalog_enriched",
+        "ordinal_position": 14,
+        "column_name": "ts_created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "v_ts_catalog_enriched",
+        "ordinal_position": 15,
+        "column_name": "n_points",
+        "data_type": "bigint",
+        "udt_name": "int8",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "v_ts_catalog_enriched",
+        "ordinal_position": 16,
+        "column_name": "start_date",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "YES"
+      },
+      {
+        "table_schema": "public",
+        "table_name": "v_ts_catalog_enriched",
+        "ordinal_position": 17,
+        "column_name": "end_date",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "YES"
+      }
+    ]
+  }
+]

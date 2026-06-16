@@ -1,0 +1,678 @@
+//src/api/hydro.ts
+
+import { 
+  Station, 
+  Catchment, 
+  Timeseries, 
+  Measurement,
+  Landcover,
+  FilterOptions,
+  ApiResponse,
+  Reservoir,
+  ModelRun,
+  AggregatedMeasurement,
+  SpatialFeaturesResponse,
+  DashboardStats,
+  LandcoverSummaryItem,
+  HealthResponse
+} from '../types/hydro';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1/hydro';
+
+class ApiError extends Error {
+  constructor(message: string, public status?: number) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
+// Utilitaire fetch avec gestion d'erreur améliorée
+async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  const url = `${API_BASE_URL}${endpoint}`;
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+    });
+
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch {
+        // Ignorer si pas de JSON
+      }
+      throw new ApiError(errorMessage, response.status);
+    }
+
+    const data: ApiResponse<T> = await response.json();
+    
+    if (!data.success) {
+      throw new ApiError(data.error || 'API request failed');
+    }
+
+    return data.data;
+  } catch (error) {
+    console.error(`API Error ${endpoint}:`, error);
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(error instanceof Error ? error.message : 'Network error');
+  }
+}
+
+// ================ HEALTH CHECK ================
+export async function checkHealth(): Promise<HealthResponse> {
+  return fetchAPI<HealthResponse>('/health');
+}
+
+// ================ STATIONS ================
+export async function getStations(filter?: FilterOptions): Promise<Station[]> {
+  const params = new URLSearchParams();
+  
+  if (filter?.stationIds?.length) {
+    params.append('stationIds', JSON.stringify(filter.stationIds));
+  }
+  if (filter?.limit) {
+    params.append('limit', filter.limit.toString());
+  }
+
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return fetchAPI<Station[]>(`/stations${query}`);
+}
+
+export async function getStationById(id: number): Promise<Station> {
+  return fetchAPI<Station>(`/stations/${id}`);
+}
+
+// ================ CATCHMENTS ================
+export async function getCatchments(filter?: FilterOptions): Promise<Catchment[]> {
+  const params = new URLSearchParams();
+  
+  if (filter?.catchmentIds?.length) {
+    params.append('catchmentIds', JSON.stringify(filter.catchmentIds));
+  }
+
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return fetchAPI<Catchment[]>(`/catchments${query}`);
+}
+
+export async function getCatchmentById(id: number): Promise<Catchment> {
+  return fetchAPI<Catchment>(`/catchments/${id}`);
+}
+
+// ================ TIMESERIES (Variables) ================
+export async function getTimeseries(stationId?: number, propertyId?: number): Promise<Timeseries[]> {
+  const params = new URLSearchParams();
+  
+  if (stationId) {
+    params.append('stationId', stationId.toString());
+  }
+  if (propertyId) {
+    params.append('propertyId', propertyId.toString());
+  }
+
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return fetchAPI<Timeseries[]>(`/timeseries${query}`);
+}
+
+// ================ MEASUREMENTS ================
+export async function getMeasurements(
+  tsId: number, 
+  filter: FilterOptions
+): Promise<Measurement[]> {
+  const params = new URLSearchParams();
+  
+  if (filter.startDate) {
+    params.append('startDate', filter.startDate);
+  }
+  if (filter.endDate) {
+    params.append('endDate', filter.endDate);
+  }
+  if (filter.limit) {
+    params.append('limit', filter.limit.toString());
+  }
+
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return fetchAPI<Measurement[]>(`/timeseries/${tsId}/measurements${query}`);
+}
+
+export async function getAggregatedMeasurements(
+  tsId: number,
+  interval: 'hour' | 'day' | 'month' | 'year',
+  startDate: string,
+  endDate: string
+): Promise<AggregatedMeasurement[]> {
+  const params = new URLSearchParams({
+    interval,
+    startDate,
+    endDate
+  });
+
+  return fetchAPI<AggregatedMeasurement[]>(`/timeseries/${tsId}/measurements/aggregated?${params.toString()}`);
+}
+
+// ================ LANDCOVER ================
+export async function getLandcover(periodId?: number, catchmentId?: number): Promise<Landcover[]> {
+  const params = new URLSearchParams();
+  
+  if (periodId) {
+    params.append('periodId', periodId.toString());
+  }
+  if (catchmentId) {
+    params.append('catchmentId', catchmentId.toString());
+  }
+
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return fetchAPI<Landcover[]>(`/landcover${query}`);
+}
+
+export async function getLandcoverSummary(catchmentId: number, periodId?: number): Promise<LandcoverSummaryItem[]> {
+  const params = new URLSearchParams();
+  
+  if (periodId) {
+    params.append('periodId', periodId.toString());
+  }
+
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return fetchAPI<LandcoverSummaryItem[]>(`/catchments/${catchmentId}/landcover-summary${query}`);
+}
+
+// ================ RESERVOIRS ================
+export async function getReservoirs(): Promise<Reservoir[]> {
+  return fetchAPI<Reservoir[]>('/reservoirs');
+}
+
+// ================ MODEL RUNS ================
+export async function getModelRuns(isObserved?: boolean): Promise<ModelRun[]> {
+  const params = new URLSearchParams();
+  
+  if (isObserved !== undefined) {
+    params.append('isObserved', isObserved.toString());
+  }
+
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return fetchAPI<ModelRun[]>(`/model-runs${query}`);
+}
+
+// ================ SPATIAL ================
+export async function getFeaturesInBounds(bounds: {
+  minLng: number;
+  minLat: number;
+  maxLng: number;
+  maxLat: number;
+}): Promise<SpatialFeaturesResponse> {
+  const params = new URLSearchParams({
+    minLng: bounds.minLng.toString(),
+    minLat: bounds.minLat.toString(),
+    maxLng: bounds.maxLng.toString(),
+    maxLat: bounds.maxLat.toString()
+  });
+
+  return fetchAPI<SpatialFeaturesResponse>(`/spatial/features?${params.toString()}`);
+}
+
+// ================ DASHBOARD ================
+export async function getDashboardStats(): Promise<DashboardStats> {
+  return fetchAPI<DashboardStats>('/stats');
+}
+
+// ================ FONCTIONS UTILITAIRES POUR LE DASHBOARD ================
+
+// Interface pour les données du dashboard
+export interface DashboardData {
+  stations: Station[];
+  catchments: Catchment[];
+  timeseries: Timeseries[];
+  reservoirs: Reservoir[];
+}
+
+// Récupérer toutes les données pour l'initialisation du dashboard
+export async function getDashboardData(): Promise<DashboardData> {
+  try {
+    const [stations, catchments, timeseries, reservoirs] = await Promise.all([
+      getStations({ limit: 50 }),
+      getCatchments(),
+      getTimeseries(),
+      getReservoirs()
+    ]);
+    
+    return { stations, catchments, timeseries, reservoirs };
+  } catch (error) {
+    console.error('Failed to load dashboard data:', error);
+    throw error;
+  }
+}
+
+// Interface pour les variables UI
+export interface UIVariable {
+  id: string;
+  name: string;
+  unit: string;
+  category: string;
+}
+
+// Convertir les timeseries en format compatible avec l'ancien dashboard
+export function formatTimeseriesForUI(timeseries: Timeseries[]): UIVariable[] {
+  return timeseries.map(ts => ({
+    id: ts.property_code || `prop-${ts.property_id}`,
+    name: ts.property_name || 'Inconnu',
+    unit: ts.unit || 'N/A',
+    category: getVariableCategory(ts.property_code || '')
+  }));
+}
+
+function getVariableCategory(code: string): string {
+  if (code.includes('temp') || code.includes('precip') || code.includes('et')) {
+    return 'climate';
+  } else if (code.includes('discharge') || code.includes('level') || code.includes('volume')) {
+    return 'hydraulic';
+  } else if (code.includes('sediment') || code.includes('turbidity')) {
+    return 'sediment';
+  }
+  return 'other';
+}
+
+// Interface pour les stations UI
+export interface UIStation {
+  id: string;
+  name: string;
+  code: string;
+  type: string;
+  isActive: boolean;
+}
+
+// Convertir les stations en format UI
+export function formatStationsForUI(stations: Station[]): UIStation[] {
+  return stations.map(station => ({
+    id: `st-${station.station_id}`,
+    name: station.name,
+    code: station.code || `ST${station.station_id}`,
+    type: station.type || 'station',
+    isActive: true
+  }));
+}
+
+export async function fetchStations() {
+  try {
+    const response = await fetch("http://localhost:5000/api/v1/hydro/stations");
+
+    if (!response.ok) {
+      throw new Error("Erreur API");
+    }
+
+    const json = await response.json();
+    return json.data;
+  } catch (error) {
+    console.error("Erreur fetchStations:", error);
+    return [];
+  }
+}
+------------------------------------------------------------------------------------------------
+//src/hooks/useFetch.ts
+
+import { useState, useEffect, useCallback } from 'react';
+import { hydroApi } from '@/api/hydro';
+
+type Status = 'idle' | 'loading' | 'success' | 'error';
+
+interface UseFetchOptions<T> {
+  initialData?: T;
+  enabled?: boolean;
+  refetchInterval?: number;
+  onSuccess?: (data: T) => void;
+  onError?: (error: Error) => void;
+}
+
+interface UseFetchResult<T> {
+  data: T | null;
+  error: Error | null;
+  status: Status;
+  isLoading: boolean;
+  isError: boolean;
+  isSuccess: boolean;
+  refetch: () => Promise<void>;
+}
+
+export function useFetch<T>(
+  fetchFn: () => Promise<T>,
+  options: UseFetchOptions<T> = {}
+): UseFetchResult<T> {
+  const {
+    initialData = null,
+    enabled = true,
+    refetchInterval,
+    onSuccess,
+    onError,
+  } = options;
+
+  const [data, setData] = useState<T | null>(initialData);
+  const [error, setError] = useState<Error | null>(null);
+  const [status, setStatus] = useState<Status>('idle');
+
+  const isLoading = status === 'loading';
+  const isError = status === 'error';
+  const isSuccess = status === 'success';
+
+  const fetchData = useCallback(async () => {
+    if (!enabled) return;
+
+    setStatus('loading');
+    setError(null);
+
+    try {
+      const result = await fetchFn();
+      setData(result);
+      setStatus('success');
+      onSuccess?.(result);
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Unknown error');
+      setError(error);
+      setStatus('error');
+      onError?.(error);
+    }
+  }, [fetchFn, enabled, onSuccess, onError]);
+
+  useEffect(() => {
+    if (enabled) {
+      fetchData();
+    }
+  }, [enabled, fetchData]);
+
+  useEffect(() => {
+    if (!refetchInterval) return;
+
+    const intervalId = setInterval(() => {
+      if (enabled) {
+        fetchData();
+      }
+    }, refetchInterval);
+
+    return () => clearInterval(intervalId);
+  }, [refetchInterval, enabled, fetchData]);
+
+  return {
+    data,
+    error,
+    status,
+    isLoading,
+    isError,
+    isSuccess,
+    refetch: fetchData,
+  };
+}
+
+// Hook simple pour les données hydrologiques
+export function useHydroData<T>(
+  apiFunction: () => Promise<T>,
+  options?: UseFetchOptions<T>
+) {
+  return useFetch(apiFunction, options);
+}
+
+// Exemples d'utilisation :
+export const useStations = (options?: UseFetchOptions<Array<{ id: string; name: string }>>) => {
+  return useFetch(() => hydroApi.getStations(), options);
+};
+
+export const useTimeseries = (params?: { stationId?: string; variable?: string }, options?: UseFetchOptions<Array<{ timestamp: string; value: number }>>) => {
+  return useFetch(() => hydroApi.getTimeseries(params || {}), options);
+};
+-----------------------------------------------------------------------------------------
+// src/contexts/HydroDataContext.tsx
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { getDashboardData } from '@/api/hydro';
+import { Station, Catchment, Timeseries, Reservoir } from '@/types/hydro';
+
+interface HydroDataContextType {
+  stations: Station[];
+  catchments: Catchment[];
+  timeseries: Timeseries[];
+  reservoirs: Reservoir[];
+  loading: boolean;
+  error: string | null;
+}
+
+const HydroDataContext = createContext<HydroDataContextType>({
+  stations: [],
+  catchments: [],
+  timeseries: [],
+  reservoirs: [],
+  loading: true,
+  error: null,
+});
+
+export const HydroDataProvider = ({ children }: { children: ReactNode }) => {
+  const [stations, setStations] = useState<Station[]>([]);
+  const [catchments, setCatchments] = useState<Catchment[]>([]);
+  const [timeseries, setTimeseries] = useState<Timeseries[]>([]);
+  const [reservoirs, setReservoirs] = useState<Reservoir[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const { stations, catchments, timeseries, reservoirs } = await getDashboardData();
+        setStations(stations);
+        setCatchments(catchments);
+        setTimeseries(timeseries);
+        setReservoirs(reservoirs);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
+
+  return (
+    <HydroDataContext.Provider value={{ stations, catchments, timeseries, reservoirs, loading, error }}>
+      {children}
+    </HydroDataContext.Provider>
+  );
+};
+
+export const useHydroData = () => useContext(HydroDataContext);
+-----------------------------------------------------------------------------------
+//src/types/hydro.ts
+// Types pour les données hydro
+export interface Station {
+  station_id: number;
+  name: string;
+  geom?: string;
+  type?: string;
+  created_at?: string;
+  code?: string;
+  isActive?: boolean;
+}
+
+export interface Catchment {
+  catchment_id: number;
+  name: string;
+  dam_name: string;
+  area_m2: number;
+  geom: string;
+}
+
+export interface Timeseries {
+  ts_id: number;
+  station_id: number;
+  property_id: number;
+  unit?: string;
+  model_run_id?: number;
+  catchment_id?: number;
+  created_at?: string;
+  station_name?: string;
+  property_name?: string;
+  property_code?: string;
+}
+
+export interface Measurement {
+  ts_id: number;
+  datetime: string;
+  value: number;
+  quality_flag?: string;
+}
+
+export interface Landcover {
+  lc_id: number;
+  lc_period_id: number;
+  class_id: number;
+  geom: string;
+  area_m2?: number;
+  year?: number;
+  scenario_code?: string;
+  class_code?: string;
+  name_fr?: string;
+  color_hex?: string;
+}
+
+export interface ModelRun {
+  run_id: number;
+  scenario_code: string;
+  scenario_name: string;
+  description?: string;
+  is_observed: boolean;
+  created_at: string;
+}
+
+export interface Reservoir {
+  reservoir_id: number;
+  name: string;
+  geom: string;
+  created_at: string;
+}
+
+// Types pour les filtres
+export interface FilterOptions {
+  stationIds?: number[];
+  catchmentIds?: number[];
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
+  offset?: number;
+  propertyId?: number;
+  periodId?: number;
+  scenarioCode?: string;
+}
+
+export interface FilterState {
+  stations: number[];
+  variables: number[];
+  scenario: string;
+  startDate: string;
+  endDate: string;
+  resolution: 'hour' | 'day' | 'month' | 'year';
+}
+
+// Réponse API standard
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  count?: number;
+  error?: string;
+}
+
+// Types pour l'UI du dashboard
+export type ModuleType = 'climate' | 'hydraulic' | 'sediment' | 'spatial' | 'maps' | 'reports';
+export type DataSourceType = 'observed' | 'simulated' | 'cmip6_historical' | 'cmip6_future';
+export type TemporalResolution = 'daily' | 'monthly' | 'yearly';
+
+// Types pour les variables UI
+export interface UIVariable {
+  id: string;
+  name: string;
+  unit: string;
+  category: string;
+}
+
+export interface UIStation {
+  id: string;
+  name: string;
+  code: string;
+  type: string;
+  isActive: boolean;
+}
+
+// ================ NOUVEAUX TYPES POUR REMPLACER LES 'any' ================
+
+export interface AggregatedMeasurement {
+  period: string;
+  avg_value: number;
+  min_value: number;
+  max_value: number;
+  count: number;
+}
+
+export interface SpatialFeature {
+  type: string;
+  id: number;
+  name: string;
+  geom: string;
+  subtype?: string;
+  subtitle?: string;
+}
+
+export interface SpatialFeaturesResponse {
+  stations: SpatialFeature[];
+  catchments: SpatialFeature[];
+  reservoirs: SpatialFeature[];
+  bounds: {
+    minLng: number;
+    minLat: number;
+    maxLng: number;
+    maxLat: number;
+  };
+}
+
+export interface DashboardStats {
+  totalStations: { count: string };
+  totalCatchments: { count: string };
+  totalMeasurements: { count: string };
+  totalReservoirs: { count: string };
+  latestMeasurement: { latest_date: string };
+  activeStations: { count: string };
+}
+
+export interface LandcoverSummaryItem {
+  code: string;
+  name_fr: string;
+  color_hex: string;
+  area_m2: number;
+  percentage: number;
+}
+
+export interface HealthResponse {
+  success: boolean;
+  timestamp: string;
+  service: string;
+  version: string;
+  database: string;
+  uptime: number;
+  tables?: string[];
+  structures?: Record<string, string[]>;
+}
+---------------------------------------------------------------------
+//src/types/station.ts
+
+export interface Station {
+  station_id: number | string;
+  station_code: string;
+  name: string;
+  oued: string;
+  type_station: string;
+  station_type_ci_measures: string;
+  commune_code: string;
+  geom: string; // Format WKB/EWKB
+  altitude_m: number;
+  start_date: string | null;
+  end_date: string | null;
+}
