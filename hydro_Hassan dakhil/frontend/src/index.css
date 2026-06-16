@@ -338,3 +338,33 @@
 .maplibregl-popup-tip {
   @apply border-t-card !important;
 }
+
+/* Ensure Radix overlays render above Leaflet panels and tiles */
+[data-radix-popper-content-wrapper] {
+  z-index: 99999 !important;
+}
+
+[data-radix-select-content],
+.radix-select-content {
+  z-index: 99999 !important;
+}
+
+[data-radix-popover-content],
+.radix-popover-content,
+[data-radix-dropdown-menu-content],
+.radix-dropdown-menu-content {
+  z-index: 99999 !important;
+}
+
+.leaflet-container {
+  z-index: 0 !important;
+}
+
+.leaflet-pane,
+.leaflet-map-pane,
+.leaflet-overlay-pane,
+.leaflet-marker-pane,
+.leaflet-tooltip-pane,
+.leaflet-popup-pane {
+  z-index: auto !important;
+}

@@ -9,6 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Layers,
   Ruler,
   Download,
@@ -648,18 +655,24 @@ export function OperationalSpatialModule() {
             <label className="text-xs text-muted-foreground mb-2 block">
               {t("spatial.displayMode")}
             </label>
-            <select
+            <Select
               value={displayMode}
-              onChange={(e) => changeDisplayMode(e.target.value as SpatialDisplayMode)}
-              className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              onValueChange={(value) =>
+                changeDisplayMode(value as SpatialDisplayMode)
+              }
             >
-              <option value="project_hassan_addakhil">
-                {t("spatial.displayModes.project_hassan_addakhil")}
-              </option>
-              <option value="raw_database">
-                {t("spatial.displayModes.raw_database")}
-              </option>
-            </select>
+              <SelectTrigger className="h-10 w-full">
+                <SelectValue placeholder={t("spatial.displayMode")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="project_hassan_addakhil">
+                  {t("spatial.displayModes.project_hassan_addakhil")}
+                </SelectItem>
+                <SelectItem value="raw_database">
+                  {t("spatial.displayModes.raw_database")}
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {isProjectMode && (
@@ -697,55 +710,61 @@ export function OperationalSpatialModule() {
           <div>
             <label className="text-xs text-muted-foreground mb-2 block">{t("spatial.filters.basin")}</label>
 
-            <select
-              value={selectedBasinId === "" ? ALL : selectedBasinId}
-              onChange={(e) => focusBasin(e.target.value)}
-              className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-            >
-              <option value={ALL}>{t("spatial.filters.allBasins")}</option>
-              {availableBasins.map((b) => (
-                <option key={b.id} value={String(b.id)}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
+            <Select value={selectedBasinId === "" ? ALL : selectedBasinId} onValueChange={focusBasin}>
+              <SelectTrigger className="h-10 w-full">
+                <SelectValue placeholder={t("spatial.filters.allBasins")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>{t("spatial.filters.allBasins")}</SelectItem>
+                {availableBasins.map((b) => (
+                  <SelectItem key={b.id} value={String(b.id)}>
+                    {b.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Subbasin filter */}
           <div>
             <label className="text-xs text-muted-foreground mb-2 block">{t("spatial.filters.barrageFilter")}</label>
 
-            <select
-              value={selectedBarrageId === "" ? ALL : selectedBarrageId}
-              onChange={(e) => focusBarrage(e.target.value)}
-              className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-            >
-              <option value={ALL}>{t("spatial.filters.allBarrages")}</option>
-              {availableBarrages.map((b) => (
-                <option key={b.id} value={String(b.id)}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
+            <Select value={selectedBarrageId === "" ? ALL : selectedBarrageId} onValueChange={focusBarrage}>
+              <SelectTrigger className="h-10 w-full">
+                <SelectValue placeholder={t("spatial.filters.allBarrages")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>{t("spatial.filters.allBarrages")}</SelectItem>
+                {availableBarrages.map((b) => (
+                  <SelectItem key={b.id} value={String(b.id)}>
+                    {b.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Subbasin filter */}
           <div>
             <label className="text-xs text-muted-foreground mb-2 block">{t("spatial.filters.subbasin")}</label>
 
-            <select
+            <Select
               value={selectedSubBasinId === "" ? ALL : selectedSubBasinId}
-              onChange={(e) => focusSubBasin(e.target.value)}
+              onValueChange={focusSubBasin}
               disabled={!availableSubBasins.length}
-              className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <option value={ALL}>{t("spatial.filters.allSubbasins")}</option>
-              {availableSubBasins.map((sb) => (
-                <option key={sb.id} value={String(sb.id)}>
-                  {sb.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-10 w-full">
+                <SelectValue placeholder={t("spatial.filters.allSubbasins")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>{t("spatial.filters.allSubbasins")}</SelectItem>
+                {availableSubBasins.map((sb) => (
+                  <SelectItem key={sb.id} value={String(sb.id)}>
+                    {sb.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <div className="text-[11px] text-muted-foreground mt-1">
               {t("spatial.filters.subbasinsShown", { count: availableSubBasins.length })}
             </div>
@@ -755,19 +774,23 @@ export function OperationalSpatialModule() {
           <div>
             <label className="text-xs text-muted-foreground mb-2 block">{t("spatial.filters.station")}</label>
 
-            <select
+            <Select
               value={selectedStationId === "" ? ALL : selectedStationId}
-              onChange={(e) => focusStation(e.target.value)}
+              onValueChange={focusStation}
               disabled={!availableStations.length}
-              className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <option value={ALL}>{t("spatial.filters.allStations")}</option>
-              {availableStations.map((station) => (
-                <option key={station.id} value={String(station.id)}>
-                  {station.code ? `${station.name} (${station.code})` : station.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-10 w-full">
+                <SelectValue placeholder={t("spatial.filters.allStations")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>{t("spatial.filters.allStations")}</SelectItem>
+                {availableStations.map((station) => (
+                  <SelectItem key={station.id} value={String(station.id)}>
+                    {station.code ? `${station.name} (${station.code})` : station.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Layers checkboxes */}
@@ -823,17 +846,18 @@ export function OperationalSpatialModule() {
           {/* Basemap */}
           <div>
             <label className="text-xs text-muted-foreground mb-2 block">{t("spatial.tools.basemap")}</label>
-            <select
-              value={basemap}
-              onChange={(e) => setBasemap(e.target.value as BasemapId)}
-              className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-            >
-              {Object.values(BASEMAPS).map((bm) => (
-                <option key={bm.id} value={bm.id}>
-                  {bm.label}
-                </option>
-              ))}
-            </select>
+            <Select value={basemap} onValueChange={(value) => setBasemap(value as BasemapId)}>
+              <SelectTrigger className="h-10 w-full">
+                <SelectValue placeholder={t("spatial.tools.basemap")} />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.values(BASEMAPS).map((bm) => (
+                  <SelectItem key={bm.id} value={bm.id}>
+                    {bm.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Mesure */}

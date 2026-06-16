@@ -12,6 +12,13 @@ import {
 import { AlertTriangle, Layers3, Loader2, MapPin, Waves, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useHydroData, type CatalogStation, type ModuleCode } from "@/contexts/HydroDataContext";
 import { timeseriesApi, type TimeseriesBundleResponse } from "@/api/timeseries";
 import type { FeatureCollection } from "@/api/spatial";
@@ -379,59 +386,69 @@ export function SpatialInspectorPanel({ selection, stationFeatures, onClear, cla
         {isSubbasin && catchmentStations.length > 0 && (
           <div className="space-y-1">
             <div className="text-xs font-semibold text-slate-700">Stations du sous-bassin</div>
-            <select
+            <Select
               value={String(selectedStationId ?? "")}
-              onChange={(e) => setSelectedStationId(Number(e.target.value))}
-              className="h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              onValueChange={(value) => setSelectedStationId(Number(value))}
             >
-              {catchmentStations.map((station) => (
-                <option key={station.id} value={String(station.id)}>
-                  {station.code ? `${station.code} - ${station.name}` : station.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-9 w-full">
+                <SelectValue placeholder="Choisir une station" />
+              </SelectTrigger>
+              <SelectContent>
+                {catchmentStations.map((station) => (
+                  <SelectItem key={station.id} value={String(station.id)}>
+                    {station.code ? `${station.code} - ${station.name}` : station.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         )}
 
         <div className="grid grid-cols-2 gap-2">
-          <select
-            value={selectedModule}
-            onChange={(e) => setSelectedModule(e.target.value as ModuleCode)}
-            className="h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-          >
-            {availableModules.map((moduleCode) => (
-              <option key={moduleCode} value={moduleCode}>
-                {labelForModule(moduleCode)}
-              </option>
-            ))}
-          </select>
+          <Select value={selectedModule} onValueChange={(value) => setSelectedModule(value as ModuleCode)}>
+            <SelectTrigger className="h-9 w-full">
+              <SelectValue placeholder="Choisir un module" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableModules.map((moduleCode) => (
+                <SelectItem key={moduleCode} value={moduleCode}>
+                  {labelForModule(moduleCode)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-          <select
-            value={String(selectedRunId ?? "")}
-            onChange={(e) => setSelectedRunId(Number(e.target.value))}
-            className="h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-          >
-            {availableScenarios.map((run) => (
-              <option key={run.runId} value={String(run.runId)}>
-                {run.scenarioCode || run.scenarioName || `Run ${run.runId}`}
-              </option>
-            ))}
-          </select>
+          <Select value={String(selectedRunId ?? "")} onValueChange={(value) => setSelectedRunId(Number(value))}>
+            <SelectTrigger className="h-9 w-full">
+              <SelectValue placeholder="Choisir un scénario" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableScenarios.map((run) => (
+                <SelectItem key={run.runId} value={String(run.runId)}>
+                  {run.scenarioCode || run.scenarioName || `Run ${run.runId}`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        <select
+        <Select
           value={String(selectedPropertyId ?? "")}
-          onChange={(e) => setSelectedPropertyId(Number(e.target.value))}
+          onValueChange={(value) => setSelectedPropertyId(Number(value))}
           disabled={!availableVariables.length}
-          className="h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {availableVariables.map((item) => (
-            <option key={item.property_id} value={String(item.property_id)}>
-              {item.label}
-              {item.unit ? ` (${item.unit})` : ""}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className="h-9 w-full">
+            <SelectValue placeholder="Choisir un paramètre" />
+          </SelectTrigger>
+          <SelectContent>
+            {availableVariables.map((item) => (
+              <SelectItem key={item.property_id} value={String(item.property_id)}>
+                {item.label}
+                {item.unit ? ` (${item.unit})` : ""}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         {selectedCatalogItem && (
           <div className="grid grid-cols-2 gap-2 text-xs">
