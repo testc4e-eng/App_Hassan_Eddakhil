@@ -120,19 +120,7 @@ export class SpatialService {
 
     if (useMatViews) {
       const [basins, subbasins, reaches, stations, barrages] = await Promise.all([
-        this.db.query<SpatialRow>(
-          `
-          SELECT
-            catchment_id AS id,
-            name,
-            geometry AS geometry
-          FROM api.mv_basin_catalog
-          WHERE geometry IS NOT NULL
-            AND catchment_id = $1
-          ORDER BY name
-          `,
-          [projectCatchmentId]
-        ),
+        this.getBasins(projectCatchmentId),
         this.db.query<SpatialRow>(
           `
           SELECT
@@ -381,32 +369,37 @@ export class SpatialService {
     };
   }
 
-  async getBasins() {
-    if (await this.db.relationExists("api.mv_basin_catalog")) {
-      const rows = await this.db.query(
-        `
-        SELECT
-          catchment_id AS id,
-          name,
-          geometry AS geometry
-        FROM api.mv_basin_catalog
-        WHERE geometry IS NOT NULL
-        ORDER BY name
-        `
-      );
-      return uniqueBy(rows, (row) => row.id);
+  async getBasins(catchmentId?: number) {
+    const params: any[] = [];
+    let q = `
+      SELECT
+        sb.catchment_id AS id,
+        COALESCE(
+          MAX(CASE WHEN UPPER(r.name) LIKE '%HASSAN ADDAKHIL%' THEN r.name END),
+          MAX(r.name),
+          CASE
+            WHEN sb.catchment_id = 1 THEN 'Bassin versant Guir-Ziz-Rheris'
+            ELSE 'Bassin ' || sb.catchment_id::text
+          END
+        ) AS name,
+        ST_AsGeoJSON(ST_Union(sb.geom))::json AS geometry
+      FROM gis.subbasin_shapes sb
+      LEFT JOIN core.reservoirs r
+        ON r.catchment_id = sb.catchment_id
+      WHERE sb.geom IS NOT NULL
+    `;
+
+    if (catchmentId != null) {
+      params.push(catchmentId);
+      q += ` AND sb.catchment_id = $${params.length}`;
     }
 
-    const q = `
-      SELECT
-        catchment_id AS id,
-        name,
-        ST_AsGeoJSON(geom)::json AS geometry
-      FROM public.catchments
-      WHERE geom IS NOT NULL
+    q += `
+      GROUP BY sb.catchment_id
       ORDER BY name
     `;
-    const rows = await this.db.query(q);
+
+    const rows = await this.db.query(q, params);
     return uniqueBy(rows, (row) => row.id);
   }
 

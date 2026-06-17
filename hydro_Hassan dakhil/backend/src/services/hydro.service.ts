@@ -117,73 +117,60 @@ export class HydroService {
 
   // ================ CATCHMENTS ================
   async getCatchments(filter?: FilterOptions): Promise<Catchment[]> {
-    if (await this.db.relationExists("api.mv_basin_catalog")) {
-      let query = `
-        SELECT
-          catchment_id,
-          name,
-          dam_name,
-          area_m2,
-          geometry::text as geom
-        FROM api.mv_basin_catalog
-        WHERE 1=1
-      `;
-      const params: any[] = [];
-
-      if (filter?.catchmentIds?.length) {
-        query += ` AND catchment_id = ANY($${params.length + 1})`;
-        params.push(filter.catchmentIds);
-      }
-
-      query += " ORDER BY name";
-      return this.db.query<Catchment>(query, params);
-    }
-
     let query = `
       SELECT
-        catchment_id,
-        name,
-        dam_name,
-        area_m2,
-        ST_AsGeoJSON(geom) as geom
-      FROM public.catchments
-      WHERE 1=1
+        sb.catchment_id,
+        COALESCE(
+          MAX(CASE WHEN UPPER(r.name) LIKE '%HASSAN ADDAKHIL%' THEN r.name END),
+          MAX(r.name),
+          CASE
+            WHEN sb.catchment_id = 1 THEN 'Bassin versant Guir-Ziz-Rheris'
+            ELSE 'Bassin ' || sb.catchment_id::text
+          END
+        ) AS name,
+        MAX(r.name) AS dam_name,
+        SUM(sb.area_m2) AS area_m2,
+        ST_AsGeoJSON(ST_Union(sb.geom)) as geom
+      FROM gis.subbasin_shapes sb
+      LEFT JOIN core.reservoirs r
+        ON r.catchment_id = sb.catchment_id
+      WHERE sb.geom IS NOT NULL
     `;
     const params: any[] = [];
 
     if (filter?.catchmentIds?.length) {
-      query += ` AND catchment_id = ANY($${params.length + 1})`;
+      query += ` AND sb.catchment_id = ANY($${params.length + 1})`;
       params.push(filter.catchmentIds);
     }
 
-    query += " ORDER BY name";
+    query += `
+      GROUP BY sb.catchment_id
+      ORDER BY name
+    `;
     return this.db.query<Catchment>(query, params);
   }
 
   async getCatchmentById(id: number): Promise<Catchment | null> {
-    if (await this.db.relationExists("api.mv_basin_catalog")) {
-      const query = `
-        SELECT
-          catchment_id,
-          name,
-          dam_name,
-          area_m2,
-          geometry::text as geom
-        FROM api.mv_basin_catalog
-        WHERE catchment_id = $1
-      `;
-      return this.db.queryOne<Catchment>(query, [id]);
-    }
-
     const query = `
       SELECT
-        catchment_id,
-        name,
-        dam_name,
-        area_m2,
-        ST_AsGeoJSON(geom) as geom
-      FROM public.catchments
-      WHERE catchment_id = $1
+        sb.catchment_id,
+        COALESCE(
+          MAX(CASE WHEN UPPER(r.name) LIKE '%HASSAN ADDAKHIL%' THEN r.name END),
+          MAX(r.name),
+          CASE
+            WHEN sb.catchment_id = 1 THEN 'Bassin versant Guir-Ziz-Rheris'
+            ELSE 'Bassin ' || sb.catchment_id::text
+          END
+        ) AS name,
+        MAX(r.name) AS dam_name,
+        SUM(sb.area_m2) AS area_m2,
+        ST_AsGeoJSON(ST_Union(sb.geom)) as geom
+      FROM gis.subbasin_shapes sb
+      LEFT JOIN core.reservoirs r
+        ON r.catchment_id = sb.catchment_id
+      WHERE sb.catchment_id = $1
+        AND sb.geom IS NOT NULL
+      GROUP BY sb.catchment_id
     `;
     return this.db.queryOne<Catchment>(query, [id]);
   }
