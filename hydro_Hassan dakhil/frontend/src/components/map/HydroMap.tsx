@@ -7,6 +7,7 @@ import L, { type Layer, type LatLngExpression, type LatLng } from "leaflet";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import { BASEMAPS, type BasemapId } from "@/config/basemaps";
+import { formatStationDisplayName, formatSubbasinDisplayName } from "@/lib/stationLabels";
 
 const AnyTileLayer = TileLayer as any;
 
@@ -146,10 +147,12 @@ function getFeatureId(f: any) {
 
 function getFeatureName(f: any) {
   return (
-    f?.properties?.name ??
-    f?.properties?.nom ??
-    f?.properties?.subbasin_name ??
-    `Sous-bassin ${getFeatureId(f)}`
+    f?.properties?.subbasin_label ??
+    formatSubbasinDisplayName(
+      f?.properties?.name ?? f?.properties?.nom ?? f?.properties?.subbasin_name,
+      f?.properties?.subbasin_code,
+      getFeatureId(f),
+    )
   );
 }
 
@@ -1332,8 +1335,8 @@ export function HydroMap({
               onEachFeature: (feature: any, layer: Layer) => {
                 const p: any = feature?.properties || {};
                 const stationId = Number(p.station_id ?? p.id);
-                const name = p.station_name ?? p.name ?? "Station";
                 const code = p.station_code ?? "-";
+                const name = p.station_label ?? formatStationDisplayName(p.station_name ?? p.name ?? "Station", code);
                 const kind = p.station_type_code ?? p.type_station ?? "";
                 const label = kind ? `${name} • ${kind}` : name;
 

@@ -1,4 +1,4 @@
-﻿// frontend/src/contexts/HydroDataContext.tsx
+// frontend/src/contexts/HydroDataContext.tsx
 import React, {
   createContext,
   useCallback,
@@ -10,7 +10,7 @@ import React, {
 } from "react";
 import type { ApiResponse, AvailabilityRow } from "@/types/hydro";
 import { deduplicateSelectOptions } from "@/lib/selectOptions";
-import { cleanStationLabel } from "@/lib/stationLabels";
+import { formatStationDisplayName } from "@/lib/stationLabels";
 
 export type ModuleCode = "climat" | "hydro" | "erosion";
 
@@ -281,7 +281,7 @@ export function HydroDataProvider({ children }: { children: React.ReactNode }) {
               station_id: id,
               station_code: stationCode,
               station_name: stationName,
-              station_label: cleanStationLabel(`${stationCode} - ${stationName}`),
+              station_label: formatStationDisplayName(stationName, stationCode),
               type_station: props.type_station ?? null,
               station_type_code: props.station_type_code ?? null,
             };
@@ -312,7 +312,7 @@ export function HydroDataProvider({ children }: { children: React.ReactNode }) {
 
       if (!rows.length) {
         return deduplicateSelectOptions([...stations], (station) => station.station_id).sort(
-          (a, b) => (a.station_name || "").localeCompare(b.station_name || "")
+          (a, b) => (a.station_label || a.station_name || "").localeCompare(b.station_label || b.station_name || "")
         );
       }
 
@@ -337,15 +337,16 @@ export function HydroDataProvider({ children }: { children: React.ReactNode }) {
             station_id: stationId,
             station_code: code,
             station_name: String(row?.station_name ?? stationId),
-            station_label: cleanStationLabel(
-              String((row as any)?.station_label ?? `${code} - ${row?.station_name ?? stationId}`)
+            station_label: formatStationDisplayName(
+              String(row?.station_name ?? stationId),
+              code,
             ),
           } as CatalogStation;
         })
         .filter((station): station is CatalogStation => station !== null),
         (station) => station.station_id
       ).sort((a, b) =>
-        (a.station_name || "").localeCompare(b.station_name || "")
+        (a.station_label || a.station_name || "").localeCompare(b.station_label || b.station_name || "")
       );
 
       return list;

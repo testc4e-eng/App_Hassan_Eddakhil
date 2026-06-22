@@ -1,4 +1,4 @@
-﻿// frontend/src/components/dashboard/modules/SpatialModule.tsx
+// frontend/src/components/dashboard/modules/SpatialModule.tsx
 import { type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HydroMap } from "@/components/map/HydroMap";
@@ -35,6 +35,7 @@ import {
   X,
 } from "lucide-react";
 import { BASEMAPS, DEFAULT_BASEMAP, type BasemapId } from "@/config/basemaps";
+import { formatStationDisplayName, formatSubbasinDisplayName } from "@/lib/stationLabels";
 import type { SpatialDisplayMode } from "@/types/spatial";
 import { HASSAN_ADDAKHIL_STATION_IDS } from "@/constants/projectStations";
 
@@ -59,7 +60,7 @@ const BARRAGE_NAME = "Barrage Hassan Addakhil";
 const BASEMAP_STORAGE_KEY = "hydro-basemap";
 const PROJECT_STATION_IDS = HASSAN_ADDAKHIL_STATION_IDS;
 const PROJECT_BASIN_ID = 1;
-const PROJECT_BASIN_LABEL = "Bassin versant Guir-Ziz-Rheris";
+const PROJECT_BASIN_LABEL = "Bassin versant du barrage Hassan Addakhil";
 
 function isBasemapId(value: string): value is BasemapId {
   return Object.prototype.hasOwnProperty.call(BASEMAPS, value);
@@ -153,7 +154,7 @@ function FloatingPanel({
 export function OperationalSpatialModule() {
   const { t } = useTranslation();
   const [displayMode, setDisplayMode] =
-    useState<SpatialDisplayMode>("raw_database");
+    useState<SpatialDisplayMode>("project_hassan_addakhil");
   const [basemap, setBasemap] = useState<BasemapId>(() => {
     if (typeof window === "undefined") return DEFAULT_BASEMAP;
     const saved = window.localStorage.getItem(BASEMAP_STORAGE_KEY);
@@ -197,7 +198,7 @@ export function OperationalSpatialModule() {
   const [barrageOptions, setBarrageOptions] = useState<BarrageOption[]>([]);
   const [allSubBasinOptions, setAllSubBasinOptions] = useState<SubBasinOption[]>([]);
   const [stationOptions, setStationOptions] = useState<StationOption[]>([]);
-  const [selectedBasinId, setSelectedBasinId] = useState<string>(""); // "" = aucun filtre
+  const [selectedBasinId, setSelectedBasinId] = useState<string>(String(PROJECT_BASIN_ID)); // focus bassin projet par défaut
   const [selectedBarrageId, setSelectedBarrageId] = useState<string>(""); // "" = tous les barrages
   const [selectedSubBasinId, setSelectedSubBasinId] = useState<string>(""); // "" = aucun filtre
   const [selectedStationId, setSelectedStationId] = useState<string>(""); // "" = toutes les stations
@@ -220,8 +221,9 @@ export function OperationalSpatialModule() {
   const isRawMode = displayMode === "raw_database";
   const isProjectMode = displayMode === "project_hassan_addakhil";
 
-  const resetSelections = () => {
-    setSelectedBasinId("");
+  const resetSelections = (mode: SpatialDisplayMode = displayMode) => {
+    const isProjectDefault = mode === "project_hassan_addakhil";
+    setSelectedBasinId(isProjectDefault ? String(PROJECT_BASIN_ID) : "");
     setSelectedBarrageId("");
     setSelectedSubBasinId("");
     setSelectedStationId("");
@@ -303,7 +305,7 @@ export function OperationalSpatialModule() {
 
   const changeDisplayMode = (value: SpatialDisplayMode) => {
     setDisplayMode(value);
-    resetSelections();
+    resetSelections(value);
   };
 
   const layerItems = useMemo(
@@ -337,7 +339,11 @@ export function OperationalSpatialModule() {
       const list = features
         .map((f) => ({
           id: Number(f?.properties?.id),
-          name: String(f?.properties?.name ?? `Subbasin ${f?.properties?.id}`),
+          name: formatSubbasinDisplayName(
+            String(f?.properties?.name ?? ""),
+            String(f?.properties?.subbasin_code ?? ""),
+            String(f?.properties?.id ?? ""),
+          ),
           catchment_id: Number(f?.properties?.catchment_id ?? PROJECT_BASIN_ID),
         }))
         .filter((x) => Number.isFinite(x.id))
@@ -356,7 +362,10 @@ export function OperationalSpatialModule() {
           const id = Number(p.station_id ?? p.id);
           return {
             id,
-            name: String(p.station_name ?? p.name ?? `Station ${id}`),
+            name: formatStationDisplayName(
+              String(p.station_name ?? p.name ?? `Station ${id}`),
+              p.station_code ? String(p.station_code) : undefined,
+            ),
             code: p.station_code ? String(p.station_code) : undefined,
           };
         })
@@ -454,7 +463,11 @@ export function OperationalSpatialModule() {
         const opts: SubBasinOption[] = subbasins.features
         .map((f) => ({
           id: Number(f?.properties?.id),
-          name: String(f?.properties?.name ?? `Subbasin ${f?.properties?.id}`),
+          name: formatSubbasinDisplayName(
+            String(f?.properties?.name ?? ""),
+            String(f?.properties?.subbasin_code ?? ""),
+            String(f?.properties?.id ?? ""),
+          ),
           catchment_id: Number(f?.properties?.catchment_id ?? PROJECT_BASIN_ID),
         }))
           .filter((x) => Number.isFinite(x.id))
@@ -500,7 +513,11 @@ export function OperationalSpatialModule() {
         const allSubbasinOpts: SubBasinOption[] = subbasins.features
           .map((f) => ({
             id: Number(f?.properties?.id),
-            name: String(f?.properties?.name ?? `Subbasin ${f?.properties?.id}`),
+            name: formatSubbasinDisplayName(
+            String(f?.properties?.name ?? ""),
+            String(f?.properties?.subbasin_code ?? ""),
+            String(f?.properties?.id ?? ""),
+          ),
             catchment_id: Number(f?.properties?.catchment_id ?? PROJECT_BASIN_ID),
           }))
           .filter((x) => Number.isFinite(x.id))
@@ -512,7 +529,10 @@ export function OperationalSpatialModule() {
             const id = Number(p.id ?? p.station_id);
             return {
               id,
-              name: String(p.name ?? p.station_name ?? `Station ${id}`),
+              name: formatStationDisplayName(
+                String(p.name ?? p.station_name ?? `Station ${id}`),
+                p.station_code ? String(p.station_code) : undefined,
+              ),
               code: p.station_code ? String(p.station_code) : undefined,
             };
           })
@@ -837,7 +857,7 @@ export function OperationalSpatialModule() {
               size="sm"
               variant="secondary"
               className="mt-2 w-full"
-              onClick={resetSelections}
+              onClick={() => resetSelections()}
             >
               {t("spatial.tools.fullView")}
             </Button>
@@ -1078,7 +1098,7 @@ export function OperationalSpatialModule() {
               <Button size="icon" variant="ghost" className="h-6 w-6" onPointerDown={(e) => e.stopPropagation()} onClick={() => setInspectorPopupScale((s) => Math.min(1.4, Number((s + 0.1).toFixed(2))))}>
                 <Plus className="h-3.5 w-3.5" />
               </Button>
-              <Button size="icon" variant="ghost" className="h-6 w-6" onPointerDown={(e) => e.stopPropagation()} onClick={resetSelections}>
+              <Button size="icon" variant="ghost" className="h-6 w-6" onPointerDown={(e) => e.stopPropagation()} onClick={() => resetSelections()}>
                 <X className="h-3.5 w-3.5" />
               </Button>
             </div>

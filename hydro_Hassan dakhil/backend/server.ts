@@ -1,6 +1,4 @@
-// backend/server.ts
 import dotenv from "dotenv";
-import mapsRoutes from "./src/routes/maps.routes";
 import { erosionSwatSeriesService } from "./src/services/erosionSwatSeries.service";
 import { resolveHassanDataRoot } from "./src/config/hassanDataRoot";
 dotenv.config();
@@ -20,7 +18,6 @@ process.on("SIGINT", () => {
   console.log("SIGINT received. Shutting down gracefully...");
   process.exit(0);
 });
-app.use("/api/v1/maps", mapsRoutes);
 
 async function warmPerformanceCaches(baseUrl: string): Promise<void> {
   const warmups: Array<Promise<unknown>> = [

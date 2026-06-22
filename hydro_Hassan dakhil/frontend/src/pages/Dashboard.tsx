@@ -33,7 +33,7 @@ const MODULE_COMPONENTS: Record<DashboardSection, React.ComponentType> = {
 export default function Dashboard() {
   const { t } = useTranslation();
   const location = useLocation();
-  const [activeSection, setActiveSection] = useState<DashboardSection>("climate");
+  const [activeSection, setActiveSection] = useState<DashboardSection>("spatial");
 
   const {
     loading,
@@ -65,10 +65,10 @@ export default function Dashboard() {
     const params = new URLSearchParams(location.search);
     const section = params.get("section");
     const validSections: DashboardSection[] = [
+      "spatial",
       "climate",
       "hydraulic",
       "sediment",
-      "spatial",
       "maps",
       "simulatedData",
       "dataScan",
@@ -76,7 +76,10 @@ export default function Dashboard() {
     ];
     if (section && validSections.includes(section as DashboardSection)) {
       setActiveSection(section as DashboardSection);
+      return;
     }
+
+    setActiveSection("spatial");
   }, [location.search]);
 
   if (loading) {
