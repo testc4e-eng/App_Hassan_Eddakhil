@@ -42,7 +42,14 @@ export function DashboardSidebarV2({
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+
   const sidebarSections: SidebarGroup[] = [
+    {
+      title: t("sidebar.groupCarto"),
+      items: [
+        { id: "spatial", label: t("sidebar.spatial"), icon: MapPin, color: "text-green-500" },
+      ],
+    },
     {
       title: t("sidebar.groupDashboard"),
       items: [
@@ -50,10 +57,6 @@ export function DashboardSidebarV2({
         { id: "hydraulic", label: t("sidebar.hydraulic"), icon: Droplets, color: "text-cyan-500" },
         { id: "sediment", label: t("sidebar.erosion"), icon: Mountain, color: "text-amber-600" },
       ],
-    },
-    {
-      title: t("sidebar.groupCarto"),
-      items: [{ id: "spatial", label: t("sidebar.spatial"), icon: MapPin, color: "text-green-500" }],
     },
     {
       title: t("sidebar.groupData"),
@@ -107,8 +110,8 @@ export function DashboardSidebarV2({
                     key={item.id}
                     type="button"
                     title={collapsed ? item.label : undefined}
-                  onClick={() => onSectionChange(item.id)}
-                  className={cn(
+                    onClick={() => onSectionChange(item.id)}
+                    className={cn(
                       "w-full flex items-center gap-3 px-2.5 py-2 rounded-lg transition-all duration-200",
                       isActive
                         ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
@@ -130,11 +133,9 @@ export function DashboardSidebarV2({
                   type="button"
                   title={collapsed ? "Gestion utilisateurs" : undefined}
                   onClick={() => navigate("/admin/users")}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-2.5 py-2 rounded-lg transition-all duration-200 text-sidebar-foreground hover:bg-sidebar-accent"
-                  )}
+                  className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg transition-all duration-200 text-sidebar-foreground hover:bg-sidebar-accent"
                 >
-                  <Users className={cn("w-4 h-4 flex-shrink-0 text-rose-500")} />
+                  <Users className="w-4 h-4 flex-shrink-0 text-rose-500" />
                   {!collapsed && (
                     <span className="text-sm font-medium truncate">Gestion utilisateurs</span>
                   )}
@@ -147,7 +148,7 @@ export function DashboardSidebarV2({
 
       {!collapsed && (
         <div className="p-3 border-t border-sidebar-border">
-            <div className="text-[11px] text-sidebar-foreground/60 text-center">
+          <div className="text-[11px] text-sidebar-foreground/60 text-center">
             {t("sidebar.footerTitle")}
             <br />
             {t("sidebar.footerSubtitle")}

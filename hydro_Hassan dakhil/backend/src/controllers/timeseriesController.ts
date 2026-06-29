@@ -103,6 +103,10 @@ export class TimeseriesController {
       const agg = req.query.agg
         ? (String(req.query.agg) as AggInterval)
         : undefined;
+      const startDate = req.query.startDate
+        ? String(req.query.startDate)
+        : undefined;
+      const endDate = req.query.endDate ? String(req.query.endDate) : undefined;
 
       if (!stationId || !runId || !moduleCode) {
         return res.status(400).json({
@@ -111,50 +115,81 @@ export class TimeseriesController {
         });
       }
 
-      const catalog = await timeseriesService.getCatalog({
+      const bundle = await timeseriesService.getBundle({
         stationId,
         runId,
         moduleCode,
-      });
+      }, agg ?? "day", startDate, endDate);
       console.debug("[timeseries/bundle] params", {
         stationId,
         runId,
         moduleCode,
         agg: agg ?? null,
-        startDate: req.query.startDate ? String(req.query.startDate) : null,
-        endDate: req.query.endDate ? String(req.query.endDate) : null,
-        catalogCount: catalog.length,
+        startDate: startDate ?? null,
+        endDate: endDate ?? null,
+        catalogCount: bundle.catalog.length,
       });
-
-      let aggregated: Record<number, any[]> | undefined = undefined;
-      if (agg) {
-        aggregated = {};
-        for (const ts of catalog) {
-          if (!ts.start_date || !ts.end_date) continue;
-          aggregated[ts.ts_id] = await timeseriesService.aggregate(
-            ts.ts_id,
-            agg,
-            ts.start_date,
-            ts.end_date
-          );
-        }
-      }
 
       console.debug("[timeseries/bundle] response", {
         stationId,
         runId,
         moduleCode,
-        aggregatedSeriesCount: aggregated ? Object.keys(aggregated).length : 0,
+        aggregatedSeriesCount: bundle.aggregated
+          ? Object.keys(bundle.aggregated).length
+          : 0,
       });
 
       res.json({
         success: true,
+        data: {
+          stationId,
+          runId,
+          module: moduleCode,
+          catalog: bundle.catalog,
+          aggregated: bundle.aggregated,
+        },
+      });
+    } catch (e) {
+      next(e);
+    }
+  }
+
+  async getAggregationAvailability(req: Request, res: Response, next: NextFunction) {
+    try {
+      const stationId = req.query.stationId
+        ? Number(req.query.stationId)
+        : undefined;
+      const runId = req.query.runId ? Number(req.query.runId) : undefined;
+      const propertyId = req.query.propertyId
+        ? Number(req.query.propertyId)
+        : undefined;
+      const moduleCode = req.query.module
+        ? String(req.query.module)
+        : undefined;
+      const startDate = req.query.startDate
+        ? String(req.query.startDate)
+        : undefined;
+      const endDate = req.query.endDate
+        ? String(req.query.endDate)
+        : undefined;
+
+      if (!stationId || !runId || !propertyId || !moduleCode) {
+        return res.status(400).json({
+          success: false,
+          error: "stationId, runId, propertyId, module sont requis",
+        });
+      }
+
+      const availability = await timeseriesService.getAggregationAvailability({
         stationId,
         runId,
-        module: moduleCode,
-        catalog,
-        aggregated,
+        propertyId,
+        moduleCode,
+        startDate,
+        endDate,
       });
+
+      res.json({ success: true, data: availability });
     } catch (e) {
       next(e);
     }

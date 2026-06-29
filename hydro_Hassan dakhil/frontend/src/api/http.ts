@@ -15,7 +15,7 @@ export type ApiEnvelope<T> =
   | { success: true; data: T; count?: number }
   | { success: false; error: string; stack?: string };
 
-const DEFAULT_BASE = "http://localhost:5000/api/v1";
+const DEFAULT_BASE = "/api/v1";
 
 export function getApiBase(): string {
   const envBase =
@@ -45,7 +45,9 @@ export async function httpGet<T>(
   const base = getApiBase();
   const p = path.startsWith("/") ? path : `/${path}`;
 
-  const url = new URL(`${base}${p}`);
+  const url = base.startsWith("/")
+    ? new URL(`${base}${p}`, window.location.origin)
+    : new URL(`${base}${p}`);
   if (params) {
     for (const [k, v] of Object.entries(params)) {
       if (v === undefined || v === null || v === "") continue;

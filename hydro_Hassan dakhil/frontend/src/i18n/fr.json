@@ -63,7 +63,7 @@
       "kpi3": "Capteurs actifs"
     },
     "footer": {
-      "line1": "© 2024 Barrage Hassan Addakhil - Systeme de Monitoring Hydrologique",
+      "line1": "© 2026 Barrage Hassan Addakhil - Systeme de Monitoring Hydrologique",
       "line2": "Donnees mises a jour en temps reel - Ministere de l'Equipement et de l'Eau"
     }
   },
@@ -93,7 +93,7 @@
     },
     "map": { "city": "Errachidia, Maroc" },
     "footer": {
-      "line1": "© 2024 Barrage Hassan Addakhil - Systeme de Monitoring Hydrologique",
+      "line1": "© 2026 Barrage Hassan Addakhil - Systeme de Monitoring Hydrologique",
       "line2": "Agence du Bassin Hydraulique Guir-Ziz-Rheris"
     }
   },
@@ -114,7 +114,7 @@
     "groupReporting": "Reporting",
     "climate": "Suivi Climat",
     "hydraulic": "Suivi Hydrologique",
-    "erosion": "Suivi erosion",
+    "erosion": "Sédiments",
     "spatial": "Analyse Spatiale",
     "simulatedData": "Gestion de donnée",
     "scan": "Scan de donnees",
@@ -125,7 +125,7 @@
   "dashboard": {
     "climate": "Suivi Climat",
     "hydro": "Suivi Hydrologique",
-    "erosion": "Suivi erosion",
+    "erosion": "Sédiments",
     "spatial": "Analyse Spatiale",
     "maps": "Cartes Thématiques",
     "simulatedData": "Data : Donnees simulees",
@@ -161,9 +161,12 @@
     "month": "Mois",
     "year": "Année",
     "reset": "Réinitialiser",
+    "variablesLoadError": "Impossible de charger les variables pour le moment. Réessaie après rechargement.",
+    "noVariablesForSelection": "Aucune variable disponible pour cette station et ce scénario.",
+    "noSedimentForSelection": "Aucune donnée sédiment disponible pour ce scénario et cette station.",
     "noSimulatedForStation": "Cette station n'a pas de série simulée disponible.",
-    "sourceObserved": "Observed",
-    "sourceSimulated": "Simulated"
+    "sourceObserved": "Observé",
+    "sourceSimulated": "Simulé"
   },
   "common": {
     "loading": "Chargement…",
@@ -184,6 +187,9 @@
     "date": "Date",
     "compareScenarios": "Scénarios à comparer",
     "selectedScenarios": "Sélectionnés : {{count}} scénario(s)",
+    "compareVariables": "Variables à comparer",
+    "selectedVariables": "Sélectionnées : {{count}} variable(s)",
+    "maxComparedVariables": "Maximum 2 variables comparées à la fois.",
     "temporalComparisonMode": "Mode de comparaison temporelle",
     "compareFullPeriod": "Comparer sur toute la période",
     "compareCommonPeriod": "Comparer sur la période commune",
@@ -218,7 +224,8 @@
       "subbasins": "{{count}} sous-bassins projet",
       "basins": "{{count}} bassin projet",
       "reaches": "{{count}} reach projet",
-      "barrages": "{{count}} barrage projet"
+      "barrages": "{{count}} barrage projet",
+      "hruSummary": "{{count}} synthèses HRU"
     },
     "filters": {
       "basin": "Bassin",
@@ -230,6 +237,9 @@
       "subbasin": "Sous-bassin",
       "chooseSubbasin": "Choisir un sous-bassin",
       "allSubbasins": "Tous les sous-bassins",
+      "station": "Station",
+      "chooseStation": "Choisir une station",
+      "allStations": "Toutes les stations",
       "subbasinsShown": "Sous-bassins affichés : {{count}}"
     },
     "layers": {
@@ -238,12 +248,19 @@
       "basins": "Bassins",
       "subbasins": "Sous-bassins",
       "reach": "Reach",
-      "stations": "Stations"
+      "stations": "Stations",
+      "hruSummary": "Synthèse HRU (LULC/SOL/PENTE)"
     },
     "tools": {
       "title": "Outils d'analyse",
       "navigation": "Navigation",
       "zoom": "Zoom",
+      "zoomSelection": "Zoom sélection",
+      "fullView": "Vue globale",
+      "mapOnly": "Carte seule",
+      "exitMapOnly": "Quitter carte seule",
+      "showAnalysisPanel": "Analyse",
+      "showToolsPanel": "Outils",
       "basemap": "Fond de carte",
       "chooseBasemap": "Choisir un fond",
       "measure": "Mesure",
@@ -259,7 +276,8 @@
       "barrages": "Barrages / reservoirs",
       "basinOutline": "Contour bassin versant",
       "subbasins": "Sous-bassins",
-      "reach": "Reach / reseau hydro"
+      "reach": "Reach / reseau hydro",
+      "hruSummary": "Synthèse HRU dominante"
     }
   }
 }

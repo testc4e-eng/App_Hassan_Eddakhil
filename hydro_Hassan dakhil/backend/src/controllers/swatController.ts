@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { accessService } from "../services/access.service";
 import { swatIngestionService } from "../services/swatIngestion.service";
 import { SwatDeleteFilterPayload, SwatImportPayload } from "../types/swatIngestion.types";
+import { TtlCache } from "../utils/ttlCache";
 
 function qString(v: unknown, fallback = ""): string {
   if (v === undefined || v === null) return fallback;
@@ -17,9 +18,24 @@ function qInt(v: unknown): number | undefined {
 }
 
 export class SwatController {
+  private cache = new TtlCache<any>();
+  private readonly cacheTtlMs = 5 * 60 * 1000;
+
+  private cacheKey(name: string, payload?: unknown): string {
+    return payload === undefined ? name : `${name}:${JSON.stringify(payload)}`;
+  }
+
+  private clearCache() {
+    this.cache.clear();
+  }
+
   async summary(_req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await swatIngestionService.getSummary();
+      const data = await this.cache.getOrSet(
+        this.cacheKey("swat.summary"),
+        this.cacheTtlMs,
+        () => swatIngestionService.getSummary()
+      );
       res.json({ success: true, data });
     } catch (error) {
       next(error);
@@ -30,6 +46,7 @@ export class SwatController {
     try {
       const payload = (req.body ?? {}) as SwatImportPayload;
       const data = await swatIngestionService.importSwat(payload);
+      this.clearCache();
       res.json({ success: true, data });
     } catch (error) {
       next(error);
@@ -38,7 +55,11 @@ export class SwatController {
 
   async batches(_req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await swatIngestionService.listBatches();
+      const data = await this.cache.getOrSet(
+        this.cacheKey("swat.batches"),
+        this.cacheTtlMs,
+        () => swatIngestionService.listBatches()
+      );
       res.json({ success: true, data, count: data.length });
     } catch (error) {
       next(error);
@@ -47,7 +68,11 @@ export class SwatController {
 
   async availability(_req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await swatIngestionService.getAvailability();
+      const data = await this.cache.getOrSet(
+        this.cacheKey("swat.availability"),
+        this.cacheTtlMs,
+        () => swatIngestionService.getAvailability()
+      );
       res.json({ success: true, data, count: data.length });
     } catch (error) {
       next(error);
@@ -83,6 +108,7 @@ export class SwatController {
         limit: payload.limit,
       });
 
+      this.cache.set(this.cacheKey("swat.data", payload), data, this.cacheTtlMs);
       res.json({ success: true, data, count: data.length });
     } catch (error) {
       next(error);
@@ -93,6 +119,7 @@ export class SwatController {
     try {
       const payload = (req.body ?? {}) as SwatDeleteFilterPayload;
       const data = await swatIngestionService.deleteByFilter(payload);
+      this.clearCache();
       res.json({ success: true, data });
     } catch (error) {
       next(error);
@@ -102,7 +129,11 @@ export class SwatController {
   async subbasins(req: Request, res: Response, next: NextFunction) {
     try {
       const entityId = qInt(req.query.entityId);
-      const data = await accessService.listEntities("sub");
+      const data = await this.cache.getOrSet(
+        this.cacheKey("swat.subbasins", entityId ?? null),
+        this.cacheTtlMs,
+        () => accessService.listEntities("sub")
+      );
       const filtered = entityId ? data.filter((r: any) => Number(r.entity_id) === entityId) : data;
       res.json({ success: true, entityType: "sub", data: filtered, count: filtered.length });
     } catch (error) {
@@ -113,7 +144,11 @@ export class SwatController {
   async reaches(req: Request, res: Response, next: NextFunction) {
     try {
       const entityId = qInt(req.query.entityId);
-      const data = await accessService.listEntities("rch");
+      const data = await this.cache.getOrSet(
+        this.cacheKey("swat.reaches", entityId ?? null),
+        this.cacheTtlMs,
+        () => accessService.listEntities("rch")
+      );
       const filtered = entityId ? data.filter((r: any) => Number(r.entity_id) === entityId) : data;
       res.json({ success: true, entityType: "rch", data: filtered, count: filtered.length });
     } catch (error) {
@@ -123,7 +158,11 @@ export class SwatController {
 
   async variables(_req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await accessService.listVariables();
+      const data = await this.cache.getOrSet(
+        this.cacheKey("swat.variables"),
+        this.cacheTtlMs,
+        () => accessService.listVariables()
+      );
       res.json({ success: true, data, count: data.length });
     } catch (error) {
       next(error);
@@ -137,13 +176,18 @@ export class SwatController {
       const variableCode = qString(req.query.variable);
       const year = qInt(req.query.year);
       const limit = qInt(req.query.limit);
-      const data = await accessService.listTimeSeries({
-        entityType,
-        entityId,
-        variableCode: variableCode || undefined,
-        year,
-        limit,
-      });
+      const payload = { entityType, entityId, variableCode: variableCode || null, year, limit };
+      const data = await this.cache.getOrSet(
+        this.cacheKey("swat.timeseries", payload),
+        this.cacheTtlMs,
+        () => accessService.listTimeSeries({
+          entityType,
+          entityId,
+          variableCode: variableCode || undefined,
+          year,
+          limit,
+        })
+      );
       res.json({ success: true, entityType, data, count: data.length });
     } catch (error) {
       next(error);
@@ -155,11 +199,16 @@ export class SwatController {
       const entityType = qString(req.query.entityType, "sub") as "sub" | "rch";
       const entityId = qInt(req.query.entityId);
       const variableCode = qString(req.query.variable);
-      const data = await accessService.stats({
-        entityType,
-        entityId,
-        variableCode: variableCode || undefined,
-      });
+      const payload = { entityType, entityId, variableCode: variableCode || null };
+      const data = await this.cache.getOrSet(
+        this.cacheKey("swat.stats", payload),
+        this.cacheTtlMs,
+        () => accessService.stats({
+          entityType,
+          entityId,
+          variableCode: variableCode || undefined,
+        })
+      );
       res.json({ success: true, entityType, data, count: data.length });
     } catch (error) {
       next(error);

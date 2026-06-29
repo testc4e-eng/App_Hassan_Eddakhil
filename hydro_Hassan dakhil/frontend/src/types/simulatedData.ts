@@ -51,6 +51,44 @@ export interface SwatImportPayload {
   importMode?: "skipAccess" | "import" | "reload" | "preview";
 }
 
+export interface SwatImportCounters {
+  raw_rch?: number;
+  raw_sub?: number;
+  norm_rch?: number;
+  norm_sub?: number;
+  timeseries_inserted?: number;
+  measurements_upserted?: number;
+}
+
+export interface SwatImportResult {
+  batch_id?: string;
+  run_id?: number;
+  run_code?: string;
+  scenario_code?: string;
+  access_import_id?: number | null;
+  dry_run?: boolean;
+  mode?: string;
+  counters?: SwatImportCounters;
+  logs?: string[];
+}
+
+export interface SwatImportAuditReport {
+  totalLines: number;
+  variables: string[];
+  periodMin: string | null;
+  periodMax: string | null;
+  duplicatesNote: string;
+  errors: string[];
+  entities: {
+    reaches: number;
+    subbasins: number;
+    timeseries: number;
+  };
+  scenarios: string[];
+  runs: string[];
+  accessImportId: string | null;
+}
+
 export interface SwatDeletePayload {
   entity_type?: SwatEntityType;
   entity_id?: number;

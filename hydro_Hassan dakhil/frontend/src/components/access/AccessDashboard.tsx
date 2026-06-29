@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   LineChart,
   Line,
@@ -11,6 +11,8 @@ import {
   Bar,
 } from "recharts";
 import { accessApi, AccessEntityType, AccessTimeSeriesRow, AccessVariable } from "../../services/accessApi";
+import { ChartExportMenu } from "@/components/charts/ChartExportMenu";
+import { buildChartImageFileName, downloadChartAsImage } from "@/lib/chartExport";
 
 type Summary = {
   import_runs: number;
@@ -25,6 +27,12 @@ function asNumber(value: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function csvEscape(value: unknown): string {
+  const text = value === null || value === undefined ? "" : String(value);
+  if (/[",\n\r]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
+  return text;
+}
+
 export default function AccessDashboard() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [variables, setVariables] = useState<AccessVariable[]>([]);
@@ -33,6 +41,8 @@ export default function AccessDashboard() {
   const [entityType, setEntityType] = useState<AccessEntityType>("sub");
   const [entityId, setEntityId] = useState<string>("");
   const [variable, setVariable] = useState<string>("");
+  const seriesChartRef = useRef<HTMLDivElement>(null);
+  const statsChartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     accessApi.summary().then(setSummary).catch(() => setSummary(null));
@@ -92,6 +102,38 @@ export default function AccessDashboard() {
     }));
   }, [series]);
 
+  const exportSeriesCsv = () => {
+    if (!chartData.length) return;
+    const headers = ["Period", "Value"];
+    const rows = chartData.map((item) => [item.period, item.value]);
+    const csv = [headers, ...rows].map((row) => row.map(csvEscape).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `access_series_${entityType}_${entityId || "NA"}_${variable || "series"}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportStatsCsv = () => {
+    if (!statsByVariable.length) return;
+    const headers = ["Variable", "Count", "Average"];
+    const rows = statsByVariable.map((item) => [item.variable, item.count, item.average]);
+    const csv = [headers, ...rows].map((row) => row.map(csvEscape).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `access_stats_${entityType}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-4">
@@ -142,8 +184,27 @@ export default function AccessDashboard() {
         </div>
 
         <div className="rounded-2xl border bg-white p-4 shadow-sm lg:col-span-2">
-          <div className="mb-3 text-sm font-semibold text-slate-700">Série temporelle</div>
-          <div className="h-72">
+          <div className="mb-3 flex items-center justify-between gap-2 text-sm font-semibold text-slate-700">
+            <span>Série temporelle</span>
+            <ChartExportMenu
+              onExportCsv={exportSeriesCsv}
+              onExportPng={() =>
+                downloadChartAsImage(
+                  seriesChartRef,
+                  buildChartImageFileName({
+                    prefix: "access",
+                    station: entityId ? `entity_${entityId}` : null,
+                    variable: variable || "series",
+                    aggregation: "day",
+                    mode: entityType,
+                  })
+                )
+              }
+              csvDisabled={!chartData.length}
+              pngDisabled={!chartData.length}
+            />
+          </div>
+          <div ref={seriesChartRef} className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -171,8 +232,26 @@ export default function AccessDashboard() {
         </div>
 
         <div className="rounded-2xl border bg-white p-4 shadow-sm">
-          <div className="mb-3 text-sm font-semibold text-slate-700">Statistiques</div>
-          <div className="h-72">
+          <div className="mb-3 flex items-center justify-between gap-2 text-sm font-semibold text-slate-700">
+            <span>Statistiques</span>
+            <ChartExportMenu
+              onExportCsv={exportStatsCsv}
+              onExportPng={() =>
+                downloadChartAsImage(
+                  statsChartRef,
+                  buildChartImageFileName({
+                    prefix: "access_stats",
+                    station: entityId ? `entity_${entityId}` : null,
+                    variable: entityType,
+                    aggregation: "day",
+                  })
+                )
+              }
+              csvDisabled={!statsByVariable.length}
+              pngDisabled={!statsByVariable.length}
+            />
+          </div>
+          <div ref={statsChartRef} className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={statsByVariable}>
                 <CartesianGrid strokeDasharray="3 3" />

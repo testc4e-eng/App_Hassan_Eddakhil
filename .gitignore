@@ -15,3 +15,18 @@ Données_Bge_Hassan_Addakhil/
 /package-lock.json
 scripts/swat-import/work/
 scripts/swat-import/logs/*.log
+*.log
+hydro_Hassan dakhil/hassan dakhil/
+hydro_Hassan dakhil/archive/deprecated/06_1_Database synthese/backup/
+.codex-artifacts/
+Scenarios/
+Donn?e-etat actuel/
+hassan dakhil/
+hydro_hd_1714.sql
+Apport_Hassan_Addakhil.xlsx
+bathy_HAD.xlsx
+INDICATEURS POUR APPLICATION.xlsx
+tmp-siltation.xlsx
+~$*.xlsx
+Projet HD.qgz
+prompt.txt

@@ -1,5 +1,14 @@
 // backend/src/services/catalog.service.ts
 import { DatabaseService } from "./database.service";
+import { erosionSwatSeriesService } from "./erosionSwatSeries.service";
+import { hydroSwatSeriesService } from "./hydroSwatSeries.service";
+import {
+  LEGACY_SWAT_SCENARIO_CODES,
+  NORMALIZED_SWAT_SCENARIO_CODES,
+  NORMALIZED_SWAT_SCENARIOS,
+} from "../constants/swatScenarios";
+import { isStandardNameVisibleForModule } from "../constants/moduleVariables";
+import { uniqueBy } from "../utils/deduplicate";
 
 export type CatalogProperty = {
   module_code: string;
@@ -26,6 +35,11 @@ export type CatalogStation = {
   station_code: string;
   station_name: string;
 };
+
+const CANONICAL_SWAT_SCENARIOS = [
+  ...NORMALIZED_SWAT_SCENARIO_CODES,
+  ...LEGACY_SWAT_SCENARIO_CODES,
+];
 
 export class CatalogService {
   private db = new DatabaseService();
@@ -92,23 +106,147 @@ export class CatalogService {
         )
       ORDER BY sort_order, property_id
     `;
-    return this.db.query<CatalogProperty>(q, [moduleCode]);
+
+    const baseRows = uniqueBy(
+      (await this.db.query<CatalogProperty>(q, [moduleCode])).filter((row) =>
+        isStandardNameVisibleForModule(moduleCode, row.standard_name)
+      ),
+      (row) => row.property_id
+    );
+
+    if (moduleCode !== "hydro") {
+      if (moduleCode !== "erosion") {
+        return baseRows;
+      }
+
+      const erosionRows = uniqueBy(
+        (await erosionSwatSeriesService.getModuleProperties()).filter((row) =>
+          isStandardNameVisibleForModule(moduleCode, row.standard_name)
+        ),
+        (row) => row.property_id
+      );
+      const merged = new Map<number, CatalogProperty>();
+
+      for (const row of baseRows) {
+        merged.set(row.property_id, row);
+      }
+
+      for (const row of erosionRows as CatalogProperty[]) {
+        merged.set(row.property_id, row);
+      }
+
+      return Array.from(merged.values()).sort(
+        (a, b) => a.sort_order - b.sort_order || a.property_id - b.property_id
+      );
+    }
+
+    const swatRows = uniqueBy(
+      (await hydroSwatSeriesService.getModuleProperties()).filter((row) =>
+        isStandardNameVisibleForModule(moduleCode, row.standard_name)
+      ),
+      (row) => row.property_id
+    );
+    const merged = new Map<number, CatalogProperty>();
+
+    for (const row of baseRows) {
+      merged.set(row.property_id, row);
+    }
+
+    for (const row of swatRows as CatalogProperty[]) {
+      merged.set(row.property_id, row);
+    }
+
+    return Array.from(merged.values()).sort(
+      (a, b) => a.sort_order - b.sort_order || a.property_id - b.property_id
+    );
   }
 
   async getRuns(): Promise<CatalogRun[]> {
+    const virtualSwatRuns = NORMALIZED_SWAT_SCENARIOS.map((scenario) => ({
+      run_id: scenario.run_id,
+      scenario_code: scenario.scenario_code,
+      scenario_name: scenario.scenario_name,
+      description: "Scénario SWAT exposé depuis les résultats importés SWAT_OUTPUT.",
+      is_observed: false,
+      created_at: new Date(0).toISOString(),
+    }));
+    const hideTechnicalSwatRuns = (rows: CatalogRun[]) =>
+      rows.filter((row) => !LEGACY_SWAT_SCENARIO_CODES.has(String(row.scenario_code)));
+
+    if (await this.db.relationExists("api.mv_scenario_catalog")) {
+      const rows = await this.db.query<CatalogRun & { is_visible: boolean }>(
+        `
+        SELECT
+          run_id,
+          scenario_code,
+          scenario_name,
+          description,
+          is_observed,
+          created_at,
+          is_visible
+        FROM api.mv_scenario_catalog
+        WHERE is_visible = true
+        ORDER BY
+          CASE WHEN is_observed THEN 0 ELSE 1 END,
+          scenario_code,
+          run_id
+        `
+      );
+      return uniqueBy(
+        [...hideTechnicalSwatRuns(rows.map(({ is_visible: _isVisible, ...row }) => row)), ...virtualSwatRuns],
+        (row) => row.run_id
+      );
+    }
+
+    const hasScenarioMetadata = await this.db.relationExists("access.scenario_metadata");
+
     const q = `
       SELECT run_id, scenario_code, scenario_name, description, is_observed, created_at
       FROM public.model_runs
-      ORDER BY run_id
+      WHERE (
+          is_observed = true
+          OR ${hasScenarioMetadata ? `EXISTS (
+            SELECT 1
+            FROM access.scenario_metadata sm
+            WHERE sm.scenario_code = public.model_runs.scenario_code
+          )` : "false"}
+          OR scenario_code = ANY($1::text[])
+        )
+      ORDER BY
+        CASE WHEN is_observed THEN 0 ELSE 1 END,
+        array_position($1::text[], scenario_code),
+        run_id
     `;
-    return this.db.query<CatalogRun>(q, []);
+    return uniqueBy(
+      [...hideTechnicalSwatRuns(await this.db.query<CatalogRun>(q, [CANONICAL_SWAT_SCENARIOS])), ...virtualSwatRuns],
+      (row) => row.run_id
+    );
   }
 
   async getStationsForModule(
     moduleCode: string,
     runId: number
   ): Promise<CatalogStation[]> {
-    // station list filtrée par présence de timeseries sur ce module+run
+    if (moduleCode === "hydro") {
+      const scenario = await hydroSwatSeriesService.resolveHydroScenario(runId);
+      if (scenario) {
+        return uniqueBy(
+          await hydroSwatSeriesService.getStationsForRun(runId),
+          (row) => row.station_id
+        );
+      }
+    }
+
+    if (moduleCode === "erosion") {
+      const scenario = await erosionSwatSeriesService.resolveErosionScenario(runId);
+      if (scenario) {
+        return uniqueBy(
+          await erosionSwatSeriesService.getStationsForRun(runId),
+          (row) => row.station_id
+        );
+      }
+    }
+
     const q = `
       WITH station_catalog AS (
         SELECT
@@ -168,7 +306,10 @@ export class CatalogService {
         )
       ORDER BY c.station_name
     `;
-    return this.db.query<CatalogStation>(q, [moduleCode, runId]);
+    const rows = await this.db.query<CatalogStation>(q, [moduleCode, runId]);
+    return uniqueBy(rows, (row) => row.station_id).sort((a, b) =>
+      a.station_name.localeCompare(b.station_name)
+    );
   }
 }
 

@@ -1,13 +1,16 @@
 // frontend/src/contexts/HydroDataContext.tsx
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import type { ApiResponse, AvailabilityRow } from "@/types/hydro";
-import { isHassanAddakhilStationId } from "@/constants/projectStations";
+import { deduplicateSelectOptions } from "@/lib/selectOptions";
+import { formatStationDisplayName } from "@/lib/stationLabels";
 
 export type ModuleCode = "climat" | "hydro" | "erosion";
 
@@ -52,12 +55,16 @@ type HydroDataContextValue = {
 
   // availability = base pour stations/scénarios/variables/périodes
   availabilityByModule: Record<ModuleCode, AvailabilityRow[]>;
+  availabilityErrorByModule: Record<ModuleCode, string | null>;
   loadAvailability: (moduleCode: ModuleCode) => Promise<void>;
 
   stations: CatalogStation[];
   loadStations: () => Promise<void>;
 
-  getStationsForModule: (moduleCode: ModuleCode) => CatalogStation[];
+  getStationsForModule: (
+    moduleCode: ModuleCode,
+    runId?: number
+  ) => CatalogStation[];
 };
 
 const HydroDataContext = createContext<HydroDataContextValue | null>(null);
@@ -98,139 +105,266 @@ export function HydroDataProvider({ children }: { children: React.ReactNode }) {
     hydro: [],
     erosion: [],
   });
+  const [availabilityErrorByModule, setAvailabilityErrorByModule] = useState<
+    Record<ModuleCode, string | null>
+  >({
+    climat: null,
+    hydro: null,
+    erosion: null,
+  });
 
   const [stations, setStations] = useState<CatalogStation[]>([]);
+  const runsLoadPromiseRef = useRef<Promise<void> | null>(null);
+  const stationsLoadPromiseRef = useRef<Promise<void> | null>(null);
+  const modulePropertiesRef = useRef(moduleProperties);
+  const availabilityByModuleRef = useRef(availabilityByModule);
+  const stationsRef = useRef(stations);
+  const modulePropertiesLoadPromiseRef = useRef<
+    Record<ModuleCode, Promise<void> | null>
+  >({
+    climat: null,
+    hydro: null,
+    erosion: null,
+  });
+  const availabilityLoadPromiseRef = useRef<
+    Record<ModuleCode, Promise<void> | null>
+  >({
+    climat: null,
+    hydro: null,
+    erosion: null,
+  });
+
+  useEffect(() => {
+    modulePropertiesRef.current = moduleProperties;
+  }, [moduleProperties]);
+
+  useEffect(() => {
+    availabilityByModuleRef.current = availabilityByModule;
+  }, [availabilityByModule]);
+
+  useEffect(() => {
+    stationsRef.current = stations;
+  }, [stations]);
 
   // Charger runs au démarrage
   useEffect(() => {
     let cancelled = false;
 
-    (async () => {
-      try {
-        setLoading(true);
-        setError(null);
+    const runPromise =
+      runsLoadPromiseRef.current ||
+      (runsLoadPromiseRef.current = (async () => {
+        try {
+          setLoading(true);
+          setError(null);
 
-        const runsResp = await apiGet<ApiResponse<CatalogRun[]>>(
-          apiBase,
-          "/catalog/runs"
-        );
-        if (!runsResp.success)
-          throw new Error(runsResp.error || "Erreur catalog/runs");
-        if (!cancelled) setRuns(runsResp.data);
-      } catch (e: any) {
-        if (!cancelled) setError(e?.message || String(e));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
+          const runsResp = await apiGet<ApiResponse<CatalogRun[]>>(
+            apiBase,
+            "/catalog/runs"
+          );
+          if (!runsResp.success)
+            throw new Error(runsResp.error || "Erreur catalog/runs");
+          if (!cancelled) {
+            setRuns(
+              deduplicateSelectOptions(runsResp.data || [], (run) => run.run_id)
+            );
+          }
+        } catch (e: any) {
+          if (!cancelled) setError(e?.message || String(e));
+        } finally {
+          if (!cancelled) setLoading(false);
+          if (runsLoadPromiseRef.current === runPromise) {
+            runsLoadPromiseRef.current = null;
+          }
+        }
+      })());
+
+    void runPromise;
 
     return () => {
       cancelled = true;
     };
   }, [apiBase]);
 
-  const loadModuleProperties = async (moduleCode: ModuleCode) => {
-    // cache simple
-    if (moduleProperties[moduleCode]?.length) return;
+  const loadModuleProperties = useCallback(
+    async (moduleCode: ModuleCode) => {
+      if (modulePropertiesRef.current[moduleCode]?.length) return;
+      const pending = modulePropertiesLoadPromiseRef.current[moduleCode];
+      if (pending) return pending;
 
-    const resp = await apiGet<ApiResponse<CatalogProperty[]>>(
-      apiBase,
-      `/catalog/modules/${moduleCode}/properties`
-    );
-    if (!resp.success)
-      throw new Error(resp.error || "Erreur module properties");
-    setModuleProperties((prev) => ({ ...prev, [moduleCode]: resp.data }));
-  };
-
-  const loadAvailability = async (moduleCode: ModuleCode) => {
-    // cache simple
-    if (availabilityByModule[moduleCode]?.length) return;
-
-    const resp = await apiGet<ApiResponse<AvailabilityRow[]>>(
-      apiBase,
-      `/catalog/availability?module=${encodeURIComponent(moduleCode)}`
-    );
-    if (!resp.success)
-      throw new Error(resp.error || "Erreur catalog/availability");
-
-    const filtered = (resp.data || []).filter((row) =>
-      isHassanAddakhilStationId((row as any).station_id)
-    );
-
-    setAvailabilityByModule((prev) => ({ ...prev, [moduleCode]: filtered }));
-  };
-
-  const loadStations = async () => {
-    if (stations.length) return;
-
-    const resp = await apiGet<ApiResponse<any>>(
-      apiBase,
-      "/spatial/stations"
-    );
-    if (!resp.success) throw new Error(resp.error || "Erreur spatial/stations");
-
-    const features = resp.data?.features || [];
-    const list: CatalogStation[] = features
-      .map((feature: any) => {
-        const props = feature?.properties || {};
-        const id = Number(props.id ?? props.station_id ?? 0);
-        const stationCode = String(
-          props.station_code ?? props.code ?? props.name ?? id
+      const promise = (async () => {
+        const resp = await apiGet<ApiResponse<CatalogProperty[]>>(
+          apiBase,
+          `/catalog/modules/${moduleCode}/properties`
         );
-        const stationName = String(props.name ?? props.station_name ?? stationCode);
-        return {
-          station_id: id,
-          station_code: stationCode,
-          station_name: stationName,
-          station_label: `${stationCode} - ${stationName}`,
-          type_station: props.type_station ?? null,
-          station_type_code: props.station_type_code ?? null,
-        };
-      })
-      .filter((station) => isHassanAddakhilStationId(station.station_id));
+        if (!resp.success)
+          throw new Error(resp.error || "Erreur module properties");
+        setModuleProperties((prev) => ({
+          ...prev,
+          [moduleCode]: deduplicateSelectOptions(resp.data || [], (prop) => prop.property_id),
+        }));
+      })();
 
-    setStations(list);
-  };
-
-  const getStationsForModule = (moduleCode: ModuleCode): CatalogStation[] => {
-    const rows = availabilityByModule[moduleCode] || [];
-    const stationById = new Map<number, CatalogStation>();
-    for (const station of stations) {
-      stationById.set(station.station_id, station);
-    }
-
-    const availableIds = new Set<number>();
-    for (const r of rows) {
-      const stationId = Number(r.station_id);
-      if (Number.isFinite(stationId) && isHassanAddakhilStationId(stationId)) {
-        availableIds.add(stationId);
+      modulePropertiesLoadPromiseRef.current[moduleCode] = promise;
+      try {
+        return await promise;
+      } finally {
+        if (modulePropertiesLoadPromiseRef.current[moduleCode] === promise) {
+          modulePropertiesLoadPromiseRef.current[moduleCode] = null;
+        }
       }
-    }
+    },
+    [apiBase]
+  );
 
-    const list = Array.from(availableIds)
-      .map((stationId) => {
-        const fromCatalog = stationById.get(stationId);
-        if (fromCatalog) return fromCatalog;
-        const row = rows.find((r) => Number(r.station_id) === stationId);
-        const code = String(row?.station_code ?? stationId);
-        // On garde la liste dashboard orientée "stations métier".
-        if (code.toLowerCase().startsWith("swat_")) return null;
-        return {
-          station_id: stationId,
-          station_code: code,
-          station_name: String(row?.station_name ?? stationId),
-          station_label:
-            (row as any)?.station_label ??
-            `${code} - ${row?.station_name ?? stationId}`,
-        } as CatalogStation;
-      })
-      .filter((station): station is CatalogStation => station !== null)
-      .sort((a, b) =>
-      (a.station_name || "").localeCompare(b.station_name || "")
+  const loadAvailability = useCallback(
+    async (moduleCode: ModuleCode) => {
+      if (availabilityByModuleRef.current[moduleCode]?.length) return;
+      const pending = availabilityLoadPromiseRef.current[moduleCode];
+      if (pending) return pending;
+
+      const promise = (async () => {
+        setAvailabilityErrorByModule((prev) => ({ ...prev, [moduleCode]: null }));
+        try {
+          const resp = await apiGet<ApiResponse<AvailabilityRow[]>>(
+            apiBase,
+            `/catalog/availability?module=${encodeURIComponent(moduleCode)}`
+          );
+          if (!resp.success)
+            throw new Error(resp.error || "Erreur catalog/availability");
+
+          const filtered = deduplicateSelectOptions(resp.data || [], (row) => row.ts_id);
+
+          if ((import.meta as any).env?.DEV) {
+            console.debug("[hydro-data] availability loaded", {
+              moduleCode,
+              rows: resp.data?.length ?? 0,
+              filtered: filtered.length,
+              sample: filtered.slice(0, 5).map((row) => ({
+                station_id: row.station_id,
+                station_code: row.station_code,
+                run_id: row.run_id,
+                scenario_code: row.scenario_code,
+                property_id: row.property_id,
+                standard_name: row.standard_name,
+              })),
+            });
+          }
+
+          setAvailabilityByModule((prev) => ({ ...prev, [moduleCode]: filtered }));
+        } catch (error: any) {
+          setAvailabilityErrorByModule((prev) => ({
+            ...prev,
+            [moduleCode]: error?.message || String(error),
+          }));
+          throw error;
+        }
+      })();
+
+      availabilityLoadPromiseRef.current[moduleCode] = promise;
+      try {
+        return await promise;
+      } finally {
+        if (availabilityLoadPromiseRef.current[moduleCode] === promise) {
+          availabilityLoadPromiseRef.current[moduleCode] = null;
+        }
+      }
+    },
+    [apiBase]
+  );
+
+  const loadStations = useCallback(async () => {
+    if (stationsRef.current.length) return;
+    if (stationsLoadPromiseRef.current) return stationsLoadPromiseRef.current;
+
+    const promise = (async () => {
+      const resp = await apiGet<ApiResponse<any>>(apiBase, "/spatial/stations");
+      if (!resp.success) throw new Error(resp.error || "Erreur spatial/stations");
+
+      const features = resp.data?.features || [];
+      const list: CatalogStation[] = deduplicateSelectOptions(
+        features
+          .map((feature: any) => {
+            const props = feature?.properties || {};
+            const id = Number(props.id ?? props.station_id ?? 0);
+            const stationCode = String(
+              props.station_code ?? props.code ?? props.name ?? id
+            );
+            const stationName = String(
+              props.name ?? props.station_name ?? stationCode
+            );
+            return {
+              station_id: id,
+              station_code: stationCode,
+              station_name: stationName,
+              station_label: formatStationDisplayName(stationName, stationCode),
+              type_station: props.type_station ?? null,
+              station_type_code: props.station_type_code ?? null,
+            };
+          }),
+        (station) => station.station_id
       );
 
-    return list;
-  };
+      setStations(list);
+    })();
+
+    stationsLoadPromiseRef.current = promise;
+    try {
+      return await promise;
+    } finally {
+      if (stationsLoadPromiseRef.current === promise) {
+        stationsLoadPromiseRef.current = null;
+      }
+    }
+  }, [apiBase]);
+
+  const getStationsForModule = useCallback(
+    (moduleCode: ModuleCode, runId?: number): CatalogStation[] => {
+      const rows = availabilityByModuleRef.current[moduleCode] || [];
+      const stationById = new Map<number, CatalogStation>();
+      for (const station of stationsRef.current) {
+        stationById.set(station.station_id, station);
+      }
+
+      if (!rows.length) {
+        return [];
+      }
+
+      const availableIds = new Set<number>();
+      for (const r of rows) {
+        if (runId && Number(r.run_id) !== runId) continue;
+        const stationId = Number(r.station_id);
+        if (Number.isFinite(stationId)) {
+          availableIds.add(stationId);
+        }
+      }
+
+      const list = deduplicateSelectOptions(
+        Array.from(availableIds)
+        .map((stationId) => {
+          const fromCatalog = stationById.get(stationId);
+          if (fromCatalog) return fromCatalog;
+          const row = rows.find((r) => Number(r.station_id) === stationId);
+          const code = String(row?.station_code ?? stationId);
+          return {
+            station_id: stationId,
+            station_code: code,
+            station_name: String(row?.station_name ?? stationId),
+            station_label: formatStationDisplayName(
+              String(row?.station_name ?? stationId),
+              code,
+            ),
+          } as CatalogStation;
+        })
+        .filter((station): station is CatalogStation => station !== null),
+        (station) => station.station_id
+      ).sort((a, b) =>
+        (a.station_label || a.station_name || "").localeCompare(b.station_label || b.station_name || "")
+      );
+
+      return list;
+    },
+    []
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -248,19 +382,36 @@ export function HydroDataProvider({ children }: { children: React.ReactNode }) {
     };
   }, [apiBase]);
 
-  const value: HydroDataContextValue = {
-    loading,
-    error,
-    apiBase,
-    runs,
-    moduleProperties,
-    loadModuleProperties,
-    availabilityByModule,
-    loadAvailability,
-    stations,
-    loadStations,
-    getStationsForModule,
-  };
+  const value: HydroDataContextValue = useMemo(
+    () => ({
+      loading,
+      error,
+      apiBase,
+      runs,
+      moduleProperties,
+      loadModuleProperties,
+      availabilityByModule,
+      availabilityErrorByModule,
+      loadAvailability,
+      stations,
+      loadStations,
+      getStationsForModule,
+    }),
+    [
+      loading,
+      error,
+      apiBase,
+      runs,
+      moduleProperties,
+      loadModuleProperties,
+      availabilityByModule,
+      availabilityErrorByModule,
+      loadAvailability,
+      stations,
+      loadStations,
+      getStationsForModule,
+    ]
+  );
 
   return (
     <HydroDataContext.Provider value={value}>

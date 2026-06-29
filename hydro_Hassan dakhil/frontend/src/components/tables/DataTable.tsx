@@ -15,7 +15,11 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useHydroData } from "@/contexts/HydroDataContext";
 import { useTranslation } from "react-i18next";
-import { formatDateByAggregation } from "@/lib/seriesGranularity";
+import {
+  formatDateByAggregation,
+} from "@/lib/seriesGranularity";
+import { timeseriesApi } from "@/api/timeseries";
+import { isModulePropertyVisibleForModule } from "@/constants/moduleVariables";
 
 interface DataTableProps {
   moduleCode: "climat" | "hydro" | "erosion";
@@ -40,11 +44,11 @@ type AggRow = {
   avg_value: number;
   min_value: number;
   max_value: number;
-  count: number;
+  count?: number;
+  n?: number;
 };
 
 type BundleResponse = {
-  success: boolean;
   stationId: number;
   runId: number;
   module: string;
@@ -55,7 +59,7 @@ type BundleResponse = {
 
 export function DataTable({ moduleCode, filters }: DataTableProps) {
   const { t } = useTranslation();
-  const { apiBase, moduleProperties } = useHydroData();
+  const { moduleProperties } = useHydroData();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +73,10 @@ export function DataTable({ moduleCode, filters }: DataTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
 
   // variables sélectionnées = property_id (chez toi filters.variables = number[])
-  const selectedPropertyIds = filters.variables ?? [];
+  const selectedPropertyIds = useMemo(
+    () => Array.from(new Set(filters.variables ?? [])),
+    [filters.variables]
+  );
 
   const stationId =
     (filters as any).stationId ?? (filters as any).stations?.[0];
@@ -108,22 +115,15 @@ export function DataTable({ moduleCode, filters }: DataTableProps) {
       try {
         setLoading(true);
 
-        // 1) bundle du module
-        const url =
-          `${apiBase}/timeseries/bundle` +
-          `?stationId=${encodeURIComponent(String(stationId))}` +
-          `&runId=${encodeURIComponent(String(runId))}` +
-          `&module=${encodeURIComponent(moduleCode)}` +
-          `&agg=${encodeURIComponent(aggInterval)}`;
-
-        const res = await fetch(url);
-        if (!res.ok) {
-          const txt = await res.text();
-          throw new Error(`HTTP ${res.status} ${res.statusText} - ${txt}`);
-        }
-
-        const json = (await res.json()) as BundleResponse;
-        if (!json.success) throw new Error(json.error || "Erreur bundle");
+        // 1) bundle du module via cache partagé
+        const json = (await timeseriesApi.bundle({
+          stationId,
+          runId,
+          module: moduleCode,
+          agg: aggInterval,
+          startDate: filters.startDate || undefined,
+          endDate: filters.endDate || undefined,
+        })) as BundleResponse;
 
         // 2) filtrer le catalog sur variables sélectionnées
         const filteredCatalog = json.catalog.filter((c) =>
@@ -159,17 +159,20 @@ export function DataTable({ moduleCode, filters }: DataTableProps) {
       cancelled = true;
     };
   }, [
-    apiBase,
     moduleCode,
     stationId,
     runId,
     aggInterval,
+    filters.startDate,
+    filters.endDate,
     selectedPropertyIds.join(","),
   ]);
 
   // Colonnes : Date + variables sélectionnées (depuis moduleProperties)
   const tableColumns = useMemo(() => {
-    const props = moduleProperties[moduleCode] || [];
+    const props = (moduleProperties[moduleCode] || []).filter((p) =>
+      isModulePropertyVisibleForModule(moduleCode, p.standard_name)
+    );
     const selectedProps = props.filter((p) =>
       selectedPropertyIds.includes(p.property_id)
     );

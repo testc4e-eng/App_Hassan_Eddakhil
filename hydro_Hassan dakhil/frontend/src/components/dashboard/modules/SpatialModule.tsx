@@ -1,12 +1,14 @@
 // frontend/src/components/dashboard/modules/SpatialModule.tsx
-import { useEffect, useMemo, useState } from "react";
+import { type PointerEvent as ReactPointerEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HydroMap } from "@/components/map/HydroMap";
+import { SpatialInspectorPanel, type SpatialInspectorSelection } from "@/components/dashboard/modules/SpatialInspectorPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -24,8 +26,19 @@ import {
   Waves,
   Grid3X3,
   Search,
+  Maximize2,
+  Minimize2,
+  Move,
+  PanelLeftOpen,
+  Plus,
+  Minus,
+  X,
+  Map,
+  Info,
+  Loader2,
 } from "lucide-react";
 import { BASEMAPS, DEFAULT_BASEMAP, type BasemapId } from "@/config/basemaps";
+import { formatStationDisplayName, formatSubbasinDisplayName } from "@/lib/stationLabels";
 import type { SpatialDisplayMode } from "@/types/spatial";
 import { HASSAN_ADDAKHIL_STATION_IDS } from "@/constants/projectStations";
 
@@ -43,23 +56,196 @@ import {
 type BasinOption = { id: number; name: string };
 type BarrageOption = { id: number; name: string };
 type SubBasinOption = { id: number; name: string; catchment_id?: number };
+type StationOption = { id: number; name: string; code?: string };
+type ReachOption = {
+  id: number;
+  name: string;
+  code?: string;
+  subbasinId?: number;
+  catchmentId?: number;
+};
+type EntityControlOption = { id: number; label: string; meta?: string };
+type ManagedLayerKey = "barrages" | "basins" | "subBasins" | "reach" | "stations";
 
 const ALL = "__ALL__";
 const BARRAGE_NAME = "Barrage Hassan Addakhil";
 const BASEMAP_STORAGE_KEY = "hydro-basemap";
 const PROJECT_STATION_IDS = HASSAN_ADDAKHIL_STATION_IDS;
 const PROJECT_BASIN_ID = 1;
-const PROJECT_BARRAGE_ID = 2;
-const PROJECT_BASIN_LABEL = "Bassin versant Guir-Ziz-Rheris";
+const PROJECT_BASIN_LABEL = "Bassin versant du barrage Hassan Addakhil";
 
 function isBasemapId(value: string): value is BasemapId {
   return Object.prototype.hasOwnProperty.call(BASEMAPS, value);
 }
 
-export function SpatialModule() {
+function EntityControlCard({
+  title,
+  helper,
+  icon,
+  visible,
+  count,
+  selectedValue,
+  options,
+  placeholder,
+  onToggleVisibility,
+  onSelect,
+  onEmphasize,
+  onZoom,
+}: {
+  title: string;
+  helper: string;
+  icon: ReactNode;
+  visible: boolean;
+  count: number;
+  selectedValue: string;
+  options: EntityControlOption[];
+  placeholder: string;
+  onToggleVisibility: () => void;
+  onSelect: (value: string) => void;
+  onEmphasize: () => void;
+  onZoom: () => void;
+}) {
+  const hasSelection = selectedValue !== "";
+
+  return (
+    <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-3 shadow-sm">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <div className="rounded-xl bg-slate-100 p-2 text-slate-700">{icon}</div>
+            <div className="min-w-0">
+              <div className="text-sm font-semibold text-slate-900">{title}</div>
+              <div className="text-[11px] text-slate-500">{helper}</div>
+            </div>
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <Badge variant="outline" className="rounded-full text-[10px]">
+            {count}
+          </Badge>
+          <label className="flex items-center gap-2 text-[11px] text-slate-500">
+            <Checkbox checked={visible} onCheckedChange={onToggleVisibility} />
+            Visible
+          </label>
+        </div>
+      </div>
+
+      <Select value={selectedValue === "" ? ALL : selectedValue} onValueChange={onSelect} disabled={!options.length}>
+        <SelectTrigger className="h-10 w-full bg-white">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL}>{placeholder}</SelectItem>
+          {options.map((option) => (
+            <SelectItem key={option.id} value={String(option.id)}>
+              {option.meta ? `${option.label} (${option.meta})` : option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <div className="mt-3 flex items-center gap-2">
+        <Button type="button" size="sm" variant="secondary" className="flex-1" onClick={onEmphasize} disabled={!hasSelection}>
+          Mettre en evidence
+        </Button>
+        <Button type="button" size="sm" variant="outline" className="flex-1" onClick={onZoom} disabled={!hasSelection}>
+          <Search className="mr-2 h-3.5 w-3.5" />
+          Zoom
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function FloatingPanel({
+  title,
+  icon,
+  anchor,
+  widthClass,
+  onClose,
+  children,
+}: {
+  title: string;
+  icon: ReactNode;
+  anchor: "left" | "right";
+  widthClass: string;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  const startDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement | null;
+    if (target?.closest("button, select, input, textarea, [role='combobox'], [data-radix-select-trigger]")) {
+      return;
+    }
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const initial = offset;
+    event.currentTarget.setPointerCapture(event.pointerId);
+
+    const move = (moveEvent: PointerEvent) => {
+      setOffset({
+        x: initial.x + moveEvent.clientX - startX,
+        y: initial.y + moveEvent.clientY - startY,
+      });
+    };
+
+    const stop = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+    };
+
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+  };
+
+  return (
+    <div
+      ref={panelRef}
+      className={`absolute top-16 z-[450] max-h-[calc(100%-5rem)] ${widthClass} resize-x overflow-auto ${
+        anchor === "left" ? "left-4" : "right-4"
+      }`}
+      onPointerDown={(event) => event.stopPropagation()}
+      onClick={(event) => event.stopPropagation()}
+      onWheel={(event) => event.stopPropagation()}
+      style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}
+    >
+      <Card className="border-white/60 bg-white/60 shadow-2xl shadow-slate-950/20 backdrop-blur-xl">
+      <CardHeader
+        className="cursor-move select-none border-b border-white/50 px-3 py-2"
+        onPointerDown={startDrag}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            {icon}
+            {title}
+          </CardTitle>
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <Move className="h-3.5 w-3.5" />
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={onClose}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3 p-3">{children}</CardContent>
+      </Card>
+    </div>
+  );
+}
+
+export function OperationalSpatialModule() {
   const { t } = useTranslation();
   const [displayMode, setDisplayMode] =
-    useState<SpatialDisplayMode>("raw_database");
+    useState<SpatialDisplayMode>("project_hassan_addakhil");
   const [basemap, setBasemap] = useState<BasemapId>(() => {
     if (typeof window === "undefined") return DEFAULT_BASEMAP;
     const saved = window.localStorage.getItem(BASEMAP_STORAGE_KEY);
@@ -77,14 +263,14 @@ export function SpatialModule() {
     stations: true,
   });
 
-  const [opacityPct, setOpacityPct] = useState([80]); // 0..100
+  const [opacityPct, setOpacityPct] = useState([80]);
   const opacity = opacityPct[0] / 100;
 
-  // tools (distance / surface)
   const [activeTool, setActiveTool] = useState<"distance" | "area" | null>(null);
 
   // tick zoom bassin
   const [zoomTick, setZoomTick] = useState(0);
+  const [resetViewTick, setResetViewTick] = useState(0);
 
   // tick export png
   const [exportTick, setExportTick] = useState(0);
@@ -100,10 +286,20 @@ export function SpatialModule() {
   // options + filtres
   const [basinOptions, setBasinOptions] = useState<BasinOption[]>([]);
   const [barrageOptions, setBarrageOptions] = useState<BarrageOption[]>([]);
-  const [subBasinOptions, setSubBasinOptions] = useState<SubBasinOption[]>([]);
-  const [selectedBasinId, setSelectedBasinId] = useState<string>(""); // "" = aucun filtre
+  const [allSubBasinOptions, setAllSubBasinOptions] = useState<SubBasinOption[]>([]);
+  const [stationOptions, setStationOptions] = useState<StationOption[]>([]);
+  const [reachOptions, setReachOptions] = useState<ReachOption[]>([]);
+  const [selectedBasinId, setSelectedBasinId] = useState<string>("");
   const [selectedBarrageId, setSelectedBarrageId] = useState<string>(""); // "" = tous les barrages
   const [selectedSubBasinId, setSelectedSubBasinId] = useState<string>(""); // "" = aucun filtre
+  const [selectedReachId, setSelectedReachId] = useState<string>("");
+  const [selectedStationId, setSelectedStationId] = useState<string>(""); // "" = toutes les stations
+  const [showAnalysisPanel, setShowAnalysisPanel] = useState(true);
+  const [mapOnlyMode, setMapOnlyMode] = useState(false);
+  const [inspectorSelection, setInspectorSelection] = useState<SpatialInspectorSelection | null>(null);
+  const [inspectorPopupScale, setInspectorPopupScale] = useState(1);
+  const inspectorPopupRef = useRef<HTMLDivElement | null>(null);
+  const inspectorPopupOffsetRef = useRef({ x: 0, y: 0 });
 
   const toggleLayer = (layer: keyof typeof leftSidebarLayers) => {
     setLeftSidebarLayers((prev) => ({ ...prev, [layer]: !prev[layer] }));
@@ -116,23 +312,216 @@ export function SpatialModule() {
   const isRawMode = displayMode === "raw_database";
   const isProjectMode = displayMode === "project_hassan_addakhil";
 
+  const resetSelections = useCallback((mode: SpatialDisplayMode = displayMode) => {
+    void mode;
+    setSelectedBasinId("");
+    setSelectedBarrageId("");
+    setSelectedSubBasinId("");
+    setSelectedReachId("");
+    setSelectedStationId("");
+    setInspectorSelection(null);
+    setInspectorPopupScale(1);
+    inspectorPopupOffsetRef.current = { x: 0, y: 0 };
+    if (inspectorPopupRef.current) {
+      inspectorPopupRef.current.style.transform = "translate(0px, 0px) scale(1)";
+    }
+    setResetViewTick((tick) => tick + 1);
+  }, [displayMode]);
+
+  const startInspectorDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const initial = inspectorPopupOffsetRef.current;
+    let rafId = 0;
+
+    const applyTransform = () => {
+      if (!inspectorPopupRef.current) return;
+      const { x, y } = inspectorPopupOffsetRef.current;
+      inspectorPopupRef.current.style.transform = `translate(${x}px, ${y}px) scale(${inspectorPopupScale})`;
+    };
+
+    const move = (moveEvent: PointerEvent) => {
+      inspectorPopupOffsetRef.current = {
+        x: initial.x + moveEvent.clientX - startX,
+        y: initial.y + moveEvent.clientY - startY,
+      };
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = window.requestAnimationFrame(applyTransform);
+    };
+
+    const stop = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+      if (rafId) cancelAnimationFrame(rafId);
+      applyTransform();
+    };
+
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+  };
+
+  useEffect(() => {
+    if (!inspectorPopupRef.current) return;
+    const { x, y } = inspectorPopupOffsetRef.current;
+    inspectorPopupRef.current.style.transform = `translate(${x}px, ${y}px) scale(${inspectorPopupScale})`;
+  }, [inspectorPopupScale]);
+
+  const focusBasin = (value: string) => {
+    setSelectedBasinId(value === ALL ? "" : value);
+    setSelectedBarrageId("");
+    setSelectedSubBasinId("");
+    setSelectedReachId("");
+    setSelectedStationId("");
+    setInspectorSelection(null);
+  };
+
+  const focusBarrage = (value: string) => {
+    const nextValue = value === ALL ? "" : value;
+    setSelectedBasinId("");
+    setSelectedBarrageId(nextValue);
+    setSelectedSubBasinId("");
+    setSelectedReachId("");
+    setSelectedStationId("");
+    setInspectorSelection(nextValue ? buildBarrageSelection(Number(nextValue)) : null);
+  };
+
+  const focusSubBasin = (value: string) => {
+    const nextValue = value === ALL ? "" : value;
+    setSelectedBasinId("");
+    setSelectedBarrageId("");
+    setSelectedSubBasinId(nextValue);
+    setSelectedReachId("");
+    setSelectedStationId("");
+    setInspectorSelection(nextValue ? buildSubBasinSelection(Number(nextValue)) : null);
+  };
+
+  const focusStation = (value: string) => {
+    const nextValue = value === ALL ? "" : value;
+    setSelectedBasinId("");
+    setSelectedBarrageId("");
+    setSelectedSubBasinId("");
+    setSelectedReachId("");
+    setSelectedStationId(nextValue);
+    setInspectorSelection(nextValue ? buildStationSelection(Number(nextValue)) : null);
+  };
+
+  const focusReach = (value: string) => {
+    const nextValue = value === ALL ? "" : value;
+    setSelectedBasinId("");
+    setSelectedBarrageId("");
+    setSelectedSubBasinId("");
+    setSelectedReachId(nextValue);
+    setSelectedStationId("");
+    setInspectorSelection(nextValue ? buildReachSelection(Number(nextValue)) : null);
+  };
+
+  const changeDisplayMode = (value: SpatialDisplayMode) => {
+    setDisplayMode(value);
+    resetSelections(value);
+  };
+
   const layerItems = useMemo(
     () => [
       { id: "barrages" as const, label: t("spatial.layers.barrages"), icon: Landmark },
-      ...(isRawMode
-        ? [{ id: "basins" as const, label: t("spatial.layers.basins"), icon: Grid3X3 }]
-        : []),
+      { id: "basins" as const, label: t("spatial.layers.basins"), icon: Grid3X3 },
       { id: "subBasins" as const, label: t("spatial.layers.subbasins"), icon: Grid3X3 },
       { id: "reach" as const, label: t("spatial.layers.reach"), icon: Waves },
       { id: "stations" as const, label: t("spatial.layers.stations"), icon: MapPin },
     ],
-    [isRawMode, t]
+    [t]
   );
+
+  const availableBasins = useMemo(() => {
+    if (isProjectMode) {
+      return [{ id: PROJECT_BASIN_ID, name: PROJECT_BASIN_LABEL }];
+    }
+    return basinOptions;
+  }, [isProjectMode, projectData, basinOptions]);
+
+  const availableBarrages = useMemo(() => {
+    if (isProjectMode) {
+      const features = projectData?.barrages?.features ?? [];
+      const list = features
+        .map((f) => ({
+          id: Number(f?.properties?.id),
+          name: String(f?.properties?.name ?? BARRAGE_NAME),
+        }))
+        .filter((x) => Number.isFinite(x.id))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      return list.length ? list : barrageOptions;
+    }
+    return barrageOptions;
+  }, [isProjectMode, projectData, barrageOptions]);
+
+  const availableSubBasins = useMemo(() => {
+    if (isProjectMode) {
+      const features = projectData?.subbasins?.features ?? [];
+      const list = features
+        .map((f) => ({
+          id: Number(f?.properties?.id),
+          name: formatSubbasinDisplayName(
+            String(f?.properties?.name ?? ""),
+            String(f?.properties?.subbasin_code ?? ""),
+            String(f?.properties?.id ?? ""),
+          ),
+          catchment_id: Number(f?.properties?.catchment_id ?? PROJECT_BASIN_ID),
+        }))
+        .filter((x) => Number.isFinite(x.id))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      return list.length ? list : allSubBasinOptions;
+    }
+    return allSubBasinOptions;
+  }, [isProjectMode, projectData, allSubBasinOptions]);
+
+  const availableStations = useMemo(() => {
+    if (isProjectMode) {
+      const features = projectData?.stations?.features ?? [];
+      const list = features
+        .map((f) => {
+          const p = f?.properties ?? {};
+          const id = Number(p.station_id ?? p.id);
+          return {
+            id,
+            name: formatStationDisplayName(
+              String(p.station_name ?? p.name ?? `Station ${id}`),
+              p.station_code ? String(p.station_code) : undefined,
+            ),
+            code: p.station_code ? String(p.station_code) : undefined,
+          };
+        })
+        .filter((x) => Number.isFinite(x.id))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      return list.length ? list : stationOptions;
+    }
+    return stationOptions;
+  }, [isProjectMode, projectData, stationOptions]);
+
+  const availableReaches = useMemo(() => {
+    if (isProjectMode) {
+      const features = projectData?.reaches?.features ?? [];
+      const list = features
+        .map((f) => {
+          const p = f?.properties ?? {};
+          const id = Number(p.id ?? p.reach_id);
+          const code = p.reach_code ? String(p.reach_code) : undefined;
+          return {
+            id,
+            name: code ? `Troncon ${code}` : `Troncon ${id}`,
+            code,
+            subbasinId: Number(p.subbasin_id ?? NaN),
+            catchmentId: Number(p.catchment_id ?? NaN),
+          };
+        })
+        .filter((x) => Number.isFinite(x.id))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      return list.length ? list : reachOptions;
+    }
+    return reachOptions;
+  }, [isProjectMode, projectData, reachOptions]);
 
   // ===== 1) Load raw layers when the raw mode is active =====
   useEffect(() => {
-    if (!isRawMode) return;
-
     let cancelled = false;
 
     (async () => {
@@ -211,14 +600,30 @@ export function SpatialModule() {
         const opts: SubBasinOption[] = subbasins.features
         .map((f) => ({
           id: Number(f?.properties?.id),
-          name: String(f?.properties?.name ?? `Subbasin ${f?.properties?.id}`),
+          name: formatSubbasinDisplayName(
+            String(f?.properties?.name ?? ""),
+            String(f?.properties?.subbasin_code ?? ""),
+            String(f?.properties?.id ?? ""),
+          ),
           catchment_id: Number(f?.properties?.catchment_id ?? PROJECT_BASIN_ID),
         }))
           .filter((x) => Number.isFinite(x.id))
           .sort((a, b) => a.name.localeCompare(b.name));
 
-        setSubBasinOptions(opts);
-        setSelectedSubBasinId("");
+        const currentSubBasinId = selectedSubBasinId ? Number(selectedSubBasinId) : null;
+        const currentIsValid =
+          currentSubBasinId != null && opts.some((item) => item.id === currentSubBasinId);
+        if (!currentIsValid) {
+          setSelectedSubBasinId("");
+        }
+
+        if (import.meta.env.DEV) {
+          console.debug("[spatial] subbasins loaded for map", {
+            selectedBasinId,
+            selectedBarrageId,
+            count: opts.length,
+          });
+        }
       } catch (e) {
         console.error("fetchSubBasins failed", e);
       }
@@ -236,11 +641,93 @@ export function SpatialModule() {
 
     (async () => {
       try {
+        const [subbasins, stations, reaches] = await Promise.all([
+          fetchSubBasins(),
+          fetchStations(),
+          fetchReaches(),
+        ]);
+        if (cancelled) return;
+
+        const allSubbasinOpts: SubBasinOption[] = subbasins.features
+          .map((f) => ({
+            id: Number(f?.properties?.id),
+            name: formatSubbasinDisplayName(
+            String(f?.properties?.name ?? ""),
+            String(f?.properties?.subbasin_code ?? ""),
+            String(f?.properties?.id ?? ""),
+          ),
+            catchment_id: Number(f?.properties?.catchment_id ?? PROJECT_BASIN_ID),
+          }))
+          .filter((x) => Number.isFinite(x.id))
+          .sort((a, b) => a.name.localeCompare(b.name));
+
+        const allStationOpts: StationOption[] = stations.features
+          .map((f) => {
+            const p = f?.properties ?? {};
+            const id = Number(p.id ?? p.station_id);
+            return {
+              id,
+              name: formatStationDisplayName(
+                String(p.name ?? p.station_name ?? `Station ${id}`),
+                p.station_code ? String(p.station_code) : undefined,
+              ),
+              code: p.station_code ? String(p.station_code) : undefined,
+            };
+          })
+          .filter((x) => Number.isFinite(x.id))
+          .sort((a, b) => a.name.localeCompare(b.name));
+
+        const allReachOpts: ReachOption[] = reaches.features
+          .map((f) => {
+            const p = f?.properties ?? {};
+            const id = Number(p.id ?? p.reach_id);
+            const code = p.reach_code ? String(p.reach_code) : undefined;
+            return {
+              id,
+              name: code ? `Troncon ${code}` : `Troncon ${id}`,
+              code,
+              subbasinId: Number(p.subbasin_id ?? NaN),
+              catchmentId: Number(p.catchment_id ?? NaN),
+            };
+          })
+          .filter((x) => Number.isFinite(x.id))
+          .sort((a, b) => a.name.localeCompare(b.name));
+
+        setAllSubBasinOptions(allSubbasinOpts);
+        setStationOptions(allStationOpts);
+        setReachOptions(allReachOpts);
+
+        if (import.meta.env.DEV) {
+          console.debug("[spatial] catalog options loaded", {
+            subbasins: allSubbasinOpts.length,
+            stations: allStationOpts.length,
+            reaches: allReachOpts.length,
+          });
+        }
+      } catch (e) {
+        console.error("fetch spatial catalogs failed", e);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isRawMode]);
+
+  useEffect(() => {
+    if (!isRawMode) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
         const subIdNum = selectedSubBasinId ? Number(selectedSubBasinId) : undefined;
 
-        const reaches = await fetchReaches(
-          subIdNum ? { subbasinId: subIdNum } : undefined
-        );
+        const basinIdNum = selectedBasinId ? Number(selectedBasinId) : undefined;
+        const reaches = await fetchReaches({
+          ...(subIdNum ? { subbasinId: subIdNum } : {}),
+          ...(basinIdNum ? { catchmentId: basinIdNum } : {}),
+        });
 
         if (!cancelled) {
           setReachesFC(reaches);
@@ -253,7 +740,7 @@ export function SpatialModule() {
     return () => {
       cancelled = true;
     };
-  }, [isRawMode, selectedSubBasinId]);
+  }, [isRawMode, selectedBasinId, selectedSubBasinId]);
 
   useEffect(() => {
     if (!isRawMode) return;
@@ -309,53 +796,186 @@ export function SpatialModule() {
   const visibleStationsFC = isProjectMode ? projectData?.stations ?? null : stationsFC;
   const visibleBarragesFC = isProjectMode ? projectData?.barrages ?? null : barragesFC;
 
-  const visibleBasinOptions = isProjectMode
-    ? [
-        {
-          id: PROJECT_BASIN_ID,
-          name: PROJECT_BASIN_LABEL,
-        },
-      ]
-    : basinOptions;
+  const activeBasinId = selectedBasinId ? Number(selectedBasinId) : null;
+  const activeBarrageId = selectedBarrageId ? Number(selectedBarrageId) : null;
+  const activeSubBasinId = selectedSubBasinId ? Number(selectedSubBasinId) : null;
+  const activeReachId = selectedReachId ? Number(selectedReachId) : null;
+  const activeStationId = selectedStationId ? Number(selectedStationId) : null;
+  const spatialLoading = isProjectMode
+    ? !projectData
+    : !visibleBasinsFC && !visibleSubBasinsFC && !visibleStationsFC && !visibleBarragesFC;
 
-  const visibleBarrageOptions = isProjectMode
-    ? [
-        {
-          id: PROJECT_BARRAGE_ID,
-          name: BARRAGE_NAME,
-        },
-      ]
-    : barrageOptions;
+  const findFeatureById = (
+    collection: FeatureCollection | null | undefined,
+    id: number,
+    keys: string[]
+  ) =>
+    collection?.features.find((feature: any) =>
+      keys.some((key) => Number(feature?.properties?.[key]) === id)
+    ) ?? null;
 
-  const visibleSubBasinOptions = isProjectMode
-    ? (projectData?.subbasins?.features ?? [])
-        .map((f) => ({
-          id: Number(f?.properties?.id),
-          name: String(f?.properties?.name ?? `Subbasin ${f?.properties?.id}`),
-          catchment_id: Number(f?.properties?.catchment_id ?? PROJECT_BASIN_ID),
-        }))
-        .filter((x) => Number.isFinite(x.id))
-    : subBasinOptions;
+  const buildStationSelection = (stationId: number): SpatialInspectorSelection | null => {
+    const feature = findFeatureById(visibleStationsFC, stationId, ["station_id", "id"]);
+    const properties = (feature?.properties ?? {}) as Record<string, unknown>;
+    const option = availableStations.find((item) => item.id === stationId);
+    const catchmentId = Number(properties.catchment_id ?? NaN);
+    const name =
+      option?.name ||
+      formatStationDisplayName(
+        String(properties.station_name ?? properties.name ?? `Station ${stationId}`),
+        properties.station_code ? String(properties.station_code) : undefined,
+      );
 
-  const activeBasinId = isProjectMode
-    ? PROJECT_BASIN_ID
-    : selectedBasinId
-      ? Number(selectedBasinId)
-      : null;
-  const activeBarrageId = isProjectMode
-    ? PROJECT_BARRAGE_ID
-    : selectedBarrageId
-      ? Number(selectedBarrageId)
-      : null;
-  const activeSubBasinId = isProjectMode
-    ? null
-    : selectedSubBasinId
-      ? Number(selectedSubBasinId)
-      : null;
+    return {
+      kind: "station",
+      stationId,
+      name,
+      code: option?.code || (properties.station_code ? String(properties.station_code) : undefined),
+      catchmentId: Number.isFinite(catchmentId) ? catchmentId : null,
+      stationType: properties.station_type_code
+        ? String(properties.station_type_code)
+        : properties.type_station
+        ? String(properties.type_station)
+        : null,
+      properties: feature?.properties ?? {},
+    };
+  };
+
+  const buildSubBasinSelection = (subbasinId: number): SpatialInspectorSelection | null => {
+    const feature = findFeatureById(visibleSubBasinsFC, subbasinId, ["id", "subbasin_id"]);
+    if (!feature) return null;
+    const properties = (feature.properties ?? {}) as Record<string, unknown>;
+    const catchmentId = Number(properties.catchment_id ?? NaN);
+    return {
+      kind: "subbasin",
+      subbasinId,
+      name: formatSubbasinDisplayName(
+        String(properties.name ?? ""),
+        String(properties.subbasin_code ?? ""),
+        String(properties.id ?? subbasinId),
+      ),
+      catchmentId: Number.isFinite(catchmentId) ? catchmentId : null,
+      properties: feature.properties,
+    };
+  };
+
+  const buildReachSelection = (reachId: number): SpatialInspectorSelection | null => {
+    const feature = findFeatureById(visibleReachesFC, reachId, ["id", "reach_id"]);
+    const properties = (feature?.properties ?? {}) as Record<string, unknown>;
+    const option = availableReaches.find((item) => item.id === reachId);
+    const subbasinId = Number(properties.subbasin_id ?? NaN);
+    const catchmentId = Number(properties.catchment_id ?? NaN);
+    return {
+      kind: "reach",
+      reachId,
+      name:
+        option?.name ||
+        (properties.reach_code ? `Troncon ${String(properties.reach_code)}` : `Troncon ${reachId}`),
+      code: option?.code || (properties.reach_code ? String(properties.reach_code) : undefined),
+      subbasinId: Number.isFinite(subbasinId) ? subbasinId : null,
+      catchmentId: Number.isFinite(catchmentId) ? catchmentId : null,
+      properties: feature?.properties ?? {},
+    };
+  };
+
+  const buildBarrageSelection = (barrageId: number): SpatialInspectorSelection | null => {
+    const feature = findFeatureById(visibleBarragesFC, barrageId, ["id", "barrage_id"]);
+    if (!feature) return null;
+    const properties = (feature.properties ?? {}) as Record<string, unknown>;
+    const option = availableBarrages.find((item) => item.id === barrageId);
+    const catchmentId = Number(properties.catchment_id ?? NaN);
+    return {
+      kind: "barrage",
+      barrageId,
+      name: option?.name || String(properties.name ?? `Barrage ${barrageId}`),
+      catchmentId: Number.isFinite(catchmentId) ? catchmentId : null,
+      properties: feature.properties,
+    };
+  };
+
+  const toStationEntityOptions = useMemo<EntityControlOption[]>(
+    () =>
+      availableStations.map((station) => ({
+        id: station.id,
+        label: station.name,
+        meta: station.code,
+      })),
+    [availableStations]
+  );
+
+  const toSubBasinEntityOptions = useMemo<EntityControlOption[]>(
+    () =>
+      availableSubBasins.map((subbasin) => ({
+        id: subbasin.id,
+        label: subbasin.name,
+      })),
+    [availableSubBasins]
+  );
+
+  const toReachEntityOptions = useMemo<EntityControlOption[]>(
+    () =>
+      availableReaches.map((reach) => ({
+        id: reach.id,
+        label: reach.name,
+        meta: reach.code,
+      })),
+    [availableReaches]
+  );
+
+  const toBarrageEntityOptions = useMemo<EntityControlOption[]>(
+    () =>
+      availableBarrages.map((barrage) => ({
+        id: barrage.id,
+        label: barrage.name,
+      })),
+    [availableBarrages]
+  );
+
+  const toBasinEntityOptions = useMemo<EntityControlOption[]>(
+    () =>
+      availableBasins.map((basin: any) => ({
+        id: basin.id,
+        label: basin.name,
+      })),
+    [availableBasins]
+  );
+
+  const viewportPadding = useMemo(
+    () => ({
+      topLeft: [showAnalysisPanel ? 440 : 36, 96] as [number, number],
+      bottomRight: [96, 64] as [number, number],
+    }),
+    [showAnalysisPanel]
+  );
+
+  const ensureLayerVisible = (layer: ManagedLayerKey) => {
+    setLeftSidebarLayers((prev) => (prev[layer] ? prev : { ...prev, [layer]: true }));
+  };
+
+  const emphasizeSelection = (layer: ManagedLayerKey, value: string, handler: (value: string) => void) => {
+    if (!value) return;
+    ensureLayerVisible(layer);
+    handler(value);
+  };
+
+  const zoomToSelection = (layer: ManagedLayerKey, value: string, handler: (value: string) => void) => {
+    if (!value) return;
+    ensureLayerVisible(layer);
+    handler(value);
+    setZoomTick((tick) => tick + 1);
+  };
+
+  const selectAndZoomToEntity = (layer: ManagedLayerKey, value: string, handler: (value: string) => void) => {
+    ensureLayerVisible(layer);
+    handler(value);
+    if (value !== ALL) {
+      setZoomTick((tick) => tick + 1);
+    }
+  };
 
   const mapLayers = useMemo(() => {
     return {
-      basins: isRawMode && leftSidebarLayers.basins ? visibleBasinsFC : null,
+      basins: leftSidebarLayers.basins ? visibleBasinsFC : null,
       subBasins: leftSidebarLayers.subBasins ? visibleSubBasinsFC : null,
       reach: leftSidebarLayers.reach ? visibleReachesFC : null,
       stations: leftSidebarLayers.stations ? visibleStationsFC : null,
@@ -366,15 +986,7 @@ export function SpatialModule() {
     visibleSubBasinsFC,
     visibleReachesFC,
     visibleStationsFC,
-    isProjectMode,
   ]);
-
-  const zoomTargetName = useMemo(() => {
-    if (isProjectMode) return BARRAGE_NAME;
-    if (!selectedBarrageId) return BARRAGE_NAME;
-    const found = barrageOptions.find((b) => String(b.id) === selectedBarrageId);
-    return found?.name || BARRAGE_NAME;
-  }, [isProjectMode, selectedBarrageId, barrageOptions]);
 
   const stats = useMemo(
     () => ({
@@ -387,214 +999,93 @@ export function SpatialModule() {
     [visibleBasinsFC, visibleSubBasinsFC, visibleReachesFC, visibleStationsFC, visibleBarragesFC]
   );
 
-  return (
-    <div className="flex gap-4 h-[calc(100vh-8rem)]">
-      {/* Left Sidebar */}
-      <Card className="w-72 flex-shrink-0 overflow-y-auto">
-        <CardHeader className="py-3 px-4">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Layers className="w-4 h-4" />
-            {t("spatial.title")}
-          </CardTitle>
-        </CardHeader>
-
-        <CardContent className="p-4 pt-0 space-y-4">
-          <div>
-            <label className="text-xs text-muted-foreground mb-2 block">
-              {t("spatial.displayMode")}
-            </label>
-            <Select
-              value={displayMode}
-              onValueChange={(v) => setDisplayMode(v as SpatialDisplayMode)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t("spatial.displayMode")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="raw_database">
-                  {t("spatial.displayModes.raw_database")}
-                </SelectItem>
-                <SelectItem value="project_hassan_addakhil">
-                  {t("spatial.displayModes.project_hassan_addakhil")}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+  const analysisPanel = (
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-white/70 bg-white/80 p-3 shadow-sm">
+        <div className="mb-3">
+          <div className="text-sm font-semibold text-slate-900">Zone d'interet</div>
+          <div className="text-[11px] text-slate-500">
+            Choisir l'emprise cartographique principale du module Analyse Spatiale.
           </div>
+        </div>
 
-          {isProjectMode && (
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary" className="rounded-full">
-                {t("spatial.projectBadge")}
-              </Badge>
-              <Badge variant="outline" className="rounded-full">
-                {t("spatial.projectCounts.stations", { count: PROJECT_STATION_IDS.length })}
-              </Badge>
-              <Badge variant="outline" className="rounded-full">
-                {t("spatial.projectCounts.subbasins", {
-                  count: stats.subbasins,
-                })}
-              </Badge>
-              <Badge variant="outline" className="rounded-full">
-                {t("spatial.projectCounts.basins", {
-                  count: stats.basins,
-                })}
-              </Badge>
-              <Badge variant="outline" className="rounded-full">
-                {t("spatial.projectCounts.reaches", {
-                  count: stats.reaches,
-                })}
-              </Badge>
-              <Badge variant="outline" className="rounded-full">
-                {t("spatial.projectCounts.barrages", {
-                  count: stats.barrages,
-                })}
-              </Badge>
-            </div>
-          )}
+        <Select value={displayMode} onValueChange={(value) => changeDisplayMode(value as SpatialDisplayMode)}>
+          <SelectTrigger className="h-10 w-full bg-white">
+            <SelectValue placeholder="Choisir une zone d'interet" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="project_hassan_addakhil">Bassin Hassan Dakhil</SelectItem>
+            <SelectItem value="raw_database">Bassin ABH</SelectItem>
+          </SelectContent>
+        </Select>
 
-          {/* Basin filter */}
-          <div>
-            <label className="text-xs text-muted-foreground mb-2 block">{t("spatial.filters.basin")}</label>
+        <label className="mt-3 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2 text-sm text-slate-700">
+          <span>Contour du bassin</span>
+          <Checkbox checked={leftSidebarLayers.basins} onCheckedChange={() => toggleLayer("basins")} />
+        </label>
 
-            <Select
-              value={isProjectMode ? String(PROJECT_BASIN_ID) : selectedBasinId === "" ? ALL : selectedBasinId}
-              onValueChange={(v) => {
-                if (isProjectMode) return;
-                setSelectedBasinId(v === ALL ? "" : v);
-              }}
-              disabled={isProjectMode}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t("spatial.filters.chooseBasin")} />
-              </SelectTrigger>
-
-              <SelectContent>
-                <SelectItem value={ALL}>{t("spatial.filters.allBasins")}</SelectItem>
-                {visibleBasinOptions.map((b) => (
-                  <SelectItem key={b.id} value={String(b.id)}>
-                    {b.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Subbasin filter */}
-          <div>
-            <label className="text-xs text-muted-foreground mb-2 block">{t("spatial.filters.barrageFilter")}</label>
-
-            <Select
-              value={isProjectMode ? String(PROJECT_BARRAGE_ID) : selectedBarrageId === "" ? ALL : selectedBarrageId}
-              onValueChange={(v) => {
-                if (isProjectMode) return;
-                setSelectedBarrageId(v === ALL ? "" : v);
-              }}
-              disabled={isProjectMode}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t("spatial.filters.filterByBarrage")} />
-              </SelectTrigger>
-
-              <SelectContent>
-                <SelectItem value={ALL}>{t("spatial.filters.allBarrages")}</SelectItem>
-                {visibleBarrageOptions.map((b) => (
-                  <SelectItem key={b.id} value={String(b.id)}>
-                    {b.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Subbasin filter */}
-          <div>
-            <label className="text-xs text-muted-foreground mb-2 block">{t("spatial.filters.subbasin")}</label>
-
-            <Select
-              value={isProjectMode ? ALL : selectedSubBasinId === "" ? ALL : selectedSubBasinId}
-              onValueChange={(v) => {
-                if (isProjectMode) return;
-                setSelectedSubBasinId(v === ALL ? "" : v);
-              }}
-              disabled={isProjectMode || !visibleSubBasinOptions.length}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t("spatial.filters.chooseSubbasin")} />
-              </SelectTrigger>
-
-              <SelectContent>
-                <SelectItem value={ALL}>{t("spatial.filters.allSubbasins")}</SelectItem>
-                {visibleSubBasinOptions.map((sb) => (
-                  <SelectItem key={sb.id} value={String(sb.id)}>
-                    {sb.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="text-[11px] text-muted-foreground mt-1">
-              {t("spatial.filters.subbasinsShown", { count: visibleSubBasinOptions.length })}
-            </div>
-          </div>
-
-          {/* Layers checkboxes */}
-          <div className="pt-2">
-            <label className="text-xs text-muted-foreground mb-2 block">{t("spatial.layers.title")}</label>
-            <div className="space-y-2">
-              {layerItems.map((layer) => (
-                <label
-                  key={layer.id}
-                  className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
-                    leftSidebarLayers[layer.id]
-                      ? "bg-primary/10 ring-1 ring-primary/20"
-                      : "hover:bg-muted"
-                  }`}
-                >
-                  <Checkbox
-                    checked={leftSidebarLayers[layer.id]}
-                    onCheckedChange={() => toggleLayer(layer.id)}
-                  />
-                  <layer.icon className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm">{layer.label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Map */}
-      <div className="flex-1 relative">
-        <HydroMap
-          className="h-full w-full"
-          opacity={opacity}
-          basemap={basemap}
-          displayMode={displayMode}
-          layers={mapLayers}
-          barrages={leftSidebarLayers.barrages ? visibleBarragesFC : null}
-          zoomToBasinRequest={{
-            tick: zoomTick,
-            basinName: zoomTargetName,
-            barrageName: zoomTargetName,
-          }}
-          activeTool={activeTool}
-          exportPngRequest={{ tick: exportTick, filename: "analyse_spatiale.png" }}
-          selectedBasinId={activeBasinId}
-          selectedSubBasinId={activeSubBasinId}
-          selectedBarrageId={activeBarrageId}
-          debugMode={debugMode}
-        />
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Badge variant="secondary" className="rounded-full">
+            {isProjectMode ? "Hassan Addakhil" : "ABH"}
+          </Badge>
+          <Badge variant="outline" className="rounded-full">{stats.barrages} barrage(x)</Badge>
+          <Badge variant="outline" className="rounded-full">{stats.stations} station(s)</Badge>
+          <Badge variant="outline" className="rounded-full">{stats.subbasins} sous-bassin(s)</Badge>
+          <Badge variant="outline" className="rounded-full">{stats.reaches} troncon(s)</Badge>
+        </div>
       </div>
 
-      {/* Right Sidebar */}
-      <Card className="w-64 flex-shrink-0 overflow-y-auto">
-        <CardHeader className="py-3 px-4">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Ruler className="w-4 h-4" />
-            {t("spatial.tools.title")}
-          </CardTitle>
-        </CardHeader>
+      <div className="space-y-3">
+        <EntityControlCard
+          title="Barrages"
+          helper="Selection du barrage principal ou des barrages du bassin actif."
+          icon={<Landmark className="h-4 w-4" />}
+          visible={leftSidebarLayers.barrages}
+          count={stats.barrages}
+          selectedValue={selectedBarrageId}
+          options={toBarrageEntityOptions}
+          placeholder="Tous les barrages"
+          onToggleVisibility={() => toggleLayer("barrages")}
+          onSelect={(value) => selectAndZoomToEntity("barrages", value, focusBarrage)}
+          onEmphasize={() => emphasizeSelection("barrages", selectedBarrageId, focusBarrage)}
+          onZoom={() => zoomToSelection("barrages", selectedBarrageId, focusBarrage)}
+        />
 
-        <CardContent className="p-4 pt-0 space-y-4">
+        <EntityControlCard
+          title="Stations"
+          helper="Priorite de clic la plus haute sur la carte."
+          icon={<MapPin className="h-4 w-4" />}
+          visible={leftSidebarLayers.stations}
+          count={stats.stations}
+          selectedValue={selectedStationId}
+          options={toStationEntityOptions}
+          placeholder="Toutes les stations"
+          onToggleVisibility={() => toggleLayer("stations")}
+          onSelect={(value) => selectAndZoomToEntity("stations", value, focusStation)}
+          onEmphasize={() => emphasizeSelection("stations", selectedStationId, focusStation)}
+          onZoom={() => zoomToSelection("stations", selectedStationId, focusStation)}
+        />
+
+        <EntityControlCard
+          title="Sous-bassins"
+          helper="Polygones de reference du bassin selectionne."
+          icon={<Grid3X3 className="h-4 w-4" />}
+          visible={leftSidebarLayers.subBasins}
+          count={stats.subbasins}
+          selectedValue={selectedSubBasinId}
+          options={toSubBasinEntityOptions}
+          placeholder="Tous les sous-bassins"
+          onToggleVisibility={() => toggleLayer("subBasins")}
+          onSelect={(value) => selectAndZoomToEntity("subBasins", value, focusSubBasin)}
+          onEmphasize={() => emphasizeSelection("subBasins", selectedSubBasinId, focusSubBasin)}
+          onZoom={() => zoomToSelection("subBasins", selectedSubBasinId, focusSubBasin)}
+        />
+      </div>
+    </div>
+  );
+
+  const toolsPanel = (
+    <>
           {/* Navigation */}
           <div>
             <label className="text-xs text-muted-foreground mb-2 block">{t("spatial.tools.navigation")}</label>
@@ -605,16 +1096,24 @@ export function SpatialModule() {
               onClick={() => setZoomTick((t) => t + 1)}
             >
               <Search className="w-3.5 h-3.5 mr-2" />
-              {t("spatial.tools.zoom")} {zoomTargetName}
+              {t("spatial.tools.zoomSelection")}
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="mt-2 w-full"
+              onClick={() => resetSelections()}
+            >
+              {t("spatial.tools.fullView")}
             </Button>
           </div>
 
           {/* Basemap */}
           <div>
             <label className="text-xs text-muted-foreground mb-2 block">{t("spatial.tools.basemap")}</label>
-            <Select value={basemap} onValueChange={(v) => setBasemap(v as BasemapId)}>
-              <SelectTrigger>
-                <SelectValue placeholder={t("spatial.tools.chooseBasemap")} />
+            <Select value={basemap} onValueChange={(value) => setBasemap(value as BasemapId)}>
+              <SelectTrigger className="h-10 w-full">
+                <SelectValue placeholder={t("spatial.tools.basemap")} />
               </SelectTrigger>
               <SelectContent>
                 {Object.values(BASEMAPS).map((bm) => (
@@ -631,6 +1130,7 @@ export function SpatialModule() {
             <label className="text-xs text-muted-foreground mb-2 block">{t("spatial.tools.measure")}</label>
             <div className="flex gap-2">
               <Button
+                type="button"
                 size="sm"
                 variant={activeTool === "distance" ? "default" : "outline"}
                 onClick={() => setActiveTool(activeTool === "distance" ? null : "distance")}
@@ -640,6 +1140,7 @@ export function SpatialModule() {
                 {t("spatial.tools.distance")}
               </Button>
               <Button
+                type="button"
                 size="sm"
                 variant={activeTool === "area" ? "default" : "outline"}
                 onClick={() => setActiveTool(activeTool === "area" ? null : "area")}
@@ -705,8 +1206,285 @@ export function SpatialModule() {
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+    </>
+  );
+
+  const legendContent = (
+    <div className="space-y-2 text-xs text-muted-foreground">
+      <div className="flex items-center gap-2">
+        <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border-2 border-white bg-[#F97316] shadow-[0_0_0_3px_rgba(249,115,22,0.22)]" />
+        <span>{t("spatial.legend.stations")}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border-2 border-[#0891B2] bg-[#06B6D4]" />
+        <span>{t("spatial.legend.barrages")}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="inline-flex h-1.5 w-5 rounded bg-[#1E3A8A]" />
+        <span>{t("spatial.legend.basinOutline")}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="inline-flex h-3 w-5 rounded-sm border border-[#16A34A] bg-[#22C55E]" />
+        <span>{t("spatial.legend.subbasins")}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="inline-flex h-1 w-5 rounded bg-[#3B82F6]" />
+        <span>{t("spatial.legend.reach")}</span>
+      </div>
     </div>
   );
+
+  const mapTopToolbar = (
+    <div className="pointer-events-none absolute inset-x-3 top-3 z-[540] grid grid-cols-[1fr_auto_1fr] items-start gap-2 sm:inset-x-4 sm:top-4">
+      <div aria-hidden className="min-w-0" />
+
+      <div className="pointer-events-auto flex shrink-0 items-center gap-2 rounded-full border border-white/60 bg-white/60 px-2 py-1.5 shadow-xl shadow-slate-950/20 backdrop-blur-xl">
+        {!mapOnlyMode && !showAnalysisPanel && (
+          <Button size="sm" variant="ghost" className="h-8" onClick={() => setShowAnalysisPanel(true)}>
+            <PanelLeftOpen className="mr-2 h-4 w-4" />
+            <span className="hidden md:inline">{t("spatial.tools.showAnalysisPanel")}</span>
+          </Button>
+        )}
+        <Button
+          size="sm"
+          variant={mapOnlyMode ? "secondary" : "default"}
+          className="h-8"
+          onClick={() => setMapOnlyMode((current) => !current)}
+        >
+          {mapOnlyMode ? (
+            <Minimize2 className="mr-2 h-4 w-4" />
+          ) : (
+            <Maximize2 className="mr-2 h-4 w-4" />
+          )}
+          {mapOnlyMode ? t("spatial.tools.exitMapOnly") : t("spatial.tools.mapOnly")}
+        </Button>
+      </div>
+
+      <div className="pointer-events-auto flex min-w-0 items-center justify-end">
+        <div className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full border border-white/60 bg-white/70 p-1 shadow-lg shadow-slate-950/15 backdrop-blur-xl sm:gap-1">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 shrink-0 gap-1.5 rounded-full px-2.5 text-xs font-medium text-slate-700 hover:bg-white/80"
+                title={t("spatial.tools.basemap")}
+              >
+                <Map className="h-3.5 w-3.5 shrink-0" />
+                <span className="whitespace-nowrap">{t("spatial.tools.basemap")}</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              side="bottom"
+              align="end"
+              className="z-[99999] w-64 space-y-2 bg-white/95 p-3 backdrop-blur-xl"
+            >
+              <div className="text-sm font-semibold">{t("spatial.tools.basemap")}</div>
+              <Select value={basemap} onValueChange={(value) => setBasemap(value as BasemapId)}>
+                <SelectTrigger className="h-9 w-full bg-white">
+                  <SelectValue placeholder={t("spatial.tools.basemap")} />
+                </SelectTrigger>
+                <SelectContent className="z-[100000]">
+                  {Object.values(BASEMAPS).map((bm) => (
+                    <SelectItem key={bm.id} value={bm.id}>
+                      {bm.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </PopoverContent>
+          </Popover>
+
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 shrink-0 gap-1.5 rounded-full px-2.5 text-xs font-medium text-slate-700 hover:bg-white/80"
+            title={t("spatial.tools.exportPng")}
+            onClick={() => setExportTick((tick) => tick + 1)}
+          >
+            <Download className="h-3.5 w-3.5 shrink-0" />
+            <span className="whitespace-nowrap">{t("spatial.tools.exportPng")}</span>
+          </Button>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 shrink-0 gap-1.5 rounded-full px-2.5 text-xs font-medium text-slate-700 hover:bg-white/80"
+                title={t("spatial.legend.title")}
+              >
+                <Info className="h-3.5 w-3.5 shrink-0" />
+                <span className="whitespace-nowrap">{t("spatial.legend.title")}</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              side="bottom"
+              align="end"
+              className="z-[99999] w-64 bg-white/95 p-3 backdrop-blur-xl"
+            >
+              <div className="mb-3 text-sm font-semibold">{t("spatial.legend.title")}</div>
+              {legendContent}
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div
+      className={`${
+        mapOnlyMode
+          ? "fixed inset-0 z-[100] bg-slate-950"
+          : "relative h-[calc(100vh-8rem)] overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 shadow-xl"
+      }`}
+    >
+      <HydroMap
+        className="h-full w-full"
+        opacity={opacity}
+        basemap={basemap}
+        displayMode={displayMode}
+        layers={mapLayers}
+        barrages={leftSidebarLayers.barrages ? visibleBarragesFC : null}
+        selectionZoomRequest={{ tick: zoomTick }}
+        activeTool={activeTool}
+        exportPngRequest={{ tick: exportTick, filename: "analyse_spatiale.png" }}
+        resetViewRequest={{ tick: resetViewTick }}
+        selectedBasinId={activeBasinId}
+        selectedSubBasinId={activeSubBasinId}
+        selectedBarrageId={activeBarrageId}
+        selectedReachId={activeReachId}
+        selectedStationId={activeStationId}
+        viewportPadding={viewportPadding}
+        onStationSelect={(payload) => {
+          setSelectedBarrageId("");
+          setSelectedReachId("");
+          setSelectedStationId(String(payload.stationId));
+          setSelectedSubBasinId("");
+          setInspectorSelection({
+            kind: "station",
+            stationId: payload.stationId,
+            name: payload.name,
+            code: payload.code,
+            catchmentId: payload.catchmentId ?? null,
+            stationType: payload.stationType ?? null,
+            properties: payload.properties,
+          });
+        }}
+        onSubBasinSelect={(payload) => {
+          setSelectedBarrageId("");
+          setSelectedReachId("");
+          setSelectedSubBasinId(String(payload.subbasinId));
+          setSelectedStationId("");
+          setInspectorSelection({
+            kind: "subbasin",
+            subbasinId: payload.subbasinId,
+            name: payload.name,
+            catchmentId: payload.catchmentId ?? null,
+            properties: payload.properties,
+          });
+        }}
+        onReachSelect={(payload) => {
+          setSelectedBarrageId("");
+          setSelectedSubBasinId("");
+          setSelectedReachId(String(payload.reachId));
+          setSelectedStationId("");
+          setInspectorSelection({
+            kind: "reach",
+            reachId: payload.reachId,
+            name: payload.name,
+            code: payload.code,
+            subbasinId: payload.subbasinId ?? null,
+            catchmentId: payload.catchmentId ?? null,
+            properties: payload.properties,
+          });
+        }}
+        onBarrageSelect={(payload) => {
+          setSelectedSubBasinId("");
+          setSelectedReachId("");
+          setSelectedStationId("");
+          setSelectedBarrageId(String(payload.barrageId));
+          setInspectorSelection({
+            kind: "barrage",
+            barrageId: payload.barrageId,
+            name: payload.name,
+            catchmentId: payload.catchmentId ?? null,
+            properties: payload.properties,
+          });
+        }}
+        debugMode={debugMode}
+      />
+
+      {spatialLoading && (
+        <div className="pointer-events-none absolute inset-x-0 top-20 z-[530] mx-auto flex w-fit items-center gap-2 rounded-full border border-white/70 bg-white/80 px-4 py-2 text-sm font-medium text-slate-700 shadow-xl shadow-slate-950/20 backdrop-blur-xl">
+          <Loader2 className="h-4 w-4 animate-spin text-cyan-700" />
+          Chargement des couches cartographiques...
+        </div>
+      )}
+
+      {mapTopToolbar}
+
+      {showAnalysisPanel && (
+        <FloatingPanel
+          title={t("spatial.title")}
+          icon={<Layers className="h-4 w-4" />}
+          anchor="left"
+          widthClass="w-[22rem] min-w-[20rem] max-w-[42rem]"
+          onClose={() => setShowAnalysisPanel(false)}
+        >
+          {analysisPanel}
+        </FloatingPanel>
+      )}
+
+      {inspectorSelection && (
+        <div
+          ref={inspectorPopupRef}
+          className="absolute right-6 top-20 z-[560] resize overflow-auto rounded-2xl"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
+          onWheel={(event) => event.stopPropagation()}
+          style={{
+            width: `${Math.round(380 * inspectorPopupScale)}px`,
+            height: `${Math.round(540 * inspectorPopupScale)}px`,
+            minWidth: "320px",
+            minHeight: "360px",
+            maxWidth: "calc(100vw - 2rem)",
+            maxHeight: "calc(100vh - 8rem)",
+            willChange: "transform",
+            transformOrigin: "top right",
+          }}
+        >
+          <div
+            className="mb-2 flex items-center justify-between rounded-t-2xl border border-white/60 bg-white/70 px-2.5 py-1.5 backdrop-blur-xl cursor-move select-none"
+            onPointerDown={startInspectorDrag}
+          >
+            <div className="flex items-center gap-2 text-[13px] font-semibold text-slate-800">
+              <Move className="h-3.5 w-3.5" />
+              Détails
+            </div>
+            <div className="flex items-center gap-1">
+              <Button size="icon" variant="ghost" className="h-6 w-6" onPointerDown={(e) => e.stopPropagation()} onClick={() => setInspectorPopupScale((s) => Math.max(0.75, Number((s - 0.1).toFixed(2))))}>
+                <Minus className="h-3.5 w-3.5" />
+              </Button>
+              <Button size="icon" variant="ghost" className="h-6 w-6" onPointerDown={(e) => e.stopPropagation()} onClick={() => setInspectorPopupScale((s) => Math.min(1.4, Number((s + 0.1).toFixed(2))))}>
+                <Plus className="h-3.5 w-3.5" />
+              </Button>
+              <Button size="icon" variant="ghost" className="h-6 w-6" onPointerDown={(e) => e.stopPropagation()} onClick={() => resetSelections()}>
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+          <SpatialInspectorPanel
+            className="h-[calc(100%-2rem)] w-full"
+            selection={inspectorSelection}
+            onClear={resetSelections}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+export function SpatialModule() {
+  return <OperationalSpatialModule />;
 }

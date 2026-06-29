@@ -1,3 +1,5 @@
+import { resolveSelectableAggregations } from "@/lib/aggregationAvailability";
+
 export type DataGranularity = "daily" | "monthly" | "yearly";
 export type AggregationMode = "day" | "month" | "year";
 
@@ -73,9 +75,17 @@ export function detectSeriesGranularity(rows: GranularityRow[]): DataGranularity
 }
 
 export function getAvailableAggregationModes(granularity: DataGranularity): AggregationMode[] {
-  if (granularity === "yearly") return ["year"];
-  if (granularity === "monthly") return ["month"];
-  return ["day", "month", "year"];
+  const native = {
+    daily: granularity === "daily",
+    monthly: granularity === "monthly",
+    annual: granularity === "yearly",
+  };
+  const selectable = resolveSelectableAggregations(native);
+  const modes: AggregationMode[] = [];
+  if (selectable.daily) modes.push("day");
+  if (selectable.monthly) modes.push("month");
+  if (selectable.annual) modes.push("year");
+  return modes;
 }
 
 export function formatDateByAggregation(dateLike: string, agg: AggregationMode): string {
@@ -92,4 +102,32 @@ export function formatDateByAggregation(dateLike: string, agg: AggregationMode):
   }
 
   return d.toLocaleDateString("fr-FR");
+}
+
+function parseDateYmd(value?: string | null): Date | null {
+  if (!value) return null;
+  const normalized = String(value).slice(0, 10);
+  const d = new Date(`${normalized}T00:00:00Z`);
+  return Number.isFinite(d.getTime()) ? d : null;
+}
+
+export function clampAggregationForRange(
+  requested: AggregationMode,
+  startDate?: string | null,
+  endDate?: string | null
+): AggregationMode {
+  if (requested !== "day") return requested;
+
+  const start = parseDateYmd(startDate);
+  const end = parseDateYmd(endDate);
+  if (!start || !end) return requested;
+
+  const spanDays = Math.max(
+    1,
+    Math.round((end.getTime() - start.getTime()) / 86400000) + 1
+  );
+
+  if (spanDays > 3650) return "year";
+  if (spanDays > 730) return "month";
+  return requested;
 }

@@ -4,10 +4,11 @@ import { authController } from "../controllers/authController";
 import { verifyToken } from "../middleware/auth";
 
 const router = Router();
+const isProd = process.env.NODE_ENV === "production";
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: isProd ? 20 : 500,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, error: "Trop de tentatives, réessayez plus tard." },

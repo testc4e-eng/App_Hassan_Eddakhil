@@ -46,18 +46,36 @@ const SWAT_PROPERTIES: PropertyMeta[] = [
 
 export class SwatIngestionService {
   private pool = db.getPool();
+  private infrastructureReady = false;
+  private infrastructureInitPromise: Promise<void> | null = null;
 
   private async ensureInfrastructureNoTx(): Promise<void> {
-    const client = await this.pool.connect();
+    if (this.infrastructureReady) {
+      return;
+    }
+
+    if (!this.infrastructureInitPromise) {
+      this.infrastructureInitPromise = (async () => {
+        const client = await this.pool.connect();
+        try {
+          await client.query("BEGIN");
+          await this.ensureInfrastructure(client);
+          await client.query("COMMIT");
+        } catch (error) {
+          await client.query("ROLLBACK");
+          throw error;
+        } finally {
+          client.release();
+        }
+      })();
+    }
+
     try {
-      await client.query("BEGIN");
-      await this.ensureInfrastructure(client);
-      await client.query("COMMIT");
+      await this.infrastructureInitPromise;
+      this.infrastructureReady = true;
     } catch (error) {
-      await client.query("ROLLBACK");
+      this.infrastructureInitPromise = null;
       throw error;
-    } finally {
-      client.release();
     }
   }
 
@@ -500,21 +518,37 @@ export class SwatIngestionService {
 
     await this.execute(
       `
+      WITH ranked AS (
+        SELECT
+          'rch'::text AS entity_type,
+          COALESCE(sr.swat_rch, sr.swat_sub) AS swat_code,
+          rn.subbasin_id,
+          rn.reach_id,
+          rn.mapping_method,
+          rn.mapping_confidence,
+          now() AS updated_at,
+          ROW_NUMBER() OVER (
+            PARTITION BY COALESCE(sr.swat_rch, sr.swat_sub)
+            ORDER BY rn.mapping_confidence DESC NULLS LAST, rn.subbasin_id NULLS LAST, rn.reach_id NULLS LAST
+          ) AS rn_rank
+        FROM staging.swat_rch_raw sr
+        JOIN staging.swat_rch_norm rn
+          ON rn.batch_id = sr.batch_id
+         AND rn.obs_date = COALESCE(sr.period_date, to_date(sr.yyyyddd::text, 'YYYYDDD'), make_date(sr.year, GREATEST(COALESCE(sr.mon, 1), 1), 1))
+        WHERE sr.batch_id = $1
+      )
       INSERT INTO core.swat_entity_map (entity_type, swat_code, subbasin_id, reach_id, mapping_method, confidence, is_active, updated_at)
-      SELECT DISTINCT
-        'rch',
-        COALESCE(sr.swat_rch, sr.swat_sub),
-        rn.subbasin_id,
-        rn.reach_id,
-        rn.mapping_method,
-        rn.mapping_confidence,
+      SELECT
+        entity_type,
+        swat_code,
+        subbasin_id,
+        reach_id,
+        mapping_method,
+        mapping_confidence,
         true,
-        now()
-      FROM staging.swat_rch_raw sr
-      JOIN staging.swat_rch_norm rn
-        ON rn.batch_id = sr.batch_id
-       AND rn.obs_date = COALESCE(sr.period_date, to_date(sr.yyyyddd::text, 'YYYYDDD'), make_date(sr.year, GREATEST(COALESCE(sr.mon, 1), 1), 1))
-      WHERE sr.batch_id = $1
+        updated_at
+      FROM ranked
+      WHERE rn_rank = 1
       ON CONFLICT (entity_type, swat_code) DO UPDATE
       SET subbasin_id = EXCLUDED.subbasin_id,
           reach_id = EXCLUDED.reach_id,
@@ -529,20 +563,35 @@ export class SwatIngestionService {
 
     await this.execute(
       `
+      WITH ranked AS (
+        SELECT
+          'sub'::text AS entity_type,
+          sr.swat_sub AS swat_code,
+          sn.subbasin_id,
+          sn.mapping_method,
+          sn.mapping_confidence,
+          now() AS updated_at,
+          ROW_NUMBER() OVER (
+            PARTITION BY sr.swat_sub
+            ORDER BY sn.mapping_confidence DESC NULLS LAST, sn.subbasin_id NULLS LAST
+          ) AS rn_rank
+        FROM staging.swat_sub_raw sr
+        JOIN staging.swat_sub_norm sn
+          ON sn.batch_id = sr.batch_id
+         AND sn.obs_date = COALESCE(sr.period_date, to_date(sr.yyyyddd::text, 'YYYYDDD'), make_date(sr.year, GREATEST(COALESCE(sr.mon, 1), 1), 1))
+        WHERE sr.batch_id = $1
+      )
       INSERT INTO core.swat_entity_map (entity_type, swat_code, subbasin_id, mapping_method, confidence, is_active, updated_at)
-      SELECT DISTINCT
-        'sub',
-        sr.swat_sub,
-        sn.subbasin_id,
-        sn.mapping_method,
-        sn.mapping_confidence,
+      SELECT
+        entity_type,
+        swat_code,
+        subbasin_id,
+        mapping_method,
+        mapping_confidence,
         true,
-        now()
-      FROM staging.swat_sub_raw sr
-      JOIN staging.swat_sub_norm sn
-        ON sn.batch_id = sr.batch_id
-       AND sn.obs_date = COALESCE(sr.period_date, to_date(sr.yyyyddd::text, 'YYYYDDD'), make_date(sr.year, GREATEST(COALESCE(sr.mon, 1), 1), 1))
-      WHERE sr.batch_id = $1
+        updated_at
+      FROM ranked
+      WHERE rn_rank = 1
       ON CONFLICT (entity_type, swat_code) DO UPDATE
       SET subbasin_id = EXCLUDED.subbasin_id,
           mapping_method = EXCLUDED.mapping_method,
@@ -732,10 +781,18 @@ export class SwatIngestionService {
         UNION ALL
         SELECT * FROM syld_rows
       ),
+      deduped_rows AS (
+        SELECT
+          ts_id,
+          dt,
+          MAX(val)::double precision AS val
+        FROM union_rows
+        GROUP BY ts_id, dt
+      ),
       upserted AS (
         INSERT INTO core.measurements (ts_id, datetime, value, quality_flag)
-        SELECT u.ts_id, u.dt, u.val, NULL::smallint
-        FROM union_rows u
+        SELECT d.ts_id, d.dt, d.val, NULL::smallint
+        FROM deduped_rows d
         ON CONFLICT (ts_id, datetime) DO UPDATE
         SET value = EXCLUDED.value
         RETURNING ts_id, datetime
@@ -753,13 +810,14 @@ export class SwatIngestionService {
   }
 
   async importSwat(payload: SwatImportPayload): Promise<Record<string, unknown>> {
-    const scenarioCode = payload.scenarioCode?.trim() || "SWAT_OUTPUT";
+    const scenarioCode = payload.scenarioCode?.trim() || "etat_actuel";
     const runCode = payload.runCode?.trim() || `SWAT_${scenarioCode}`;
     const runName = payload.runName?.trim() || `SWAT ${scenarioCode}`;
     const dryRun = payload.dryRun === true;
     const importMode = payload.importMode ?? "skipAccess";
     const batchId = this.newBatchId();
     const logs: string[] = [];
+    const isScenarioFolderRun = /^scenario_[1-4]$/i.test(scenarioCode);
 
     if (importMode !== "skipAccess") {
       const importScriptPath = this.resolveImportScriptPath();
@@ -778,7 +836,7 @@ export class SwatIngestionService {
       }
     }
 
-    const accessImportId = await this.getLatestAccessImportId(scenarioCode);
+    const accessImportId = isScenarioFolderRun ? null : await this.getLatestAccessImportId(scenarioCode);
     const client = await this.pool.connect();
 
     try {
@@ -903,26 +961,29 @@ export class SwatIngestionService {
             WHEN st.station_type_code = 'SWAT_SUBBASIN' THEN 'subbasin'
             ELSE 'station'
           END AS entity_type,
-          ts.source_type AS data_type,
-          COUNT(*)::int AS points_count
-        FROM core.measurements m
-        JOIN core.timeseries ts ON ts.ts_id = m.ts_id
-        JOIN core.stations st ON st.station_id = ts.station_id
-        GROUP BY 1,2
+          v.source_type AS data_type,
+          v.station_id,
+          COALESCE(v.n_points, 0)::int AS points_count
+        FROM public.v_ts_catalog_enriched v
+        JOIN core.stations st ON st.station_id = v.station_id
+      )
+      , swat_props AS (
+        SELECT DISTINCT v.standard_name
+        FROM public.v_ts_catalog_enriched v
+        WHERE v.source_type = 'simulated'
       ),
-      swat_props AS (
-        SELECT DISTINCT op.standard_name
-        FROM core.timeseries ts
-        JOIN ref.observed_properties op ON op.property_id = ts.property_id
-        WHERE ts.source_type = 'simulated'
+      simulated AS (
+        SELECT *
+        FROM availability
+        WHERE data_type = 'simulated'
       )
       SELECT
         (SELECT COUNT(*)::int FROM core.data_batches WHERE source = 'SWAT') AS batches_swat,
-        (SELECT COUNT(*)::int FROM availability WHERE data_type = 'simulated') AS availability_simulated,
-        (SELECT COALESCE(SUM(points_count),0)::int FROM availability WHERE data_type = 'simulated') AS points_simulated,
-        (SELECT COUNT(DISTINCT station_id)::int FROM core.timeseries WHERE source_type = 'simulated') AS entities_unique_simulated,
-        (SELECT COALESCE(SUM(points_count),0)::int FROM availability WHERE data_type = 'simulated' AND entity_type = 'reach') AS points_reach_simulated,
-        (SELECT COALESCE(SUM(points_count),0)::int FROM availability WHERE data_type = 'simulated' AND entity_type = 'subbasin') AS points_subbasin_simulated,
+        (SELECT COUNT(*)::int FROM simulated) AS availability_simulated,
+        (SELECT COALESCE(SUM(points_count),0)::int FROM simulated) AS points_simulated,
+        (SELECT COUNT(DISTINCT station_id)::int FROM public.v_ts_catalog_enriched WHERE source_type = 'simulated') AS entities_unique_simulated,
+        (SELECT COALESCE(SUM(points_count),0)::int FROM simulated WHERE entity_type = 'reach') AS points_reach_simulated,
+        (SELECT COALESCE(SUM(points_count),0)::int FROM simulated WHERE entity_type = 'subbasin') AS points_subbasin_simulated,
         (SELECT COUNT(*)::int FROM swat_props) AS variables_simulated_available
       `
     );
@@ -933,48 +994,72 @@ export class SwatIngestionService {
     await this.ensureInfrastructureNoTx();
     return this.query<SwatAvailabilityRow>(
       `
+      WITH base AS (
+        SELECT
+          v.ts_id,
+          v.station_id,
+          st.station_code,
+          st.name AS station_name,
+          st.station_type_code,
+          c.name AS basin_name,
+          v.source_type AS data_type,
+          v.property_id,
+          v.standard_name,
+          v.property_name,
+          COALESCE(v.n_points, 0)::int AS points_count,
+          v.start_date::date AS min_date,
+          v.end_date::date AS max_date,
+          v.run_id,
+          COALESCE(v.scenario_name, mr.scenario_name) AS run_name,
+          v.scenario_code,
+          mb.batch_id
+        FROM public.v_ts_catalog_enriched v
+        JOIN core.stations st ON st.station_id = v.station_id
+        LEFT JOIN core.catchments c ON c.catchment_id = st.catchment_id
+        LEFT JOIN core.model_runs mr ON mr.run_id = v.run_id
+        LEFT JOIN LATERAL (
+          SELECT db.batch_id
+          FROM core.data_batches db
+          WHERE db.source = 'SWAT'
+            AND db.run_id = v.run_id
+            AND COALESCE(db.scenario_code, '') = COALESCE(v.scenario_code, '')
+          ORDER BY db.imported_at DESC, db.batch_id DESC
+          LIMIT 1
+        ) mb ON true
+      )
       SELECT
         CASE
-          WHEN st.station_code LIKE 'swat_rch_%' THEN 'reach'
-          WHEN st.station_code LIKE 'swat_sub_%' THEN 'subbasin'
-          WHEN st.station_type_code = 'SWAT_REACH' THEN 'reach'
-          WHEN st.station_type_code = 'SWAT_SUBBASIN' THEN 'subbasin'
+          WHEN station_code LIKE 'swat_rch_%' THEN 'reach'
+          WHEN station_code LIKE 'swat_sub_%' THEN 'subbasin'
+          WHEN station_type_code = 'SWAT_REACH' THEN 'reach'
+          WHEN station_type_code = 'SWAT_SUBBASIN' THEN 'subbasin'
           ELSE 'station'
         END AS entity_type,
         CASE
-          WHEN st.station_code LIKE 'swat_sub_%' THEN COALESCE(NULLIF(replace(st.station_code, 'swat_sub_', ''), '')::int, st.station_id)
-          WHEN st.station_code LIKE 'swat_rch_%' THEN COALESCE(NULLIF(replace(st.station_code, 'swat_rch_', ''), '')::int, st.station_id)
-          ELSE st.station_id
+          WHEN station_code LIKE 'swat_sub_%' THEN COALESCE(NULLIF(replace(station_code, 'swat_sub_', ''), '')::int, station_id)
+          WHEN station_code LIKE 'swat_rch_%' THEN COALESCE(NULLIF(replace(station_code, 'swat_rch_', ''), '')::int, station_id)
+          ELSE station_id
         END AS entity_id,
-        st.station_code AS entity_code,
-        st.name AS entity_name,
-        c.name AS basin_name,
-        ts.source_type AS data_type,
+        station_code AS entity_code,
+        station_name AS entity_name,
+        basin_name,
+        data_type,
         CASE
-          WHEN op.standard_name = 'SWAT_FLOW_M3S' THEN 'flow_m3s'
-          WHEN op.standard_name = 'SWAT_SED_TONS' THEN 'sed_tons'
-          WHEN op.standard_name = 'SWAT_SYLDT_HA' THEN 'syldt_ha'
-          ELSE COALESCE(lower(op.standard_name), 'prop_' || op.property_id::text)
+          WHEN standard_name = 'SWAT_FLOW_M3S' THEN 'flow_m3s'
+          WHEN standard_name = 'SWAT_SED_TONS' THEN 'sed_tons'
+          WHEN standard_name = 'SWAT_SYLDT_HA' THEN 'syldt_ha'
+          ELSE COALESCE(lower(standard_name), 'prop_' || property_id::text)
         END AS variable_code,
-        op.name AS variable_label,
-        COUNT(*)::int AS points_count,
-        MIN(m.datetime)::date::text AS min_date,
-        MAX(m.datetime)::date::text AS max_date,
-        'du ' || to_char(MIN(m.datetime)::date, 'DD/MM/YYYY') || ' au ' || to_char(MAX(m.datetime)::date, 'DD/MM/YYYY') AS period_fr,
-        ts.run_id,
-        mr.scenario_name AS run_name,
-        mr.scenario_code,
-        MAX(mb.batch_id) AS batch_id
-      FROM core.measurements m
-      JOIN core.timeseries ts ON ts.ts_id = m.ts_id
-      JOIN core.stations st ON st.station_id = ts.station_id
-      JOIN ref.observed_properties op ON op.property_id = ts.property_id
-      JOIN core.model_runs mr ON mr.run_id = ts.run_id
-      LEFT JOIN core.catchments c ON c.catchment_id = st.catchment_id
-      LEFT JOIN core.measurement_batches mb
-        ON mb.ts_id = m.ts_id
-       AND mb.datetime = m.datetime
-      GROUP BY 1,2,3,4,5,6,7,8,13,14,15
+        property_name AS variable_label,
+        points_count,
+        min_date::text AS min_date,
+        max_date::text AS max_date,
+        'du ' || to_char(min_date, 'DD/MM/YYYY') || ' au ' || to_char(max_date, 'DD/MM/YYYY') AS period_fr,
+        run_id,
+        run_name,
+        scenario_code,
+        batch_id
+      FROM base
       ORDER BY entity_type, entity_id, variable_code, data_type
       `
     );

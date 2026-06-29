@@ -1,6 +1,6 @@
 param(
   [string]$MdbPath = "",
-  [string]$OutputDir = "C:\dev\Projects\hydro_HD\DOCUMENTATION"
+  [string]$OutputDir = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -89,6 +89,8 @@ function Get-Preview {
   return $rows
 }
 
+$defaultReportsDir = Join-Path $PSScriptRoot "reports"
+if (-not $OutputDir) { $OutputDir = $defaultReportsDir }
 if (-not (Test-Path $OutputDir)) { New-Item -ItemType Directory -Path $OutputDir | Out-Null }
 
 $MdbPath = Resolve-MdbPath -Path $MdbPath
@@ -110,16 +112,15 @@ $inventory | ConvertTo-Json -Depth 8 | Set-Content -Encoding UTF8 (Join-Path $Ou
 $summary = @"
 # SWATOutput.mdb - Analyse
 
-- Fichier: `$MdbPath`
+- Fichier: $MdbPath
 - Tables: $($tables.Count)
-- Tables principales: `sub`, `rch`
-- Tables dictionnaire: `tbl*Def`
+- Tables principales: sub, rch
+- Tables dictionnaire: tbl*Def
 
-## Lecture métier
+## Lecture metier
 
-`sub` et `rch` sont les séries temporelles journalières SWAT.
-Les `tbl*Def` servent à documenter les variables et leurs labels.
-`YEAR + YYYYDDD` doit être utilisé pour construire la date journalière.
+sub et rch sont les series temporelles SWAT.
+YEAR + YYYYDDD est utilise pour construire la date.
 "@
 
 $summary | Set-Content -Encoding UTF8 (Join-Path $OutputDir "swat_mdb_analysis.md")

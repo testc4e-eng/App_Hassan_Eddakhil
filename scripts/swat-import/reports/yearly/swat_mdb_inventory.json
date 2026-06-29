@@ -1,0 +1,1330 @@
+﻿[
+    {
+        "table_name":  "rch",
+        "row_count":  551,
+        "columns":  [
+                        {
+                            "name":  "SUB",
+                            "type":  3,
+                            "size":  4
+                        },
+                        {
+                            "name":  "YEAR",
+                            "type":  3,
+                            "size":  4
+                        },
+                        {
+                            "name":  "MON",
+                            "type":  3,
+                            "size":  4
+                        },
+                        {
+                            "name":  "AREAkm2",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "FLOW_INcms",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "FLOW_OUTcms",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "EVAPcms",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "TLOSScms",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "SED_INtons",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "SED_OUTtons",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "SEDCONCmg_kg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "ORGN_INkg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "ORGN_OUTkg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "ORGP_INkg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "ORGP_OUTkg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "NO3_INkg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "NO3_OUTkg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "NH4_INkg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "NH4_OUTkg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "NO2_INkg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "NO2_OUTkg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "MINP_INkg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "MINP_OUTkg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "CHLA_INkg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "CHLA_OUTkg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "CBOD_INkg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "CBOD_OUTkg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "DISOX_INkg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "DISOX_OUTkg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "SOLPST_INmg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "SOLPST_OUTmg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "SORPST_INmg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "SORPST_OUTmg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "REACTPTmg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "VOLPSTmg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "SETTLPST_mg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "RESUSP_PSTmg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "DIFUSEPSTmg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "REACHBEDPSTmg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "BURYPSTmg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "BED_PSTmg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "BACTP_OUTct",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "BACTLP_OUTct",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "CMETAL1kg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "CMETAL2kg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "CMETAL3kg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "TOT_Nkg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "TOT_Pkg",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "NO3CONCmg/l",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "WTMPdegc",
+                            "type":  5,
+                            "size":  8
+                        }
+                    ],
+        "preview":  [
+                        {
+                            "SUB":  1,
+                            "YEAR":  1995,
+                            "MON":  1995,
+                            "AREAkm2":  425.6,
+                            "FLOW_INcms":  0.4293,
+                            "FLOW_OUTcms":  0.3601,
+                            "EVAPcms":  0.06874,
+                            "TLOSScms":  0,
+                            "SED_INtons":  724300,
+                            "SED_OUTtons":  7531,
+                            "SEDCONCmg_kg":  779.8,
+                            "ORGN_INkg":  451000,
+                            "ORGN_OUTkg":  333300,
+                            "ORGP_INkg":  142400,
+                            "ORGP_OUTkg":  91450,
+                            "NO3_INkg":  2854,
+                            "NO3_OUTkg":  3561,
+                            "NH4_INkg":  867.2,
+                            "NH4_OUTkg":  12170,
+                            "NO2_INkg":  103.6,
+                            "NO2_OUTkg":  1782,
+                            "MINP_INkg":  3859,
+                            "MINP_OUTkg":  24030,
+                            "CHLA_INkg":  2426,
+                            "CHLA_OUTkg":  0,
+                            "CBOD_INkg":  5807000,
+                            "CBOD_OUTkg":  1390000,
+                            "DISOX_INkg":  107500,
+                            "DISOX_OUTkg":  80540,
+                            "SOLPST_INmg":  0,
+                            "SOLPST_OUTmg":  0,
+                            "SORPST_INmg":  0,
+                            "SORPST_OUTmg":  0,
+                            "REACTPTmg":  0,
+                            "VOLPSTmg":  0,
+                            "SETTLPST_mg":  0,
+                            "RESUSP_PSTmg":  0,
+                            "DIFUSEPSTmg":  0,
+                            "REACHBEDPSTmg":  0,
+                            "BURYPSTmg":  0,
+                            "BED_PSTmg":  0,
+                            "BACTP_OUTct":  0,
+                            "BACTLP_OUTct":  0,
+                            "CMETAL1kg":  0,
+                            "CMETAL2kg":  0,
+                            "CMETAL3kg":  0,
+                            "TOT_Nkg":  350800,
+                            "TOT_Pkg":  115500,
+                            "NO3CONCmg/l":  0,
+                            "WTMPdegc":  0
+                        },
+                        {
+                            "SUB":  2,
+                            "YEAR":  1995,
+                            "MON":  1995,
+                            "AREAkm2":  148.1,
+                            "FLOW_INcms":  0.1969,
+                            "FLOW_OUTcms":  0.1846,
+                            "EVAPcms":  0.01222,
+                            "TLOSScms":  0,
+                            "SED_INtons":  3201000,
+                            "SED_OUTtons":  2822000,
+                            "SEDCONCmg_kg":  7009,
+                            "ORGN_INkg":  441600,
+                            "ORGN_OUTkg":  429600,
+                            "ORGP_INkg":  171500,
+                            "ORGP_OUTkg":  163800,
+                            "NO3_INkg":  2798,
+                            "NO3_OUTkg":  1827,
+                            "NH4_INkg":  0,
+                            "NH4_OUTkg":  429.2,
+                            "NO2_INkg":  0,
+                            "NO2_OUTkg":  16.72,
+                            "MINP_INkg":  51.13,
+                            "MINP_OUTkg":  247.4,
+                            "CHLA_INkg":  16280,
+                            "CHLA_OUTkg":  8511,
+                            "CBOD_INkg":  48680000,
+                            "CBOD_OUTkg":  37940000,
+                            "DISOX_INkg":  26350,
+                            "DISOX_OUTkg":  5711,
+                            "SOLPST_INmg":  0,
+                            "SOLPST_OUTmg":  0,
+                            "SORPST_INmg":  0,
+                            "SORPST_OUTmg":  0,
+                            "REACTPTmg":  0,
+                            "VOLPSTmg":  0,
+                            "SETTLPST_mg":  0,
+                            "RESUSP_PSTmg":  0,
+                            "DIFUSEPSTmg":  0,
+                            "REACHBEDPSTmg":  0,
+                            "BURYPSTmg":  0,
+                            "BED_PSTmg":  0,
+                            "BACTP_OUTct":  0,
+                            "BACTLP_OUTct":  0,
+                            "CMETAL1kg":  0,
+                            "CMETAL2kg":  0,
+                            "CMETAL3kg":  0,
+                            "TOT_Nkg":  431900,
+                            "TOT_Pkg":  164100,
+                            "NO3CONCmg/l":  0,
+                            "WTMPdegc":  0
+                        },
+                        {
+                            "SUB":  3,
+                            "YEAR":  1995,
+                            "MON":  1995,
+                            "AREAkm2":  253.8,
+                            "FLOW_INcms":  0.3691,
+                            "FLOW_OUTcms":  0.3361,
+                            "EVAPcms":  0.0328,
+                            "TLOSScms":  0,
+                            "SED_INtons":  725600,
+                            "SED_OUTtons":  499300,
+                            "SEDCONCmg_kg":  8083,
+                            "ORGN_INkg":  440300,
+                            "ORGN_OUTkg":  372600,
+                            "ORGP_INkg":  145100,
+                            "ORGP_OUTkg":  112200,
+                            "NO3_INkg":  2358,
+                            "NO3_OUTkg":  1240,
+                            "NH4_INkg":  0,
+                            "NH4_OUTkg":  867.2,
+                            "NO2_INkg":  0,
+                            "NO2_OUTkg":  103.6,
+                            "MINP_INkg":  44.27,
+                            "MINP_OUTkg":  3848,
+                            "CHLA_INkg":  12140,
+                            "CHLA_OUTkg":  0,
+                            "CBOD_INkg":  8169000,
+                            "CBOD_OUTkg":  3518000,
+                            "DISOX_INkg":  110900,
+                            "DISOX_OUTkg":  79270,
+                            "SOLPST_INmg":  0,
+                            "SOLPST_OUTmg":  0,
+                            "SORPST_INmg":  0,
+                            "SORPST_OUTmg":  0,
+                            "REACTPTmg":  0,
+                            "VOLPSTmg":  0,
+                            "SETTLPST_mg":  0,
+                            "RESUSP_PSTmg":  0,
+                            "DIFUSEPSTmg":  0,
+                            "REACHBEDPSTmg":  0,
+                            "BURYPSTmg":  0,
+                            "BED_PSTmg":  0,
+                            "BACTP_OUTct":  0,
+                            "BACTLP_OUTct":  0,
+                            "CMETAL1kg":  0,
+                            "CMETAL2kg":  0,
+                            "CMETAL3kg":  0,
+                            "TOT_Nkg":  374800,
+                            "TOT_Pkg":  116000,
+                            "NO3CONCmg/l":  0,
+                            "WTMPdegc":  0
+                        },
+                        {
+                            "SUB":  4,
+                            "YEAR":  1995,
+                            "MON":  1995,
+                            "AREAkm2":  181.7,
+                            "FLOW_INcms":  0.2874,
+                            "FLOW_OUTcms":  0.2635,
+                            "EVAPcms":  0.02384,
+                            "TLOSScms":  0,
+                            "SED_INtons":  4805000,
+                            "SED_OUTtons":  3916000,
+                            "SEDCONCmg_kg":  7828,
+                            "ORGN_INkg":  431800,
+                            "ORGN_OUTkg":  407500,
+                            "ORGP_INkg":  167500,
+                            "ORGP_OUTkg":  152300,
+                            "NO3_INkg":  7906,
+                            "NO3_OUTkg":  5668,
+                            "NH4_INkg":  0,
+                            "NH4_OUTkg":  2928,
+                            "NO2_INkg":  0,
+                            "NO2_OUTkg":  133,
+                            "MINP_INkg":  71.05,
+                            "MINP_OUTkg":  672.7,
+                            "CHLA_INkg":  16380,
+                            "CHLA_OUTkg":  6006,
+                            "CBOD_INkg":  74480000,
+                            "CBOD_OUTkg":  47720000,
+                            "DISOX_INkg":  27290,
+                            "DISOX_OUTkg":  4118,
+                            "SOLPST_INmg":  0,
+                            "SOLPST_OUTmg":  0,
+                            "SORPST_INmg":  0,
+                            "SORPST_OUTmg":  0,
+                            "REACTPTmg":  0,
+                            "VOLPSTmg":  0,
+                            "SETTLPST_mg":  0,
+                            "RESUSP_PSTmg":  0,
+                            "DIFUSEPSTmg":  0,
+                            "REACHBEDPSTmg":  0,
+                            "BURYPSTmg":  0,
+                            "BED_PSTmg":  0,
+                            "BACTP_OUTct":  0,
+                            "BACTLP_OUTct":  0,
+                            "CMETAL1kg":  0,
+                            "CMETAL2kg":  0,
+                            "CMETAL3kg":  0,
+                            "TOT_Nkg":  416200,
+                            "TOT_Pkg":  153000,
+                            "NO3CONCmg/l":  0,
+                            "WTMPdegc":  0
+                        },
+                        {
+                            "SUB":  5,
+                            "YEAR":  1995,
+                            "MON":  1995,
+                            "AREAkm2":  160.5,
+                            "FLOW_INcms":  0.4217,
+                            "FLOW_OUTcms":  0.4082,
+                            "EVAPcms":  0.01326,
+                            "TLOSScms":  0,
+                            "SED_INtons":  498300,
+                            "SED_OUTtons":  396400,
+                            "SEDCONCmg_kg":  9342,
+                            "ORGN_INkg":  490800,
+                            "ORGN_OUTkg":  450500,
+                            "ORGP_INkg":  150000,
+                            "ORGP_OUTkg":  131900,
+                            "NO3_INkg":  1046,
+                            "NO3_OUTkg":  458.1,
+                            "NH4_INkg":  0,
+                            "NH4_OUTkg":  2272,
+                            "NO2_INkg":  0,
+                            "NO2_OUTkg":  33.2,
+                            "MINP_INkg":  50.25,
+                            "MINP_OUTkg":  366.1,
+                            "CHLA_INkg":  10630,
+                            "CHLA_OUTkg":  0,
+                            "CBOD_INkg":  5692000,
+                            "CBOD_OUTkg":  3672000,
+                            "DISOX_INkg":  131000,
+                            "DISOX_OUTkg":  108000,
+                            "SOLPST_INmg":  0,
+                            "SOLPST_OUTmg":  0,
+                            "SORPST_INmg":  0,
+                            "SORPST_OUTmg":  0,
+                            "REACTPTmg":  0,
+                            "VOLPSTmg":  0,
+                            "SETTLPST_mg":  0,
+                            "RESUSP_PSTmg":  0,
+                            "DIFUSEPSTmg":  0,
+                            "REACHBEDPSTmg":  0,
+                            "BURYPSTmg":  0,
+                            "BED_PSTmg":  0,
+                            "BACTP_OUTct":  0,
+                            "BACTLP_OUTct":  0,
+                            "CMETAL1kg":  0,
+                            "CMETAL2kg":  0,
+                            "CMETAL3kg":  0,
+                            "TOT_Nkg":  453300,
+                            "TOT_Pkg":  132300,
+                            "NO3CONCmg/l":  0,
+                            "WTMPdegc":  0
+                        }
+                    ]
+    },
+    {
+        "table_name":  "sub",
+        "row_count":  551,
+        "columns":  [
+                        {
+                            "name":  "SUB",
+                            "type":  3,
+                            "size":  4
+                        },
+                        {
+                            "name":  "YEAR",
+                            "type":  3,
+                            "size":  4
+                        },
+                        {
+                            "name":  "MON",
+                            "type":  3,
+                            "size":  4
+                        },
+                        {
+                            "name":  "AREAkm2",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "PRECIPmm",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "SNOWMELTmm",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "PETmm",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "ETmm",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "SWmm",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "PERCmm",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "SURQmm",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "GW_Qmm",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "WYLDmm",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "SYLDt_ha",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "ORGNkg_ha",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "ORGPhg_ha",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "NSURQkg_ha",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "SOLPkg_ha",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "SEDPkg_ha",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "LAT_Qmm",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "LAT_Q_NO3kg_ha",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "GWNO3kg_ha",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "CHOLAmic/L",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "CBODUmg/L",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "DOXQmg/L",
+                            "type":  5,
+                            "size":  8
+                        },
+                        {
+                            "name":  "TNO3kg/ha",
+                            "type":  5,
+                            "size":  8
+                        }
+                    ],
+        "preview":  [
+                        {
+                            "SUB":  1,
+                            "YEAR":  1995,
+                            "MON":  1995,
+                            "AREAkm2":  171.79,
+                            "PRECIPmm":  279.197,
+                            "SNOWMELTmm":  5.546,
+                            "PETmm":  1270.654,
+                            "ETmm":  228.39,
+                            "SWmm":  22.582,
+                            "PERCmm":  20.749,
+                            "SURQmm":  3.323,
+                            "GW_Qmm":  0.863,
+                            "WYLDmm":  17.112,
+                            "SYLDt_ha":  13.098,
+                            "ORGNkg_ha":  4.567,
+                            "ORGPhg_ha":  0.57,
+                            "NSURQkg_ha":  0.002,
+                            "SOLPkg_ha":  0.001,
+                            "SEDPkg_ha":  1.19,
+                            "LAT_Qmm":  12.134,
+                            "LAT_Q_NO3kg_ha":  0.091,
+                            "GWNO3kg_ha":  0,
+                            "CHOLAmic/L":  0,
+                            "CBODUmg/L":  0,
+                            "DOXQmg/L":  0,
+                            "TNO3kg/ha":  0
+                        },
+                        {
+                            "SUB":  2,
+                            "YEAR":  1995,
+                            "MON":  1995,
+                            "AREAkm2":  148.05,
+                            "PRECIPmm":  232.967,
+                            "SNOWMELTmm":  0,
+                            "PETmm":  1372.062,
+                            "ETmm":  181.423,
+                            "SWmm":  17.146,
+                            "PERCmm":  0.301,
+                            "SURQmm":  27.47,
+                            "GW_Qmm":  0.281,
+                            "WYLDmm":  41.938,
+                            "SYLDt_ha":  216.172,
+                            "ORGNkg_ha":  29.825,
+                            "ORGPhg_ha":  3.884,
+                            "NSURQkg_ha":  0.148,
+                            "SOLPkg_ha":  0.003,
+                            "SEDPkg_ha":  7.7,
+                            "LAT_Qmm":  14.172,
+                            "LAT_Q_NO3kg_ha":  0.041,
+                            "GWNO3kg_ha":  0,
+                            "CHOLAmic/L":  0,
+                            "CBODUmg/L":  0,
+                            "DOXQmg/L":  0,
+                            "TNO3kg/ha":  0
+                        },
+                        {
+                            "SUB":  3,
+                            "YEAR":  1995,
+                            "MON":  1995,
+                            "AREAkm2":  253.76,
+                            "PRECIPmm":  296.034,
+                            "SNOWMELTmm":  15.284,
+                            "PETmm":  1235.96,
+                            "ETmm":  212.913,
+                            "SWmm":  19.372,
+                            "PERCmm":  51.606,
+                            "SURQmm":  10.894,
+                            "GW_Qmm":  21.627,
+                            "WYLDmm":  45.876,
+                            "SYLDt_ha":  28.593,
+                            "ORGNkg_ha":  17.353,
+                            "ORGPhg_ha":  2.159,
+                            "NSURQkg_ha":  0.005,
+                            "SOLPkg_ha":  0.002,
+                            "SEDPkg_ha":  3.56,
+                            "LAT_Qmm":  11.266,
+                            "LAT_Q_NO3kg_ha":  0.087,
+                            "GWNO3kg_ha":  0.001,
+                            "CHOLAmic/L":  0,
+                            "CBODUmg/L":  0,
+                            "DOXQmg/L":  0,
+                            "TNO3kg/ha":  0
+                        },
+                        {
+                            "SUB":  4,
+                            "YEAR":  1995,
+                            "MON":  1995,
+                            "AREAkm2":  181.71,
+                            "PRECIPmm":  233.2,
+                            "SNOWMELTmm":  0,
+                            "PETmm":  1372.834,
+                            "ETmm":  174.602,
+                            "SWmm":  21.337,
+                            "PERCmm":  1.326,
+                            "SURQmm":  38.782,
+                            "GW_Qmm":  1.234,
+                            "WYLDmm":  49.875,
+                            "SYLDt_ha":  264.414,
+                            "ORGNkg_ha":  23.764,
+                            "ORGPhg_ha":  3.069,
+                            "NSURQkg_ha":  0.387,
+                            "SOLPkg_ha":  0.004,
+                            "SEDPkg_ha":  6.147,
+                            "LAT_Qmm":  9.797,
+                            "LAT_Q_NO3kg_ha":  0.048,
+                            "GWNO3kg_ha":  0,
+                            "CHOLAmic/L":  0,
+                            "CBODUmg/L":  0,
+                            "DOXQmg/L":  0,
+                            "TNO3kg/ha":  0
+                        },
+                        {
+                            "SUB":  5,
+                            "YEAR":  1995,
+                            "MON":  1995,
+                            "AREAkm2":  160.55,
+                            "PRECIPmm":  301.529,
+                            "SNOWMELTmm":  15.531,
+                            "PETmm":  1222.919,
+                            "ETmm":  184.913,
+                            "SWmm":  5.872,
+                            "PERCmm":  80.879,
+                            "SURQmm":  15.185,
+                            "GW_Qmm":  47.05,
+                            "WYLDmm":  82.827,
+                            "SYLDt_ha":  31.035,
+                            "ORGNkg_ha":  30.569,
+                            "ORGPhg_ha":  3.814,
+                            "NSURQkg_ha":  0.008,
+                            "SOLPkg_ha":  0.003,
+                            "SEDPkg_ha":  5.529,
+                            "LAT_Qmm":  17.204,
+                            "LAT_Q_NO3kg_ha":  0.057,
+                            "GWNO3kg_ha":  0,
+                            "CHOLAmic/L":  0,
+                            "CBODUmg/L":  0,
+                            "DOXQmg/L":  0,
+                            "TNO3kg/ha":  0
+                        }
+                    ]
+    },
+    {
+        "table_name":  "tblDepDef",
+        "row_count":  67,
+        "columns":  [
+                        {
+                            "name":  "Variable name",
+                            "type":  202,
+                            "size":  255
+                        },
+                        {
+                            "name":  "Definition",
+                            "type":  202,
+                            "size":  255
+                        }
+                    ],
+        "preview":  [
+                        {
+                            "Variable name":  "DAY",
+                            "Definition":  "Current day of simulation (Julian date)"
+                        },
+                        {
+                            "Variable name":  "YEAR",
+                            "Definition":  "Current year of simulation (four digit)"
+                        },
+                        {
+                            "Variable name":  "WAT_DEP1",
+                            "Definition":  "Average water depth in channel 1 (m)"
+                        },
+                        {
+                            "Variable name":  "WAT_DEP2",
+                            "Definition":  "Average water depth in channel 2 (m)"
+                        },
+                        {
+                            "Variable name":  "WAT_DEP3",
+                            "Definition":  "Average water depth in channel 3 (m)"
+                        }
+                    ]
+    },
+    {
+        "table_name":  "tblHruDef",
+        "row_count":  83,
+        "columns":  [
+                        {
+                            "name":  "Variable name",
+                            "type":  202,
+                            "size":  255
+                        },
+                        {
+                            "name":  "Definition",
+                            "type":  203,
+                            "size":  536870910
+                        }
+                    ],
+        "preview":  [
+                        {
+                            "Variable name":  "LULC",
+                            "Definition":  "Four letter character code for the cover/plant on the HRU. (code from crop.dat file)"
+                        },
+                        {
+                            "Variable name":  "HRU",
+                            "Definition":  "Hydrologic response unit number"
+                        },
+                        {
+                            "Variable name":  "GIS",
+                            "Definition":  "GIS code reprinted from watershed configuration file (.fig). See explanation of subbasin command (Chapter 2)."
+                        },
+                        {
+                            "Variable name":  "SUB",
+                            "Definition":  "Topographically-defined subbasin to which the HRU belongs."
+                        },
+                        {
+                            "Variable name":  "MGT",
+                            "Definition":  "Management number. This is pulled from the management (.mgt) file. Used by the SWAT/GRASS interface to allow development of output maps by landuse/management type."
+                        }
+                    ]
+    },
+    {
+        "table_name":  "tblMgtdef",
+        "row_count":  29,
+        "columns":  [
+                        {
+                            "name":  "Variable name",
+                            "type":  202,
+                            "size":  255
+                        },
+                        {
+                            "name":  "Definition",
+                            "type":  202,
+                            "size":  255
+                        }
+                    ],
+        "preview":  [
+                        {
+                            "Variable name":  "HRUGIS",
+                            "Definition":  "GIS ID of HRU (SSSSSHHHH)"
+                        },
+                        {
+                            "Variable name":  "YEAR",
+                            "Definition":  "Current year of simulation (four digit)"
+                        },
+                        {
+                            "Variable name":  "MON ",
+                            "Definition":  "Monthly time step:(1.12)"
+                        },
+                        {
+                            "Variable name":  "DAY",
+                            "Definition":  "Day being simulated (current Julian date)"
+                        },
+                        {
+                            "Variable name":  "CROP_FERT_PEST",
+                            "Definition":  "Identification of the type of crop, fertilizer or pesticide being used"
+                        }
+                    ]
+    },
+    {
+        "table_name":  "tblPotDef",
+        "row_count":  12,
+        "columns":  [
+                        {
+                            "name":  "Variable name",
+                            "type":  202,
+                            "size":  255
+                        },
+                        {
+                            "name":  "Definition",
+                            "type":  202,
+                            "size":  255
+                        }
+                    ],
+        "preview":  [
+                        {
+                            "Variable name":  "HRUGIS",
+                            "Definition":  "GIS ID of HRU (SSSSSHHHH)"
+                        },
+                        {
+                            "Variable name":  "DAY",
+                            "Definition":  "Current day of simulation (Julian date)"
+                        },
+                        {
+                            "Variable name":  "YEAR",
+                            "Definition":  "Year"
+                        },
+                        {
+                            "Variable name":  "VOL_I",
+                            "Definition":  "Initial volume of water stored in the depression/impounded area (m**3 H2O)"
+                        },
+                        {
+                            "Variable name":  "SA_I",
+                            "Definition":  "Initial surface area of impounded water body (ha)"
+                        }
+                    ]
+    },
+    {
+        "table_name":  "tblRchDef",
+        "row_count":  49,
+        "columns":  [
+                        {
+                            "name":  "Variable name",
+                            "type":  202,
+                            "size":  255
+                        },
+                        {
+                            "name":  "Definition",
+                            "type":  202,
+                            "size":  255
+                        }
+                    ],
+        "preview":  [
+                        {
+                            "Variable name":  "RCH",
+                            "Definition":  "Reach number."
+                        },
+                        {
+                            "Variable name":  "GIS",
+                            "Definition":  "GIS number reprinted from watershed configuration (.fig) file. "
+                        },
+                        {
+                            "Variable name":  "MON",
+                            "Definition":  "Daily time step: the julian date, Monthly time step: the month (1-12), Annual time step: 4-digit year, Average annual summary lines: number of years averaged together"
+                        },
+                        {
+                            "Variable name":  "AREA",
+                            "Definition":  "Area drained by reach (km2)."
+                        },
+                        {
+                            "Variable name":  "FLOW_IN",
+                            "Definition":  "Average daily streamflow into reach during time step (m3/s)."
+                        }
+                    ]
+    },
+    {
+        "table_name":  "tblRsvDef",
+        "row_count":  45,
+        "columns":  [
+                        {
+                            "name":  "Variable name",
+                            "type":  202,
+                            "size":  255
+                        },
+                        {
+                            "name":  "Definition",
+                            "type":  202,
+                            "size":  255
+                        }
+                    ],
+        "preview":  [
+                        {
+                            "Variable name":  "RES",
+                            "Definition":  "Reservoir number (assigned in .fig file, Chapter 2)"
+                        },
+                        {
+                            "Variable name":  "MON",
+                            "Definition":  "Daily time step: the julian date, Monthly time step: the month (1-12), Annual time step: four-digit year"
+                        },
+                        {
+                            "Variable name":  "VOLUME",
+                            "Definition":  "Volume of water in reservoir at end of time step (m3 H2O)."
+                        },
+                        {
+                            "Variable name":  "FLOW_IN",
+                            "Definition":  "Average flow into reservoir during time step (m3/s H2O)."
+                        },
+                        {
+                            "Variable name":  "FLOW_OUT",
+                            "Definition":  "Average flow out of reservoir during time step (m3/s H2O)."
+                        }
+                    ]
+    },
+    {
+        "table_name":  "tblSedDef",
+        "row_count":  23,
+        "columns":  [
+                        {
+                            "name":  "Variable name",
+                            "type":  202,
+                            "size":  255
+                        },
+                        {
+                            "name":  "Definition",
+                            "type":  202,
+                            "size":  255
+                        }
+                    ],
+        "preview":  [
+                        {
+                            "Variable name":  "RCH",
+                            "Definition":  "Reach number."
+                        },
+                        {
+                            "Variable name":  "YEAR",
+                            "Definition":  "Year of simulation"
+                        },
+                        {
+                            "Variable name":  "MON",
+                            "Definition":  "Daily time step: the julian date, Monthly time step: the month (1-12), Annual time step: 4-digit year, Average annual summary lines: number of years averaged together"
+                        },
+                        {
+                            "Variable name":  "AREA",
+                            "Definition":  "Area drained by reach (km2)."
+                        },
+                        {
+                            "Variable name":  "SED_IN",
+                            "Definition":  "Total sediment transported into reach during time step (tons)"
+                        }
+                    ]
+    },
+    {
+        "table_name":  "tblSnuDef",
+        "row_count":  10,
+        "columns":  [
+                        {
+                            "name":  "Variable name",
+                            "type":  202,
+                            "size":  255
+                        },
+                        {
+                            "name":  "Definition",
+                            "type":  202,
+                            "size":  255
+                        }
+                    ],
+        "preview":  [
+                        {
+                            "Variable name":  "YEAR",
+                            "Definition":  "Year"
+                        },
+                        {
+                            "Variable name":  "DAY",
+                            "Definition":  "Daily time step: the Julian date"
+                        },
+                        {
+                            "Variable name":  "HRU",
+                            "Definition":  "Hydrologic response unit number"
+                        },
+                        {
+                            "Variable name":  "SURFACE SOL_RSD",
+                            "Definition":  "Amount of organic matter in the soil classified as residue (kg/ha)"
+                        },
+                        {
+                            "Variable name":  "SOL_P",
+                            "Definition":  "Soluble phosphorus in soil profile (kg P/ha)"
+                        }
+                    ]
+    },
+    {
+        "table_name":  "tblSnwDef",
+        "row_count":  13,
+        "columns":  [
+                        {
+                            "name":  "Variable name",
+                            "type":  202,
+                            "size":  255
+                        },
+                        {
+                            "name":  "Definition",
+                            "type":  202,
+                            "size":  255
+                        }
+                    ],
+        "preview":  [
+                        {
+                            "Variable name":  "DAY",
+                            "Definition":  "Daily time step: the Julian date"
+                        },
+                        {
+                            "Variable name":  "YEAR",
+                            "Definition":  "Current year of simulation (four digit)"
+                        },
+                        {
+                            "Variable name":  "HRUGIS",
+                            "Definition":  "GIS ID of HRU (SSSSSHHHH)"
+                        },
+                        {
+                            "Variable name":  "SNOW1",
+                            "Definition":  "Snow water content in elevation band 1 on  current day (mm)"
+                        },
+                        {
+                            "Variable name":  "SNOW2",
+                            "Definition":  "Snow water content in elevation band 2 on  current day (mm)"
+                        }
+                    ]
+    },
+    {
+        "table_name":  "tblSubDef",
+        "row_count":  26,
+        "columns":  [
+                        {
+                            "name":  "Variable name",
+                            "type":  202,
+                            "size":  255
+                        },
+                        {
+                            "name":  "Definition",
+                            "type":  203,
+                            "size":  536870910
+                        }
+                    ],
+        "preview":  [
+                        {
+                            "Variable name":  "SUB",
+                            "Definition":  "Subbasin number."
+                        },
+                        {
+                            "Variable name":  "GIS",
+                            "Definition":  "GIS code reprinted from watershed configuration file (.fig). See explanation of subbasin command."
+                        },
+                        {
+                            "Variable name":  "MON",
+                            "Definition":  "Daily time step: the julian date, Monthly time step: the month (1-12), Annual time step: 4-digit year, Average annual summary lines: number of years averaged together"
+                        },
+                        {
+                            "Variable name":  "AREA",
+                            "Definition":  "Area of the subbasin (km2)."
+                        },
+                        {
+                            "Variable name":  "PRECIP",
+                            "Definition":  "Total amount of precipitation falling on the subbasin during time step (mm H2O)."
+                        }
+                    ]
+    },
+    {
+        "table_name":  "tblSwrDef",
+        "row_count":  13,
+        "columns":  [
+                        {
+                            "name":  "Variable name",
+                            "type":  202,
+                            "size":  255
+                        },
+                        {
+                            "name":  "Definition",
+                            "type":  202,
+                            "size":  255
+                        }
+                    ],
+        "preview":  [
+                        {
+                            "Variable name":  "YEAR",
+                            "Definition":  "Year"
+                        },
+                        {
+                            "Variable name":  "DAY",
+                            "Definition":  "day being simulated"
+                        },
+                        {
+                            "Variable name":  "HRUGIS",
+                            "Definition":  "GIS ID of HRU (SSSSSHHHH)"
+                        },
+                        {
+                            "Variable name":  "SOIL STORAGE LAYER1",
+                            "Definition":  "Amount of water stored in soil layer 1 (mm)"
+                        },
+                        {
+                            "Variable name":  "SOIL STORAGE LAYER2",
+                            "Definition":  "Amount of water stored in soil layer 2 (mm)"
+                        }
+                    ]
+    },
+    {
+        "table_name":  "tblVelDef",
+        "row_count":  64,
+        "columns":  [
+                        {
+                            "name":  "Variable name",
+                            "type":  202,
+                            "size":  255
+                        },
+                        {
+                            "name":  "Definition",
+                            "type":  202,
+                            "size":  255
+                        }
+                    ],
+        "preview":  [
+                        {
+                            "Variable name":  "DAY",
+                            "Definition":  "Current day of simulation (Julian date)"
+                        },
+                        {
+                            "Variable name":  "YEAR",
+                            "Definition":  "Current year of simulation (four digit)"
+                        },
+                        {
+                            "Variable name":  "CH_VEL1",
+                            "Definition":  "Average flow velocity in channel 1 (m/s)"
+                        },
+                        {
+                            "Variable name":  "CH_VEL2",
+                            "Definition":  "Average flow velocity in channel 2 (m/s)"
+                        },
+                        {
+                            "Variable name":  "CH_VEL3",
+                            "Definition":  "Average flow velocity in channel 3 (m/s)"
+                        }
+                    ]
+    },
+    {
+        "table_name":  "tblWqlDef",
+        "row_count":  25,
+        "columns":  [
+                        {
+                            "name":  "Variable name",
+                            "type":  202,
+                            "size":  255
+                        },
+                        {
+                            "name":  "Definition",
+                            "type":  202,
+                            "size":  255
+                        }
+                    ],
+        "preview":  [
+                        {
+                            "Variable name":  "YEAR",
+                            "Definition":  "Year"
+                        },
+                        {
+                            "Variable name":  "RCH",
+                            "Definition":  "Reach number"
+                        },
+                        {
+                            "Variable name":  "DAY",
+                            "Definition":  "Daily time step: the Julian date"
+                        },
+                        {
+                            "Variable name":  "WTEMP",
+                            "Definition":  "Average air temperature on current day in HRU"
+                        },
+                        {
+                            "Variable name":  "ALGAE_IN",
+                            "Definition":  "Chlorophyll-a concentration in inflow (mg chl-a/L)"
+                        }
+                    ]
+    },
+    {
+        "table_name":  "tblWtrDef",
+        "row_count":  47,
+        "columns":  [
+                        {
+                            "name":  "Variable name",
+                            "type":  202,
+                            "size":  255
+                        },
+                        {
+                            "name":  "Definition",
+                            "type":  202,
+                            "size":  255
+                        }
+                    ],
+        "preview":  [
+                        {
+                            "Variable name":  "LULC          ",
+                            "Definition":  "Land Use"
+                        },
+                        {
+                            "Variable name":  "HRU           ",
+                            "Definition":  "HRU ID"
+                        },
+                        {
+                            "Variable name":  "HRUGIS           ",
+                            "Definition":  "GIS ID of HRU (SSSSSHHHH)"
+                        },
+                        {
+                            "Variable name":  "SUB            ",
+                            "Definition":  "Subbasin"
+                        },
+                        {
+                            "Variable name":  "YEAR     ",
+                            "Definition":  "Year"
+                        }
+                    ]
+    }
+]

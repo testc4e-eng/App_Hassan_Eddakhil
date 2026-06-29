@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FilterState } from "@/types/hydro";
-import { useHydroData } from "@/contexts/HydroDataContext";
 import { Card } from "@/components/ui/card";
+import { timeseriesApi } from "@/api/timeseries";
+import { Loader2 } from "lucide-react";
 
 type ModuleCode = "climat" | "hydro" | "erosion";
 
@@ -18,7 +19,6 @@ type AggRow = {
 };
 
 type BundleResponse = {
-  success: boolean;
   catalog: BundleCatalogItem[];
   aggregated?: Record<string, AggRow[]>;
   error?: string;
@@ -73,12 +73,17 @@ export function AnalyticsStatsRow({
   moduleCode: ModuleCode;
   filters: FilterState;
 }) {
-  const { apiBase } = useHydroData();
   const [stats, setStats] = useState<Stats>(EMPTY_STATS);
+  const [loading, setLoading] = useState(false);
 
   const stationId = filters.stations?.[0];
   const runId = filters.runId;
-  const selectedVarIds = useMemo(() => filters.variables ?? [], [filters.variables]);
+  const selectedVarIds = useMemo(
+    () => Array.from(new Set(filters.variables ?? [])),
+    [filters.variables]
+  );
+  const requestedAgg = resolutionToAgg(filters.resolution);
+  const agg = requestedAgg === "instant" ? "day" : requestedAgg;
 
   useEffect(() => {
     let alive = true;
@@ -90,19 +95,15 @@ export function AnalyticsStatsRow({
       }
 
       try {
-        const qs = new URLSearchParams({
-          stationId: String(stationId),
-          runId: String(runId),
+        setLoading(true);
+        const json = (await timeseriesApi.bundle({
+          stationId,
+          runId,
           module: moduleCode,
-          agg: resolutionToAgg(filters.resolution),
-        });
-        if (filters.startDate) qs.set("startDate", String(filters.startDate));
-        if (filters.endDate) qs.set("endDate", String(filters.endDate));
-
-        const res = await fetch(`${apiBase}/timeseries/bundle?${qs.toString()}`);
-        if (!res.ok) throw new Error(await res.text());
-        const json = (await res.json()) as BundleResponse;
-        if (!json.success) throw new Error(json.error || "bundle error");
+          agg,
+          startDate: filters.startDate || undefined,
+          endDate: filters.endDate || undefined,
+        })) as BundleResponse;
 
         const selectedCatalog = (json.catalog || []).filter((c) =>
           selectedVarIds.includes(c.property_id)
@@ -143,6 +144,8 @@ export function AnalyticsStatsRow({
       } catch {
         if (!alive) return;
         setStats(EMPTY_STATS);
+      } finally {
+        if (alive) setLoading(false);
       }
     })();
 
@@ -150,12 +153,11 @@ export function AnalyticsStatsRow({
       alive = false;
     };
   }, [
-    apiBase,
     moduleCode,
     stationId,
     runId,
     selectedVarIds,
-    filters.resolution,
+    agg,
     filters.startDate,
     filters.endDate,
   ]);
@@ -174,6 +176,12 @@ export function AnalyticsStatsRow({
       <h3 className="text-xs font-semibold text-foreground">
         Statistiques sur la période sélectionnée
       </h3>
+      {loading && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          Chargement des statistiques...
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         {items.map((item) => (
           <Card

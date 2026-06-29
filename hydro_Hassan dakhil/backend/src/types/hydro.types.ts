@@ -23,6 +23,21 @@ export interface Reservoir {
   created_at: Date;
 }
 
+export interface ReservoirBathymetryPoint {
+  bathy_id: number | null;
+  reservoir_id: number | null;
+  reservoir_key: string;
+  reservoir_code: string | null;
+  reservoir_name: string;
+  catchment_id: number | null;
+  catchment_name: string | null;
+  level_m: number | null;
+  volume_hm3: number | null;
+  area_km2: number | null;
+  source: string | null;
+  created_at: Date | string | null;
+}
+
 export interface Timeseries {
   ts_id: number;
   station_id: number;
@@ -122,7 +137,7 @@ export type AvailabilityRow = {
   scenario_name: string;
 
   source_type: SourceType;
-  time_step: "daily" | "monthly" | "annual" | "yearly" | string;
+  time_step: "daily" | "monthly" | "annual" | string;
 
   n_measures: number;
   dt_min: string;

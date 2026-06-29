@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { dataScanService } from "../services/dataScan.service";
 import type { DataScanTableFilters } from "../types/dataScan.types";
+import { TtlCache } from "../utils/ttlCache";
 
 function toBool(value: unknown): boolean | undefined {
   if (value === undefined) return undefined;
@@ -12,9 +13,20 @@ function toBool(value: unknown): boolean | undefined {
 }
 
 export class DataScanController {
+  private cache = new TtlCache<any>();
+  private readonly cacheTtlMs = 10 * 60 * 1000;
+
+  private cacheKey(name: string, payload?: unknown): string {
+    return payload === undefined ? name : `${name}:${JSON.stringify(payload)}`;
+  }
+
   async summary(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await dataScanService.getSummary();
+      const data = await this.cache.getOrSet(
+        this.cacheKey("dataScan.summary"),
+        this.cacheTtlMs,
+        () => dataScanService.getSummary()
+      );
       res.json({ success: true, data });
     } catch (error) {
       next(error);
@@ -33,7 +45,11 @@ export class DataScanController {
         emptyOnly: toBool(req.query.emptyOnly),
         anomalousOnly: toBool(req.query.anomalousOnly),
       };
-      const data = await dataScanService.getTables(filters);
+      const data = await this.cache.getOrSet(
+        this.cacheKey("dataScan.tables", filters),
+        this.cacheTtlMs,
+        () => dataScanService.getTables(filters)
+      );
       res.json({ success: true, data, count: data.length });
     } catch (error) {
       next(error);
@@ -44,7 +60,11 @@ export class DataScanController {
     try {
       const schemaName = String(req.params.schema);
       const tableName = String(req.params.table);
-      const data = await dataScanService.getTableDetail(schemaName, tableName);
+      const data = await this.cache.getOrSet(
+        this.cacheKey("dataScan.tableDetail", { schemaName, tableName }),
+        this.cacheTtlMs,
+        () => dataScanService.getTableDetail(schemaName, tableName)
+      );
       res.json({ success: true, data });
     } catch (error) {
       next(error);
@@ -53,7 +73,11 @@ export class DataScanController {
 
   async anomalies(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await dataScanService.getAnomalies();
+      const data = await this.cache.getOrSet(
+        this.cacheKey("dataScan.anomalies"),
+        this.cacheTtlMs,
+        () => dataScanService.getAnomalies()
+      );
       res.json({ success: true, data, count: data.length });
     } catch (error) {
       next(error);
@@ -62,7 +86,11 @@ export class DataScanController {
 
   async relations(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await dataScanService.getRelations();
+      const data = await this.cache.getOrSet(
+        this.cacheKey("dataScan.relations"),
+        this.cacheTtlMs,
+        () => dataScanService.getRelations()
+      );
       res.json({ success: true, data, count: data.length });
     } catch (error) {
       next(error);
@@ -71,7 +99,11 @@ export class DataScanController {
 
   async periodsGlobal(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await dataScanService.getPeriodsGlobal();
+      const data = await this.cache.getOrSet(
+        this.cacheKey("dataScan.periods.global"),
+        this.cacheTtlMs,
+        () => dataScanService.getPeriodsGlobal()
+      );
       res.json({ success: true, data });
     } catch (error) {
       next(error);
@@ -80,7 +112,11 @@ export class DataScanController {
 
   async periodsByVariable(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await dataScanService.getPeriodsByVariable();
+      const data = await this.cache.getOrSet(
+        this.cacheKey("dataScan.periods.byVariable"),
+        this.cacheTtlMs,
+        () => dataScanService.getPeriodsByVariable()
+      );
       res.json({ success: true, data, count: data.length });
     } catch (error) {
       next(error);
@@ -89,7 +125,11 @@ export class DataScanController {
 
   async periodsByEntity(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await dataScanService.getPeriodsByEntity();
+      const data = await this.cache.getOrSet(
+        this.cacheKey("dataScan.periods.byEntity"),
+        this.cacheTtlMs,
+        () => dataScanService.getPeriodsByEntity()
+      );
       res.json({ success: true, data, count: data.length });
     } catch (error) {
       next(error);
@@ -98,7 +138,11 @@ export class DataScanController {
 
   async periodsByEntityVariableSource(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await dataScanService.getPeriodsByEntityVariableSource();
+      const data = await this.cache.getOrSet(
+        this.cacheKey("dataScan.periods.byEntityVariableSource"),
+        this.cacheTtlMs,
+        () => dataScanService.getPeriodsByEntityVariableSource()
+      );
       res.json({ success: true, data, count: data.length });
     } catch (error) {
       next(error);
@@ -107,7 +151,11 @@ export class DataScanController {
 
   async dataAvailability(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await dataScanService.getDataAvailability();
+      const data = await this.cache.getOrSet(
+        this.cacheKey("dataScan.dataAvailability"),
+        this.cacheTtlMs,
+        () => dataScanService.getDataAvailability()
+      );
       res.json({ success: true, data });
     } catch (error) {
       next(error);

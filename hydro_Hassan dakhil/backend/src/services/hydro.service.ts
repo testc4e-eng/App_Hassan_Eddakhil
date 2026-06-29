@@ -9,13 +9,55 @@ import {
   Timeseries,
   ModelRun,
   Reservoir,
+  ReservoirBathymetryPoint,
 } from "../types/hydro.types";
+import { isStandardNameVisibleForModule } from "../constants/moduleVariables";
 
 export class HydroService {
   private db = new DatabaseService();
 
+  private static readonly canonicalSwatScenarios = [
+    "etat_actuel",
+    "ssp126",
+    "ssp245",
+    "ssp585",
+    "scenario_1",
+    "scenario_2",
+    "scenario_3",
+    "scenario_4",
+  ] as const;
+
   // ================ STATIONS ================
   async getStations(filter?: FilterOptions): Promise<Station[]> {
+    if (await this.db.relationExists("api.mv_station_catalog")) {
+      let query = `
+        SELECT
+          station_id,
+          station_name AS name,
+          station_code,
+          geometry::text as geom,
+          COALESCE(type_station, station_type_code, 'station') as type,
+          catchment_id
+        FROM api.mv_station_catalog
+        WHERE 1=1
+      `;
+      const params: any[] = [];
+
+      if (filter?.stationIds?.length) {
+        query += ` AND station_id = ANY($${params.length + 1})`;
+        params.push(filter.stationIds);
+      }
+
+      query += ` ORDER BY station_name`;
+
+      if (filter?.limit) {
+        query += ` LIMIT $${params.length + 1}`;
+        params.push(filter.limit);
+      }
+
+      return this.db.query<Station>(query, params);
+    }
+
     let query = `
       SELECT
         station_id,
@@ -45,6 +87,21 @@ export class HydroService {
   }
 
   async getStationById(id: number): Promise<Station | null> {
+    if (await this.db.relationExists("api.mv_station_catalog")) {
+      const query = `
+        SELECT
+          station_id,
+          station_name AS name,
+          station_code,
+          geometry::text as geom,
+          COALESCE(type_station, station_type_code, 'station') as type,
+          catchment_id
+        FROM api.mv_station_catalog
+        WHERE station_id = $1
+      `;
+      return this.db.queryOne<Station>(query, [id]);
+    }
+
     const query = `
       SELECT
         station_id,
@@ -63,35 +120,58 @@ export class HydroService {
   async getCatchments(filter?: FilterOptions): Promise<Catchment[]> {
     let query = `
       SELECT
-        catchment_id,
-        name,
-        dam_name,
-        area_m2,
-        ST_AsGeoJSON(geom) as geom
-      FROM public.catchments
-      WHERE 1=1
+        sb.catchment_id,
+        COALESCE(
+          MAX(CASE WHEN UPPER(r.name) LIKE '%HASSAN ADDAKHIL%' THEN r.name END),
+          MAX(r.name),
+          CASE
+            WHEN sb.catchment_id = 1 THEN 'Bassin versant Guir-Ziz-Rheris'
+            ELSE 'Bassin ' || sb.catchment_id::text
+          END
+        ) AS name,
+        MAX(r.name) AS dam_name,
+        SUM(sb.area_m2) AS area_m2,
+        ST_AsGeoJSON(ST_Union(sb.geom)) as geom
+      FROM gis.subbasin_shapes sb
+      LEFT JOIN core.reservoirs r
+        ON r.catchment_id = sb.catchment_id
+      WHERE sb.geom IS NOT NULL
     `;
     const params: any[] = [];
 
     if (filter?.catchmentIds?.length) {
-      query += ` AND catchment_id = ANY($${params.length + 1})`;
+      query += ` AND sb.catchment_id = ANY($${params.length + 1})`;
       params.push(filter.catchmentIds);
     }
 
-    query += " ORDER BY name";
+    query += `
+      GROUP BY sb.catchment_id
+      ORDER BY name
+    `;
     return this.db.query<Catchment>(query, params);
   }
 
   async getCatchmentById(id: number): Promise<Catchment | null> {
     const query = `
       SELECT
-        catchment_id,
-        name,
-        dam_name,
-        area_m2,
-        ST_AsGeoJSON(geom) as geom
-      FROM public.catchments
-      WHERE catchment_id = $1
+        sb.catchment_id,
+        COALESCE(
+          MAX(CASE WHEN UPPER(r.name) LIKE '%HASSAN ADDAKHIL%' THEN r.name END),
+          MAX(r.name),
+          CASE
+            WHEN sb.catchment_id = 1 THEN 'Bassin versant Guir-Ziz-Rheris'
+            ELSE 'Bassin ' || sb.catchment_id::text
+          END
+        ) AS name,
+        MAX(r.name) AS dam_name,
+        SUM(sb.area_m2) AS area_m2,
+        ST_AsGeoJSON(ST_Union(sb.geom)) as geom
+      FROM gis.subbasin_shapes sb
+      LEFT JOIN core.reservoirs r
+        ON r.catchment_id = sb.catchment_id
+      WHERE sb.catchment_id = $1
+        AND sb.geom IS NOT NULL
+      GROUP BY sb.catchment_id
     `;
     return this.db.queryOne<Catchment>(query, [id]);
   }
@@ -206,7 +286,19 @@ export class HydroService {
 
   // ================ RESERVOIRS (FIX) ================
   async getReservoirs(): Promise<Reservoir[]> {
-    // adapte le FROM si ton nom réel diffère (ex: public.reservoirs, public.lakes, etc.)
+    if (await this.db.relationExists("api.mv_barrage_catalog")) {
+      const query = `
+        SELECT
+          reservoir_id,
+          name,
+          geometry::text as geom,
+          created_at
+        FROM api.mv_barrage_catalog
+        ORDER BY name
+      `;
+      return this.db.query<Reservoir>(query, []);
+    }
+    // adapte le FROM si ton nom rÃ©el diffÃ¨re (ex: public.reservoirs, public.lakes, etc.)
     const query = `
       SELECT
         reservoir_id,
@@ -219,21 +311,164 @@ export class HydroService {
     return this.db.query<Reservoir>(query, []);
   }
 
+  async getBathymetry(
+    reservoirId?: number
+  ): Promise<ReservoirBathymetryPoint[]> {
+    const params = [reservoirId ?? null];
+
+    if (await this.db.relationExists("public.v_values_bathymetry")) {
+      const query = `
+        SELECT
+          NULL::integer AS bathy_id,
+          reservoir_id,
+          COALESCE(reservoir_id::text, reservoir_name, 'reservoir') AS reservoir_key,
+          NULL::text AS reservoir_code,
+          COALESCE(reservoir_name, 'Reservoir ' || reservoir_id::text) AS reservoir_name,
+          catchment_id,
+          catchment_name,
+          level_m::double precision AS level_m,
+          volume_hm3::double precision AS volume_hm3,
+          area_km2::double precision AS area_km2,
+          NULL::text AS source,
+          NULL::timestamp AS created_at
+        FROM public.v_values_bathymetry
+        WHERE ($1::integer IS NULL OR reservoir_id = $1)
+        ORDER BY reservoir_name, level_m NULLS LAST
+      `;
+      return this.db.query<ReservoirBathymetryPoint>(query, params);
+    }
+
+    if (await this.db.relationExists("core.reservoir_bathymetry")) {
+      const hasReservoirs = await this.db.relationExists("core.reservoirs");
+
+      const query = `
+        SELECT
+          b.bathy_id,
+          b.reservoir_id,
+          COALESCE(b.reservoir_id::text${hasReservoirs ? ", r.name" : ""}, 'reservoir') AS reservoir_key,
+          NULL::text AS reservoir_code,
+          COALESCE(${hasReservoirs ? "r.name, " : ""}'Reservoir ' || b.reservoir_id::text) AS reservoir_name,
+          NULL::integer AS catchment_id,
+          NULL::text AS catchment_name,
+          b.level_m::double precision AS level_m,
+          b.volume_hm3::double precision AS volume_hm3,
+          b.area_km2::double precision AS area_km2,
+          b.source,
+          b.created_at
+        FROM core.reservoir_bathymetry b
+        ${hasReservoirs ? "LEFT JOIN core.reservoirs r ON r.reservoir_id = b.reservoir_id" : ""}
+        WHERE ($1::integer IS NULL OR b.reservoir_id = $1)
+        ORDER BY reservoir_name, b.level_m NULLS LAST
+      `;
+      return this.db.query<ReservoirBathymetryPoint>(query, params);
+    }
+
+    if (await this.db.relationExists("public.reservoir_bathymetry")) {
+      const hasReservoirs = await this.db.relationExists("public.reservoirs");
+      const query = `
+        SELECT
+          b.bathy_id,
+          b.reservoir_id,
+          COALESCE(b.reservoir_id::text${hasReservoirs ? ", r.name" : ""}, 'reservoir') AS reservoir_key,
+          NULL::text AS reservoir_code,
+          COALESCE(${hasReservoirs ? "r.name, " : ""}'Reservoir ' || b.reservoir_id::text) AS reservoir_name,
+          NULL::integer AS catchment_id,
+          NULL::text AS catchment_name,
+          b.level_m::double precision AS level_m,
+          b.volume_hm3::double precision AS volume_hm3,
+          b.area_km2::double precision AS area_km2,
+          b.source,
+          b.created_at
+        FROM public.reservoir_bathymetry b
+        ${hasReservoirs ? "LEFT JOIN public.reservoirs r ON r.reservoir_id = b.reservoir_id" : ""}
+        WHERE ($1::integer IS NULL OR b.reservoir_id = $1)
+        ORDER BY reservoir_name, b.level_m NULLS LAST
+      `;
+      return this.db.query<ReservoirBathymetryPoint>(query, params);
+    }
+
+    if (await this.db.relationExists("public.bathymetries_barrages_abhgzr")) {
+      const query = `
+        SELECT
+          id_cote AS bathy_id,
+          NULL::integer AS reservoir_id,
+          COALESCE(ire_barrage, 'reservoir') AS reservoir_key,
+          ire_barrage AS reservoir_code,
+          COALESCE('Barrage ' || ire_barrage, 'Barrage') AS reservoir_name,
+          NULL::integer AS catchment_id,
+          NULL::text AS catchment_name,
+          cote_mngm::double precision AS level_m,
+          volumr_mm3::double precision AS volume_hm3,
+          surface_km2::double precision AS area_km2,
+          'ABHGZR'::text AS source,
+          NULL::timestamp AS created_at
+        FROM public.bathymetries_barrages_abhgzr
+        WHERE $1::integer IS NULL
+        ORDER BY reservoir_name, cote_mngm NULLS LAST
+      `;
+      return this.db.query<ReservoirBathymetryPoint>(query, params);
+    }
+
+    return [];
+  }
+
   // ================ MODEL RUNS ================
   async getModelRuns(isObserved?: boolean): Promise<ModelRun[]> {
+    if (await this.db.relationExists("api.mv_scenario_catalog")) {
+      let query = `
+        SELECT run_id, scenario_code, scenario_name, description, is_observed, created_at
+        FROM api.mv_scenario_catalog
+        WHERE is_visible = true
+      `;
+      const params: any[] = [];
+
+      if (typeof isObserved === "boolean") {
+        query += ` AND is_observed = $${params.length + 1}`;
+        params.push(isObserved);
+        query += " ORDER BY run_id";
+      } else {
+        query += ` ORDER BY
+          CASE WHEN is_observed THEN 0 ELSE 1 END,
+          array_position($${params.length + 1}::text[], scenario_code),
+          run_id`;
+        params.push(HydroService.canonicalSwatScenarios);
+      }
+
+      return this.db.query<ModelRun>(query, params);
+    }
+
     let query = `
       SELECT run_id, scenario_code, scenario_name, description, is_observed, created_at
       FROM public.model_runs
       WHERE 1=1
     `;
+    const hasScenarioMetadata = await this.db.relationExists("access.scenario_metadata");
     const params: any[] = [];
 
     if (typeof isObserved === "boolean") {
       query += ` AND is_observed = $${params.length + 1}`;
       params.push(isObserved);
+      query += " ORDER BY run_id";
+    } else {
+      query += `
+        AND (
+          is_observed = true
+          OR ${hasScenarioMetadata ? `EXISTS (
+            SELECT 1
+            FROM access.scenario_metadata sm
+            WHERE sm.scenario_code = public.model_runs.scenario_code
+          )` : "false"}
+          OR scenario_code = ANY($${params.length + 1}::text[])
+        )
+      `;
+      params.push(HydroService.canonicalSwatScenarios);
+      query += `
+        ORDER BY
+          CASE WHEN is_observed THEN 0 ELSE 1 END,
+          array_position($${params.length}::text[], scenario_code),
+          run_id
+      `;
     }
-
-    query += " ORDER BY run_id";
     return this.db.query<ModelRun>(query, params);
   }
 
@@ -242,7 +477,7 @@ export class HydroService {
     periodId?: number,
     catchmentId?: number
   ): Promise<Landcover[]> {
-    // adapte selon ton schéma réel
+    // adapte selon ton schÃ©ma rÃ©el
     let query = `
       SELECT
         lc_id,
@@ -273,7 +508,7 @@ export class HydroService {
     return this.db.query<Landcover>(query, params);
   }
 
-  // Placeholders si le controller les appelle (évite crash)
+  // Placeholders si le controller les appelle (Ã©vite crash)
   async getLandcoverSummary(
     _catchmentId: number,
     _periodId?: number
@@ -296,7 +531,7 @@ export class HydroService {
     };
   }
 
-  // IMPORTANT: ton controller appelle aussi ça
+  // IMPORTANT: ton controller appelle aussi Ã§a
   async getTimeseriesCatalogByModule(
     stationId: number,
     runId: number,
@@ -380,7 +615,10 @@ export class HydroService {
         )
       ORDER BY COALESCE(mp.sort_order, 9999), c.property_id
     `;
-    return this.db.query<any>(query, [stationId, runId, moduleCode]);
+    const rows = await this.db.query<any>(query, [stationId, runId, moduleCode]);
+    return rows.filter((row) =>
+      isStandardNameVisibleForModule(moduleCode, row.standard_name)
+    );
   }
 
 
@@ -405,15 +643,15 @@ export class HydroService {
     startDate: string,
     endDate: string
   ) {
-    // On réutilise la méthode existante
+    // On rÃ©utilise la mÃ©thode existante
     const measurements = await this.getMeasurements(tsId, {
       startDate,
       endDate,
-      // on met une limite très grande (ou null si ton code supporte)
+      // on met une limite trÃ¨s grande (ou null si ton code supporte)
       limit: 1000000,
     });
 
-    // IMPORTANT: adapte le champ value si différent (ex: m.value, m.val, m.measurement_value)
+    // IMPORTANT: adapte le champ value si diffÃ©rent (ex: m.value, m.val, m.measurement_value)
     const values = (measurements ?? [])
       .map((m: any) => Number(m.value))
       .filter((v: number) => Number.isFinite(v));
@@ -444,3 +682,4 @@ export class HydroService {
 }
 
 export const hydroService = new HydroService();
+

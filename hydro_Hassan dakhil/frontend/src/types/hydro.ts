@@ -73,6 +73,7 @@ export interface AvailabilityRow {
   property_id: number;
   property_name: string;
   unit?: string | null;
+  standard_name?: string | null;
 
   run_id: number;
   scenario_code: string;
@@ -99,6 +100,8 @@ export interface FilterState {
   stations: number[]; // station_id
   variables: number[]; // property_id
   runId?: number; // model run
+  compareRunIds?: number[]; // scenarios selected for comparison
+  compareWindow?: "union" | "intersection";
   startDate: string;
   endDate: string;
   resolution: "instant" | "day" | "month" | "year";

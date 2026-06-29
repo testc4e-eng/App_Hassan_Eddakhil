@@ -11,7 +11,7 @@ interface HeaderProps {
 const modules = [
   { id: 'climate' as ModuleType, label: 'Suivi Climatologie', icon: Cloud, className: 'module-btn-climate' },
   { id: 'hydraulic' as ModuleType, label: 'Hydraulique', icon: Waves, className: 'module-btn-hydraulic' },
-  { id: 'sediment' as ModuleType, label: 'Érosion / Sédiments', icon: BarChart3, className: 'module-btn-sediment' },
+  { id: 'sediment' as ModuleType, label: 'Sédiments', icon: BarChart3, className: 'module-btn-sediment' },
   { id: 'comparison' as ModuleType, label: 'Comparaison', icon: GitCompare, className: 'module-btn-comparison' },
 ];
 

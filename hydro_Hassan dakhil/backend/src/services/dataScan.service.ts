@@ -1,4 +1,5 @@
 import { DatabaseService } from "./database.service";
+import { TtlCache } from "../utils/ttlCache";
 import {
   EXTENSIONS_QUERY,
   FK_RELATIONS_QUERY,
@@ -30,6 +31,12 @@ type DbScalar = string | number | boolean | null;
 
 export class DataScanService {
   private db = new DatabaseService();
+  private cache = new TtlCache<any>();
+  private readonly cacheTtlMs = 10 * 60 * 1000;
+
+  private cacheKey(name: string, payload?: unknown): string {
+    return payload === undefined ? name : `${name}:${JSON.stringify(payload)}`;
+  }
 
   private isSafeIdentifier(value: string): boolean {
     return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(value);
@@ -239,6 +246,8 @@ export class DataScanService {
   }
 
   async getTables(filters: DataScanTableFilters = {}): Promise<DataScanTableRow[]> {
+    const key = this.cacheKey("dataScan.tables", filters);
+    return this.cache.getOrSet(key, this.cacheTtlMs, async () => {
     const raw = await this.db.query<{
       schema_name: string;
       table_name: string;
@@ -290,14 +299,20 @@ export class DataScanService {
       return a.table_name.localeCompare(b.table_name);
     });
     return rows;
+    });
   }
 
   async getAnomalies(): Promise<DataScanAnomaly[]> {
-    const tables = await this.getTables();
-    return tables.flatMap((t) => this.buildTableAnomalies(t));
+    const key = this.cacheKey("dataScan.anomalies");
+    return this.cache.getOrSet(key, this.cacheTtlMs, async () => {
+      const tables = await this.getTables();
+      return tables.flatMap((t) => this.buildTableAnomalies(t));
+    });
   }
 
   async getSummary(): Promise<DataScanSummary> {
+    const key = this.cacheKey("dataScan.summary");
+    return this.cache.getOrSet(key, this.cacheTtlMs, async () => {
     const [base] = await this.db.query<{
       database_name: string;
       database_size: string;
@@ -334,9 +349,12 @@ export class DataScanService {
       total_columns: Number(base.total_columns ?? 0),
       anomalies_count: anomalies.length,
     };
+    });
   }
 
   async getRelations(): Promise<DataScanRelation[]> {
+    const key = this.cacheKey("dataScan.relations");
+    return this.cache.getOrSet(key, this.cacheTtlMs, async () => {
     const fk = await this.db.query<{
       source_schema: string;
       source_table: string;
@@ -376,6 +394,7 @@ export class DataScanService {
     }
 
     return relations;
+    });
   }
 
   async getPeriodsGlobal(): Promise<DataScanGlobalPeriods> {
@@ -663,18 +682,7 @@ export class DataScanService {
       )
       `;
 
-    const rows = await this.db.query<{
-      entity_type: string;
-      entity_code: string;
-      entity_name: string;
-      basin_name: string | null;
-      variables: string[] | null;
-      sources: string[] | null;
-      total_points: string | number;
-      min_date: string | null;
-      max_date: string | null;
-      }>(
-      `
+    const entityPeriodsSql = `
       WITH entities AS (
         SELECT
           'station'::text AS entity_type,
@@ -708,9 +716,31 @@ export class DataScanService {
         ON a.entity_type = e.entity_type
        AND a.entity_code = e.entity_code
       ORDER BY e.entity_type, e.entity_name
-      `,
-      [latestBatch]
-    );
+      `;
+
+    const rows = normExists
+      ? await this.db.query<{
+          entity_type: string;
+          entity_code: string;
+          entity_name: string;
+          basin_name: string | null;
+          variables: string[] | null;
+          sources: string[] | null;
+          total_points: string | number;
+          min_date: string | null;
+          max_date: string | null;
+        }>(entityPeriodsSql, [latestBatch])
+      : await this.db.query<{
+          entity_type: string;
+          entity_code: string;
+          entity_name: string;
+          basin_name: string | null;
+          variables: string[] | null;
+          sources: string[] | null;
+          total_points: string | number;
+          min_date: string | null;
+          max_date: string | null;
+        }>(entityPeriodsSql);
 
     return rows.map((r) => {
       const minDate = r.min_date ?? null;

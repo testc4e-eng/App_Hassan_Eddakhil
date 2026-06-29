@@ -11,7 +11,7 @@ export default function Login() {
   }
 
   if (user) {
-    return <Navigate to={user.role === "ADMIN" ? "/admin" : "/dashboard"} replace />;
+    return <Navigate to="/home" replace />;
   }
 
   return (

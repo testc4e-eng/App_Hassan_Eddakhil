@@ -16,6 +16,8 @@ const initialFilters: FilterState = {
   stations: [],
   variables: [],
   runId: undefined,
+  compareRunIds: [],
+  compareWindow: "union",
   startDate: "",
   endDate: "",
   resolution: "day",
@@ -28,18 +30,24 @@ export function ClimateModule() {
   const [tableOpen, setTableOpen] = useState(false);
   const [chartDisplayMode, setChartDisplayMode] =
     useState<ChartDisplayMode>("normal");
+  const isVariableComparisonActive = (filters.variables?.length ?? 0) > 1;
+  const chartTitle = isVariableComparisonActive
+    ? t("panels.chartMulti")
+    : t("panels.chart");
 
   return (
     <div className="w-full max-w-[1600px] mx-auto space-y-3 px-4 lg:px-5">
       <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-4 items-stretch">
         <div>
           <AnalyticsChartCard
-            title={t("panels.chart")}
+            title={chartTitle}
             action={
-              <Button variant="outline" size="sm" onClick={() => setChartOpen(true)}>
-                <Maximize2 className="mr-2 h-4 w-4" />
-                Agrandir
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setChartOpen(true)}>
+                  <Maximize2 className="mr-2 h-4 w-4" />
+                  Agrandir
+                </Button>
+              </div>
             }
           >
             <TimeSeriesChart
@@ -82,7 +90,7 @@ export function ClimateModule() {
       <ExpandableDialog
         open={chartOpen}
         onOpenChange={setChartOpen}
-        title={`${t("panels.chart")} - Vue agrandie`}
+        title={`${chartTitle} - Vue agrandie`}
       >
         <div className="h-[72vh] min-h-[520px] w-full">
           <TimeSeriesChart
@@ -109,3 +117,5 @@ export function ClimateModule() {
     </div>
   );
 }
+
+

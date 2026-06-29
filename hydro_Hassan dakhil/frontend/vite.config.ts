@@ -1,5 +1,5 @@
 // vite.config.ts
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -7,49 +7,59 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: { "@": path.resolve(__dirname, "./src") },
-  },
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+  const backendProxyTarget = env.VITE_BACKEND_PROXY || "http://127.0.0.1:5000";
+  const hmrClientPort = env.VITE_HMR_CLIENT_PORT
+    ? Number(env.VITE_HMR_CLIENT_PORT)
+    : undefined;
+  const hmrHost = env.VITE_HMR_HOST || undefined;
 
-  server: {
-    host: true,
-    port: 5173,
-    strictPort: false,
-
-    hmr: {
-      protocol: "ws",
-      clientPort: 5173,
+  return {
+    plugins: [react()],
+    resolve: {
+      alias: { "@": path.resolve(__dirname, "./src") },
     },
 
-    proxy: {
-      // ✅ proxy explicite pour ton base "/api/v1"
-      "/api/v1": {
-        target: "http://127.0.0.1:5000",
-        changeOrigin: true,
-      },
-      // ✅ optionnel: si d’autres routes utilisent "/api"
-      "/api": {
-        target: "http://127.0.0.1:5000",
-        changeOrigin: true,
-      },
-    },
-  },
+    server: {
+      host: true,
+      port: 5173,
+      strictPort: false,
 
-  build: {
-    target: "es2020",
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          "react-vendor": ["react", "react-dom", "react-router-dom"],
-          "ui-vendor": ["recharts", "leaflet", "react-leaflet"],
+      hmr: {
+        protocol: "ws",
+        ...(hmrClientPort ? { clientPort: hmrClientPort } : {}),
+        host: hmrHost,
+      },
+
+      proxy: {
+        // ✅ proxy explicite pour ton base "/api/v1"
+        "/api/v1": {
+          target: backendProxyTarget,
+          changeOrigin: true,
+        },
+        // ✅ optionnel: si d’autres routes utilisent "/api"
+        "/api": {
+          target: backendProxyTarget,
+          changeOrigin: true,
         },
       },
     },
-  },
 
-  optimizeDeps: {
-    esbuildOptions: { target: "es2020" },
-  },
+    build: {
+      target: "es2020",
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            "react-vendor": ["react", "react-dom", "react-router-dom"],
+            "ui-vendor": ["recharts", "leaflet", "react-leaflet"],
+          },
+        },
+      },
+    },
+
+    optimizeDeps: {
+      esbuildOptions: { target: "es2020" },
+    },
+  };
 });

@@ -1,8 +1,19 @@
 // backend/src/routes/catalogAvailability.ts
 import { Router, Request, Response } from "express";
 import Database from "../config/database.config";
+import { isStandardNameVisibleForModule } from "../constants/moduleVariables";
+import { erosionSwatSeriesService } from "../services/erosionSwatSeries.service";
+import { hydroSwatSeriesService } from "../services/hydroSwatSeries.service";
 
 const router = Router();
+const EROSION_VISIBLE_SCENARIO_CODES = new Set([
+  "OBSERVED",
+  "etat_actuel",
+  "scenario_1",
+  "scenario_2",
+  "scenario_3",
+  "scenario_4",
+]);
 
 function normalizeModule(moduleCode: string): "climat" | "hydro" | "erosion" | "" {
   const m = String(moduleCode || "").trim().toLowerCase();
@@ -36,6 +47,152 @@ router.get("/catalog/availability", async (req: Request, res: Response) => {
     const propertyId = req.query.propertyId
       ? Number(req.query.propertyId)
       : null;
+
+    if (moduleCode === "hydro") {
+      const pool = Database.getPool();
+
+      const observedQuery = `
+        SELECT
+          c.ts_id,
+          c.station_id,
+          c.station_code,
+          c.station_name,
+          c.property_id,
+          c.property_name,
+          c.unit,
+          c.standard_name,
+          c.run_id,
+          c.scenario_code,
+          c.scenario_name,
+          c.source_type,
+          c.time_step,
+          c.ts_created_at,
+          c.n_points,
+          c.start_date,
+          c.end_date
+        FROM public.v_ts_catalog_enriched c
+        JOIN public.module_properties mp
+          ON mp.property_id = c.property_id
+         AND mp.module_code = 'hydro'
+         AND mp.is_enabled = true
+        WHERE c.source_type = 'observed'
+      `;
+
+      const [observedResult, simulatedRows] = await Promise.all([
+        pool.query(observedQuery),
+        hydroSwatSeriesService.getAvailability({
+          stationId: stationId ?? undefined,
+          scenarioCode:
+            scenarioCode && scenarioCode !== "OBSERVED"
+              ? scenarioCode
+              : undefined,
+          propertyId: propertyId ?? undefined,
+        }),
+      ]);
+
+      const merged = [...observedResult.rows, ...simulatedRows];
+      const unique = new Map<string, any>();
+
+      for (const row of merged) {
+        const key = `${row.source_type || "unknown"}:${row.ts_id}`;
+        if (!unique.has(key)) {
+          unique.set(key, row);
+        }
+      }
+
+      const filtered = Array.from(unique.values()).filter((row) => {
+        if (!isStandardNameVisibleForModule(moduleCode, row.standard_name)) return false;
+        if (stationId && Number(row.station_id) !== stationId) return false;
+        if (propertyId && Number(row.property_id) !== propertyId) return false;
+        if (sourceType && row.source_type !== sourceType) return false;
+        if (scenarioCode) {
+          if (scenarioCode === "OBSERVED") {
+            return String(row.source_type) === "observed";
+          }
+          if (row.scenario_code !== scenarioCode) return false;
+        }
+        return true;
+      });
+
+      return res.json({
+        success: true,
+        data: filtered,
+        count: filtered.length,
+      });
+    }
+
+    if (moduleCode === "erosion") {
+      const pool = Database.getPool();
+
+      const observedQuery = `
+        SELECT
+          c.ts_id,
+          c.station_id,
+          c.station_code,
+          c.station_name,
+          c.property_id,
+          c.property_name,
+          c.unit,
+          c.standard_name,
+          c.run_id,
+          c.scenario_code,
+          c.scenario_name,
+          c.source_type,
+          c.time_step,
+          c.ts_created_at,
+          c.n_points,
+          c.start_date,
+          c.end_date
+        FROM public.v_ts_catalog_enriched c
+        JOIN public.module_properties mp
+          ON mp.property_id = c.property_id
+         AND mp.module_code = 'erosion'
+         AND mp.is_enabled = true
+        WHERE c.source_type = 'observed'
+      `;
+
+      const [observedResult, simulatedRows] = await Promise.all([
+        pool.query(observedQuery),
+        erosionSwatSeriesService.getAvailability({
+          stationId: stationId ?? undefined,
+          scenarioCode:
+            scenarioCode && scenarioCode !== "OBSERVED"
+              ? scenarioCode
+              : undefined,
+          propertyId: propertyId ?? undefined,
+        }),
+      ]);
+
+      const merged = [...observedResult.rows, ...simulatedRows];
+      const unique = new Map<string, any>();
+
+      for (const row of merged) {
+        const key = `${row.source_type || "unknown"}:${row.ts_id}`;
+        if (!unique.has(key)) {
+          unique.set(key, row);
+        }
+      }
+
+      const filtered = Array.from(unique.values()).filter((row) => {
+        if (!isStandardNameVisibleForModule(moduleCode, row.standard_name)) return false;
+        if (stationId && Number(row.station_id) !== stationId) return false;
+        if (propertyId && Number(row.property_id) !== propertyId) return false;
+        if (sourceType && row.source_type !== sourceType) return false;
+        if (scenarioCode) {
+          if (scenarioCode === "OBSERVED") {
+            return String(row.source_type) === "observed";
+          }
+          if (row.scenario_code !== scenarioCode) return false;
+        }
+        return true;
+      });
+
+      return res.json({
+        success: true,
+        data: filtered,
+        count: filtered.length,
+      });
+    }
 
     const where: string[] = [];
     const params: any[] = [];
@@ -187,8 +344,11 @@ router.get("/catalog/availability", async (req: Request, res: Response) => {
 
     const pool = Database.getPool();
     const { rows } = await pool.query(sql, params);
+    const data = rows.filter((row) =>
+      isStandardNameVisibleForModule(moduleCode, row.standard_name)
+    );
 
-    res.json({ success: true, data: rows, count: rows.length });
+    res.json({ success: true, data, count: data.length });
   } catch (e: any) {
     res.status(500).json({ success: false, error: e?.message || String(e) });
   }

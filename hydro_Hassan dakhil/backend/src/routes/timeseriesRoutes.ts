@@ -34,6 +34,11 @@ router.get(
   timeseriesController.getBundle.bind(timeseriesController)
 );
 
+router.get(
+  "/availability",
+  timeseriesController.getAggregationAvailability.bind(timeseriesController)
+);
+
 /**
  * Agrégation d’une TS
  * GET /api/v1/timeseries/:tsId/aggregate?interval=month&startDate=2020-01-01&endDate=2020-12-31

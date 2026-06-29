@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { solidYieldService } from "../services/solidYield.service";
 import { SolidYieldInterval } from "../types/solidYield.types";
+import { TtlCache } from "../utils/ttlCache";
 
 function qString(v: unknown, fallback = ""): string {
   if (v === undefined || v === null) return fallback;
@@ -23,9 +24,20 @@ function qInterval(v: unknown): SolidYieldInterval {
 }
 
 export class SolidYieldController {
+  private cache = new TtlCache<any>();
+  private readonly cacheTtlMs = 5 * 60 * 1000;
+
+  private cacheKey(name: string, payload?: unknown): string {
+    return payload === undefined ? name : `${name}:${JSON.stringify(payload)}`;
+  }
+
   async subbasins(_req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await solidYieldService.getSubbasins();
+      const data = await this.cache.getOrSet(
+        this.cacheKey("solidYield.subbasins"),
+        this.cacheTtlMs,
+        () => solidYieldService.getSubbasins()
+      );
       res.json({ success: true, data, count: data.length });
     } catch (error) {
       next(error);
@@ -35,7 +47,15 @@ export class SolidYieldController {
   async availability(req: Request, res: Response, next: NextFunction) {
     try {
       const subbasinStationId = qInt(req.query.subbasinStationId);
-      const data = await solidYieldService.getAvailability(subbasinStationId);
+      const data = await this.cache.getOrSet(
+        this.cacheKey("solidYield.availability", { subbasinStationId: subbasinStationId ?? null }),
+        this.cacheTtlMs,
+        () => solidYieldService.getAvailability(subbasinStationId)
+      );
+      console.debug("[solid-yield][availability]", {
+        subbasinStationId: subbasinStationId ?? null,
+        count: data.length,
+      });
       res.json({ success: true, data, count: data.length });
     } catch (error) {
       next(error);
@@ -57,11 +77,35 @@ export class SolidYieldController {
         });
       }
 
-      const data = await solidYieldService.getSeries(interval, {
+      const payload = {
         subbasinStationId,
         runId,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
+        interval,
+        startDate: startDate || null,
+        endDate: endDate || null,
+      };
+      const data = await this.cache.getOrSet(
+        this.cacheKey("solidYield.timeseries", payload),
+        this.cacheTtlMs,
+        () =>
+          solidYieldService.getSeries(interval, {
+            subbasinStationId,
+            runId,
+            startDate: startDate || undefined,
+            endDate: endDate || undefined,
+          })
+      );
+      const scenario = await solidYieldService.resolveScenarioByRunId(runId);
+
+      console.debug("[solid-yield][timeseries]", {
+        endpoint: "/solid-yield/timeseries",
+        subbasinStationId,
+        runId,
+        scenario_code: scenario?.scenario_code ?? null,
+        variable: "SYLDT_HA",
+        interval,
+        aggregation: interval,
+        points_count: data.length,
       });
 
       res.json({
@@ -91,11 +135,34 @@ export class SolidYieldController {
         });
       }
 
-      const data = await solidYieldService.getStats({
+      const payload = {
         subbasinStationId,
         runId,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
+        startDate: startDate || null,
+        endDate: endDate || null,
+      };
+      const data = await this.cache.getOrSet(
+        this.cacheKey("solidYield.stats", payload),
+        this.cacheTtlMs,
+        () =>
+          solidYieldService.getStats({
+            subbasinStationId,
+            runId,
+            startDate: startDate || undefined,
+            endDate: endDate || undefined,
+          })
+      );
+      const scenario = await solidYieldService.resolveScenarioByRunId(runId);
+
+      console.debug("[solid-yield][stats]", {
+        endpoint: "/solid-yield/stats",
+        subbasinStationId,
+        runId,
+        scenario_code: scenario?.scenario_code ?? null,
+        variable: "SYLDT_HA",
+        aggregation: "period",
+        points_count: data?.n_points ?? 0,
+        hasData: Boolean(data),
       });
 
       res.json({ success: true, subbasinStationId, runId, data });
@@ -103,7 +170,21 @@ export class SolidYieldController {
       next(error);
     }
   }
+
+  async diagnostic(_req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await solidYieldService.getSedimentDiagnostics();
+      console.debug("[solid-yield][diagnostic]", {
+        scenarios: data.summary.scenario_count,
+        stations: data.summary.station_count,
+        rows: data.rows.length,
+        availableRows: data.summary.available_rows,
+      });
+      res.json({ success: true, data, count: data.rows.length });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const solidYieldController = new SolidYieldController();
-

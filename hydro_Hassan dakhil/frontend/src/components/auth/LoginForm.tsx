@@ -25,10 +25,10 @@ export function LoginForm() {
     setSuccess(null);
 
     try {
-      const user = await login(email, password);
+      await login(email, password);
       setSuccess("Connexion réussie, redirection en cours...");
       window.setTimeout(() => {
-        navigate(user.role === "ADMIN" ? "/admin" : "/dashboard", { replace: true });
+        navigate("/home", { replace: true });
       }, 250);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Connexion impossible");

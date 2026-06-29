@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   CartesianGrid,
   Legend,
@@ -8,15 +16,23 @@ import {
   YAxis,
   Area,
   ComposedChart,
+  Line,
 } from "recharts";
 import type { FilterState } from "@/types/hydro";
 import type { ChartDisplayMode } from "@/types/chart";
-import { TrendingUp, Download } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { TrendingUp } from "lucide-react";
 import { useHydroData } from "@/contexts/HydroDataContext";
+import { timeseriesApi } from "@/api/timeseries";
 import { useTranslation } from "react-i18next";
-import { formatDateByAggregation } from "@/lib/seriesGranularity";
+import {
+  formatDateByAggregation,
+} from "@/lib/seriesGranularity";
 import { AnalyticsChartContainer } from "@/components/dashboard/analytics/AnalyticsChartContainer";
+import { ChartExportMenu } from "@/components/charts/ChartExportMenu";
+import {
+  buildChartImageFileName,
+  downloadChartAsImage,
+} from "@/lib/chartExport";
 import {
   Select,
   SelectContent,
@@ -32,6 +48,10 @@ interface TimeSeriesChartProps {
   onDisplayModeChange?: (mode: ChartDisplayMode) => void;
   chartHeightClassName?: string;
 }
+
+export type TimeSeriesChartHandle = {
+  downloadImage: (fileNameOverride?: string) => Promise<void>;
+};
 
 type AggRowAny = {
   period?: string;
@@ -49,7 +69,6 @@ type BundleCatalogItem = {
 };
 
 type BundleResponse = {
-  success: boolean;
   catalog: BundleCatalogItem[];
   aggregated?: Record<string, AggRowAny[]>;
   error?: string;
@@ -75,7 +94,59 @@ type VarMeta = {
   key: string;
   label: string;
   unit?: string | null;
+  displayLabel: string;
 };
+
+type YAxisDomainTuple = ["auto", "auto"] | [number, number];
+
+function toFiniteNumber(value: unknown): number | null {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value === "string" && value.trim() !== "") {
+    const n = Number(value.replace(",", "."));
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+function downsampleKeepingExtremes(
+  all: ChartDataPoint[],
+  varMetas: VarMeta[],
+  maxPoints = 700
+): ChartDataPoint[] {
+  if (all.length <= maxPoints) return all;
+
+  const step = Math.max(1, Math.ceil(all.length / maxPoints));
+  const picked = new Set<number>();
+
+  picked.add(0);
+  picked.add(all.length - 1);
+  for (let i = 0; i < all.length; i += step) picked.add(i);
+
+  for (const meta of varMetas) {
+    let maxIdx = -1;
+    let maxVal = Number.NEGATIVE_INFINITY;
+    let minIdx = -1;
+    let minVal = Number.POSITIVE_INFINITY;
+    for (let i = 0; i < all.length; i++) {
+      const v = toFiniteNumber(all[i][meta.key]);
+      if (v === null) continue;
+      if (v > maxVal) {
+        maxVal = v;
+        maxIdx = i;
+      }
+      if (v < minVal) {
+        minVal = v;
+        minIdx = i;
+      }
+    }
+    if (maxIdx >= 0) picked.add(maxIdx);
+    if (minIdx >= 0) picked.add(minIdx);
+  }
+
+  return Array.from(picked)
+    .sort((a, b) => a - b)
+    .map((idx) => all[idx]);
+}
 
 function resolutionToAgg(resolution: FilterState["resolution"]): "instant" | "day" | "month" | "year" {
   if (resolution === "instant") return "instant";
@@ -98,15 +169,9 @@ function pickDate(r: AggRowAny): string | null {
 }
 
 function pickValue(r: AggRowAny): number | null {
-  const v =
-    typeof r.avg_value === "number"
-      ? r.avg_value
-      : typeof r.value_avg === "number"
-      ? r.value_avg
-      : typeof r.value === "number"
-      ? r.value
-      : null;
-  return Number.isFinite(v as number) ? (v as number) : null;
+  return toFiniteNumber(
+    r.avg_value ?? r.value_avg ?? r.value ?? null
+  );
 }
 
 function safeDate(ts: string): Date | null {
@@ -120,15 +185,20 @@ function csvEscape(v: unknown): string {
   return s;
 }
 
-export function TimeSeriesChart({
-  filters,
-  moduleCode,
-  displayMode = "normal",
-  onDisplayModeChange,
-  chartHeightClassName = "h-[340px] md:h-[360px] xl:h-[380px]",
-}: TimeSeriesChartProps) {
+export const TimeSeriesChart = forwardRef<TimeSeriesChartHandle, TimeSeriesChartProps>(
+function TimeSeriesChart(
+  {
+    filters,
+    moduleCode,
+    displayMode = "normal",
+    onDisplayModeChange,
+    chartHeightClassName = "h-[340px] md:h-[360px] xl:h-[380px]",
+  }: TimeSeriesChartProps,
+  ref
+) {
   const { t } = useTranslation();
-  const { apiBase, moduleProperties } = useHydroData();
+  const { moduleProperties, runs, stations } = useHydroData();
+  const chartRef = useRef<HTMLDivElement>(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -136,9 +206,12 @@ export function TimeSeriesChart({
 
   const stationId = filters.stations?.[0];
   const runId = filters.runId;
-  const agg = resolutionToAgg(filters.resolution);
-  const displayAgg = displayAggFromResolution(filters.resolution);
-  const selectedVarIds = useMemo(() => filters.variables ?? [], [filters.variables]);
+  const agg = displayAggFromResolution(filters.resolution);
+  const displayAgg = agg;
+  const selectedVarIds = useMemo(
+    () => Array.from(new Set(filters.variables ?? [])),
+    [filters.variables]
+  );
 
   const varMetas: VarMeta[] = useMemo(() => {
     const props = (moduleProperties as any)?.[moduleCode] || [];
@@ -149,9 +222,56 @@ export function TimeSeriesChart({
         key: `p_${id}`,
         label: p?.name ? String(p.name) : `Variable ${id}`,
         unit: p?.unit ?? null,
+        displayLabel: p?.name
+          ? `${String(p.name)}${p?.unit ? ` (${String(p.unit)})` : ""}`
+          : `Variable ${id}`,
       };
     });
   }, [selectedVarIds, moduleCode, moduleProperties]);
+
+  const isDualAxisMode =
+    displayMode === "normal" && varMetas.length === 2;
+  const primaryVarMeta = isDualAxisMode ? varMetas[0] : null;
+  const secondaryVarMeta = isDualAxisMode ? varMetas[1] : null;
+
+  const stationMeta = useMemo(
+    () => stations.find((station) => station.station_id === stationId) ?? null,
+    [stations, stationId]
+  );
+  const runMeta = useMemo(
+    () => runs.find((run) => run.run_id === runId) ?? null,
+    [runs, runId]
+  );
+  const chartFileName = useMemo(
+    () =>
+      buildChartImageFileName({
+        prefix: moduleCode,
+        station: stationMeta?.station_label || stationMeta?.station_name || (stationId ? `station_${stationId}` : null),
+        scenario: runMeta?.scenario_code || runMeta?.scenario_name || (runId ? `run_${runId}` : null),
+        variable:
+          varMetas.map((v) => v.label).join("_") ||
+          selectedVarIds.map((id) => `p_${id}`).join("_") ||
+          "variables",
+        aggregation: displayAgg,
+        mode: displayMode,
+      }),
+    [moduleCode, stationMeta, stationId, runMeta, runId, varMetas, selectedVarIds, displayAgg, displayMode]
+  );
+
+  const handleDownloadImage = useCallback(
+    async (fileNameOverride?: string) => {
+      await downloadChartAsImage(chartRef, fileNameOverride || chartFileName);
+    },
+    [chartFileName]
+  );
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      downloadImage: handleDownloadImage,
+    }),
+    [handleDownloadImage]
+  );
 
   const depsKey = useMemo(() => {
     const ids = [...selectedVarIds].sort((a, b) => a - b);
@@ -179,25 +299,16 @@ export function TimeSeriesChart({
           return;
         }
 
-        const qs = new URLSearchParams({
-          stationId: String(stationId),
-          runId: String(runId),
+        const bundleResponse = await timeseriesApi.bundle({
+          stationId,
+          runId,
           module: moduleCode,
           agg,
+          startDate: filters.startDate || undefined,
+          endDate: filters.endDate || undefined,
         });
-        if (filters.startDate) qs.set("startDate", String(filters.startDate));
-        if (filters.endDate) qs.set("endDate", String(filters.endDate));
-
-        const res = await fetch(`${apiBase}/timeseries/bundle?${qs.toString()}`);
-        if (!res.ok) {
-          const txt = await res.text();
-          throw new Error(`HTTP ${res.status} ${res.statusText} - ${txt}`);
-        }
-
-        const json = (await res.json()) as BundleResponse;
-        if (!json.success) throw new Error(json.error || "Erreur bundle");
         if (!alive) return;
-        setBundle(json);
+        setBundle(bundleResponse as BundleResponse);
       } catch (e: any) {
         if (!alive) return;
         setError(String(e?.message || e));
@@ -210,9 +321,9 @@ export function TimeSeriesChart({
     return () => {
       alive = false;
     };
-  }, [apiBase, depsKey]);
+  }, [depsKey, agg, filters.startDate, filters.endDate, moduleCode, runId, stationId]);
 
-  const baseChartData = useMemo(() => {
+  const rawChartData = useMemo(() => {
     if (!bundle?.catalog?.length || !bundle.aggregated) return [] as ChartDataPoint[];
 
     const tsByProperty = new Map<number, number>();
@@ -242,14 +353,18 @@ export function TimeSeriesChart({
       return da - db;
     });
 
-    const step = Math.max(1, Math.ceil(all.length / 700));
-    return all.filter((_, i) => i % step === 0);
+    return all;
   }, [bundle, varMetas, selectedVarIds]);
+
+  const displayChartData = useMemo(
+    () => downsampleKeepingExtremes(rawChartData, varMetas, 700),
+    [rawChartData, varMetas]
+  );
 
   const transformed = useMemo(() => {
     if (displayMode === "normal") {
       return {
-        data: baseChartData,
+        data: displayChartData,
         xKey: "date" as const,
         xLabel: "Date",
         logExcludedCount: 0,
@@ -258,11 +373,11 @@ export function TimeSeriesChart({
 
     if (displayMode === "logarithmic") {
       let logExcludedCount = 0;
-      const data = baseChartData.map((row) => {
+      const data = displayChartData.map((row) => {
         const out: ChartDataPoint = { ...row };
         for (const meta of varMetas) {
-          const v = out[meta.key];
-          if (typeof v === "number" && v <= 0) {
+        const v = toFiniteNumber(out[meta.key]);
+        if (v !== null && v <= 0) {
             out[meta.key] = null;
             logExcludedCount += 1;
           }
@@ -278,9 +393,9 @@ export function TimeSeriesChart({
     }
 
     const seriesByVar = varMetas.map((meta) => {
-      const values = baseChartData
-        .map((row) => row[meta.key])
-        .filter((v): v is number => typeof v === "number" && Number.isFinite(v))
+      const values = displayChartData
+        .map((row) => toFiniteNumber(row[meta.key]))
+        .filter((v): v is number => v !== null)
         .sort((a, b) => b - a);
       return { key: meta.key, values };
     });
@@ -304,7 +419,101 @@ export function TimeSeriesChart({
       xLabel: "Probabilité de dépassement (%)",
       logExcludedCount: 0,
     };
-  }, [baseChartData, varMetas, displayMode]);
+  }, [displayChartData, varMetas, displayMode]);
+  const xAxisLabel =
+    transformed.xKey === "probability" ? transformed.xLabel : undefined;
+
+  const axisMetrics = useMemo(() => {
+    const targetKeys = isDualAxisMode && primaryVarMeta
+      ? [primaryVarMeta.key]
+      : varMetas.map((v) => v.key);
+
+    const rawSeriesValues: number[] = [];
+    for (const row of rawChartData) {
+      for (const key of targetKeys) {
+        const v = toFiniteNumber(row[key]);
+        if (v !== null) rawSeriesValues.push(v);
+      }
+    }
+
+    const displayedValues: number[] = [];
+    for (const row of transformed.data) {
+      for (const key of targetKeys) {
+        const v = toFiniteNumber(row[key]);
+        if (v !== null) displayedValues.push(v);
+      }
+    }
+
+    const rawMaxY = rawSeriesValues.length ? Math.max(...rawSeriesValues) : null;
+    const rawMinY = rawSeriesValues.length ? Math.min(...rawSeriesValues) : null;
+    const displayedMaxY = displayedValues.length ? Math.max(...displayedValues) : null;
+    const displayedMinY = displayedValues.length ? Math.min(...displayedValues) : null;
+
+    return {
+      rawSeriesPoints: rawSeriesValues.length,
+      pointsRaw: rawChartData.length,
+      pointsDisplayed: transformed.data.length,
+      rawMaxY,
+      rawMinY,
+      displayedMaxY,
+      displayedMinY,
+    };
+  }, [isDualAxisMode, primaryVarMeta, rawChartData, transformed.data, varMetas]);
+
+  const leftAxisDomain = useMemo<YAxisDomainTuple>(() => {
+    if (displayMode === "logarithmic") return ["auto", "auto"];
+
+    const maxCandidates = [axisMetrics.rawMaxY, axisMetrics.displayedMaxY].filter(
+      (v): v is number => typeof v === "number" && Number.isFinite(v)
+    );
+    const minCandidates = [axisMetrics.rawMinY, axisMetrics.displayedMinY].filter(
+      (v): v is number => typeof v === "number" && Number.isFinite(v)
+    );
+
+    if (!maxCandidates.length || !minCandidates.length) return ["auto", "auto"];
+
+    const finalMaxY = Math.max(...maxCandidates);
+    const finalMinY = Math.min(...minCandidates);
+
+    if (finalMaxY === finalMinY) {
+      if (finalMaxY === 0) return [0, 1];
+      const margin = Math.abs(finalMaxY) * 0.05;
+      return [Math.min(0, finalMinY - margin), finalMaxY + margin];
+    }
+
+    const yMax = finalMaxY > 0
+      ? Math.ceil(finalMaxY * 1.05)
+      : Math.ceil(finalMaxY + Math.abs(finalMaxY) * 0.05);
+    const yMin = finalMinY >= 0
+      ? 0
+      : Math.floor(finalMinY * 1.05);
+    return [yMin, yMax];
+  }, [displayMode, axisMetrics]);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    if (moduleCode !== "hydro" || displayMode !== "normal") return;
+
+    console.log("HYDRO CHART DEBUG", {
+      station: stationMeta?.station_label || stationMeta?.station_name || stationId || null,
+      scenario: runMeta?.scenario_code || runMeta?.scenario_name || runId || null,
+      rawMaxY: axisMetrics.rawMaxY,
+      displayedMaxY: axisMetrics.displayedMaxY,
+      yMax: Array.isArray(leftAxisDomain) ? leftAxisDomain[1] : null,
+      pointsRaw: axisMetrics.pointsRaw,
+      pointsDisplayed: axisMetrics.pointsDisplayed,
+      rawSeriesPoints: axisMetrics.rawSeriesPoints,
+    });
+  }, [
+    moduleCode,
+    displayMode,
+    stationMeta,
+    stationId,
+    runMeta,
+    runId,
+    axisMetrics,
+    leftAxisDomain,
+  ]);
 
   const exportCSV = useCallback(() => {
     if (!transformed.data.length) return;
@@ -359,11 +568,20 @@ export function TimeSeriesChart({
 
   if (loading) return <div className="p-6 text-sm text-muted-foreground">Chargement...</div>;
   if (error) return <div className="p-6 text-sm text-red-600">Erreur chart: {error}</div>;
+  if (!transformed.data.length) {
+    return (
+      <div className="hydro-card h-full flex items-center justify-center">
+        <div className="text-center text-muted-foreground">
+          <p>Aucune donnée disponible pour cette agrégation.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="hydro-card flex h-full flex-col">
       <div className="hydro-card-header">
-        <h3 className="font-semibold">Series Temporelles (API)</h3>
+        <h3 className="font-semibold">Séries temporelles (API)</h3>
         <div className="flex items-center gap-2">
           <Select
             value={displayMode}
@@ -378,16 +596,12 @@ export function TimeSeriesChart({
               <SelectItem value="fdc">FDC</SelectItem>
             </SelectContent>
           </Select>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={exportCSV}
-            disabled={!transformed.data.length}
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Export CSV
-          </Button>
+          <ChartExportMenu
+            onExportCsv={exportCSV}
+            onExportPng={() => handleDownloadImage()}
+            csvDisabled={!transformed.data.length}
+            pngDisabled={!transformed.data.length}
+          />
         </div>
       </div>
 
@@ -397,11 +611,15 @@ export function TimeSeriesChart({
             Les valeurs ≤ 0 sont exclues en mode logarithmique.
           </div>
         )}
-        <AnalyticsChartContainer className={chartHeightClassName}>
+        <AnalyticsChartContainer ref={chartRef} className={chartHeightClassName}>
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
               data={transformed.data}
-              margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
+              margin={
+                isDualAxisMode
+                  ? { top: 20, right: 48, left: 32, bottom: 40 }
+                  : { top: 20, right: 30, left: 20, bottom: 40 }
+              }
               style={{ overflow: "visible" }}
             >
               <defs>
@@ -430,28 +648,72 @@ export function TimeSeriesChart({
                 tick={{ fontSize: 11 }}
                 minTickGap={20}
                 tickMargin={12}
-                height={52}
+                height={xAxisLabel ? 52 : 40}
                 tickFormatter={(value) => {
                   if (transformed.xKey === "probability") return `${Number(value).toFixed(0)}%`;
                   return formatDateByAggregation(String(value), displayAgg);
                 }}
                 stroke="hsl(var(--muted-foreground))"
-                label={{
-                  value: transformed.xLabel,
-                  position: "insideBottom",
-                  offset: -12,
-                }}
+                label={
+                  xAxisLabel
+                    ? {
+                        value: xAxisLabel,
+                        position: "insideBottom",
+                        offset: -12,
+                      }
+                    : undefined
+                }
               />
 
               <YAxis
+                yAxisId="left"
                 tick={{ fontSize: 11 }}
                 tickMargin={8}
-                width={52}
-                stroke="hsl(var(--muted-foreground))"
+                width={isDualAxisMode ? 60 : 52}
+                stroke={
+                  isDualAxisMode
+                    ? chartColors[0]
+                    : "hsl(var(--muted-foreground))"
+                }
                 scale={displayMode === "logarithmic" ? "log" : "auto"}
-                domain={displayMode === "logarithmic" ? ["auto", "auto"] : ["auto", "auto"]}
+                domain={leftAxisDomain}
                 allowDataOverflow={false}
+                label={
+                  primaryVarMeta
+                    ? {
+                        value: primaryVarMeta.displayLabel,
+                        angle: -90,
+                        position: "insideLeft",
+                        style: {
+                          fill: chartColors[0],
+                          fontSize: 11,
+                        },
+                      }
+                    : undefined
+                }
               />
+
+              {secondaryVarMeta && (
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  tick={{ fontSize: 11 }}
+                  tickMargin={8}
+                  width={60}
+                  stroke={chartColors[1]}
+                  domain={["auto", "auto"]}
+                  allowDataOverflow={false}
+                  label={{
+                    value: secondaryVarMeta.displayLabel,
+                    angle: 90,
+                    position: "insideRight",
+                    style: {
+                      fill: chartColors[1],
+                      fontSize: 11,
+                    },
+                  }}
+                />
+              )}
 
               <Tooltip
                 contentStyle={{
@@ -474,20 +736,37 @@ export function TimeSeriesChart({
                 }}
               />
 
-              <Legend wrapperStyle={{ fontSize: "12px" }} />
+              <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "12px" }} />
 
               {varMetas.map((v, i) => (
-                <Area
-                  key={v.key}
-                  type="monotone"
-                  dataKey={v.key}
-                  stroke={chartColors[i % chartColors.length]}
-                  fill={`url(#gradient-${v.key})`}
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 4, strokeWidth: 2 }}
-                  connectNulls={false}
-                />
+                isDualAxisMode ? (
+                  <Line
+                    key={v.key}
+                    type="monotone"
+                    yAxisId={i === 0 ? "left" : "right"}
+                    dataKey={v.key}
+                    name={v.displayLabel}
+                    stroke={chartColors[i % chartColors.length]}
+                    strokeWidth={2.5}
+                    dot={false}
+                    activeDot={{ r: 4, strokeWidth: 2 }}
+                    connectNulls={false}
+                  />
+                ) : (
+                  <Area
+                    key={v.key}
+                    type="monotone"
+                    yAxisId="left"
+                    dataKey={v.key}
+                    name={v.displayLabel}
+                    stroke={chartColors[i % chartColors.length]}
+                    fill={`url(#gradient-${v.key})`}
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4, strokeWidth: 2 }}
+                    connectNulls={false}
+                  />
+                )
               ))}
             </ComposedChart>
           </ResponsiveContainer>
@@ -495,4 +774,6 @@ export function TimeSeriesChart({
       </div>
     </div>
   );
-}
+});
+
+TimeSeriesChart.displayName = "TimeSeriesChart";

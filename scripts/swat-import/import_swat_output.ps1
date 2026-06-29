@@ -1,14 +1,15 @@
 param(
   [string]$MdbPath = "",
-  [string]$PgHost = "localhost",
+  [string]$PgHost = "127.0.0.1",
   [int]$PgPort = 5432,
   [string]$PgDatabase = "hydro_hd_1714",
   [string]$PgUser = "postgres",
   [string]$PgPassword = "",
-  [string]$MappingPath = "C:\dev\Projects\hydro_HD\scripts\swat-import\mapping.config.json",
-  [string]$WorkDir = "C:\dev\Projects\hydro_HD\scripts\swat-import\work",
-  [string]$LogDir = "C:\dev\Projects\hydro_HD\scripts\swat-import\logs",
-  [ValidateSet("preview","import","reload")]
+  [string]$MappingPath = "",
+  [string]$WorkDir = "",
+  [string]$LogDir = "",
+  [string]$ScenarioCode = "",
+  [ValidateSet("preview","import","reload","replace")]
   [string]$Mode = "preview"
 )
 
@@ -93,11 +94,17 @@ function Get-Recordset {
 }
 
 function To-PeriodDate {
-  param([object]$Year, [object]$Yyyyddd)
+  param([object]$Year, [object]$Yyyyddd, [object]$Month)
   if ($null -ne $Yyyyddd -and [int]$Yyyyddd -gt 0) {
     $y = [int]($Yyyyddd / 1000)
     $doy = [int]($Yyyyddd % 1000)
     return (Get-Date -Year $y -Month 1 -Day 1).AddDays($doy - 1).ToString("yyyy-MM-dd")
+  }
+  if ($null -ne $Year -and $null -ne $Month) {
+    $m = [int]$Month
+    if ($m -ge 1 -and $m -le 12) {
+      return (Get-Date -Year ([int]$Year) -Month $m -Day 1).ToString("yyyy-MM-dd")
+    }
   }
   if ($null -ne $Year) {
     return (Get-Date -Year ([int]$Year) -Month 1 -Day 1).ToString("yyyy-MM-dd")
@@ -125,6 +132,10 @@ function Export-ResultCsv {
     [string]$SourceFile
   )
   $rs = Get-Recordset -Conn $Conn -TableName $SourceTable
+  $fieldNames = @{}
+  for ($i = 0; $i -lt $rs.Fields.Count; $i++) {
+    $fieldNames[[string]$rs.Fields.Item($i).Name] = $true
+  }
   $writer = New-Object System.IO.StreamWriter($CsvPath, $false, [System.Text.Encoding]::UTF8)
   try {
     $writer.WriteLine(($OutputColumns -join ","))
@@ -134,12 +145,22 @@ function Export-ResultCsv {
       $line = foreach ($col in $OutputColumns) {
         switch ($col) {
           "scenario_code" { Escape-Csv $ScenarioCode; continue }
-          "period_date" { Escape-Csv (To-PeriodDate -Year $rs.Fields.Item("YEAR").Value -Yyyyddd $rs.Fields.Item("YYYYDDD").Value); continue }
+          "period_date" {
+            $yearVal = if ($fieldNames.ContainsKey("YEAR")) { $rs.Fields.Item("YEAR").Value } else { $null }
+            $yyyydddVal = if ($fieldNames.ContainsKey("YYYYDDD")) { $rs.Fields.Item("YYYYDDD").Value } else { $null }
+            $monthVal = if ($fieldNames.ContainsKey("MON")) { $rs.Fields.Item("MON").Value } else { $null }
+            Escape-Csv (To-PeriodDate -Year $yearVal -Yyyyddd $yyyydddVal -Month $monthVal)
+            continue
+          }
           "source_row_num" { Escape-Csv $rowNum; continue }
           "source_file" { Escape-Csv $SourceFile; continue }
         }
         $src = $FieldMap[$col]
-        if ($src) { Escape-Csv $rs.Fields.Item($src).Value } else { "" }
+        if ($src -and $fieldNames.ContainsKey([string]$src)) {
+          Escape-Csv $rs.Fields.Item($src).Value
+        } else {
+          ""
+        }
       }
       $writer.WriteLine(($line -join ","))
       $rs.MoveNext()
@@ -258,15 +279,23 @@ COMMIT;
   Invoke-Psql -SqlText $sql
 }
 
+$defaultDir = Split-Path -Parent $PSCommandPath
+if (-not $MappingPath) { $MappingPath = Join-Path $defaultDir "mapping.config.json" }
+if (-not $WorkDir) { $WorkDir = Join-Path $defaultDir "work" }
+if (-not $LogDir) { $LogDir = Join-Path $defaultDir "logs" }
 if (-not (Test-Path $WorkDir)) { New-Item -ItemType Directory -Path $WorkDir | Out-Null }
 if (-not (Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir | Out-Null }
 
 $MdbPath = Resolve-MdbPath -Path $MdbPath
+if (-not (Test-Path $MappingPath)) {
+  throw "mapping.config.json introuvable: $MappingPath"
+}
 $cfg = Get-Content $MappingPath -Raw | ConvertFrom-Json
 $sourceFile = [System.IO.Path]::GetFileName($MdbPath)
-$scenarioCode = [string]$cfg.scenarioCode
+$scenarioCode = if ($ScenarioCode) { $ScenarioCode } else { [string]$cfg.scenarioCode }
 $conn = New-AdoConnection -Path $MdbPath
 $tables = Get-UserTables -Conn $conn
+$importId = $null
 
 if ($Mode -eq "preview") {
   Write-Log "Preview du fichier Access: $MdbPath"
@@ -302,9 +331,15 @@ RETURNING import_id;
 if (-not $importId) { throw "Impossible de créer access.import_runs" }
 Write-Log "Import Access démarré, import_id=$importId"
 
+try {
 if ($Mode -eq "reload") {
   Invoke-Psql -SqlText @"
 TRUNCATE access.sub_results, access.rch_results, access.variable_dictionary RESTART IDENTITY;
+"@
+} elseif ($Mode -eq "replace") {
+  Invoke-Psql -SqlText @"
+DELETE FROM access.sub_results WHERE scenario_code = '$scenarioCode';
+DELETE FROM access.rch_results WHERE scenario_code = '$scenarioCode';
 "@
 }
 
@@ -475,6 +510,20 @@ SET status = 'finished', finished_at = now(), total_rows = $totalRows
 WHERE import_id = $importId;
 "@
 
-Close-ComObject $conn
 Write-Log "Import terminé import_id=$importId total_rows=$totalRows"
+} catch {
+  $errorMessage = $_.Exception.Message.Replace("'", "''")
+  if ($importId) {
+    Invoke-Psql -SqlText @"
+UPDATE access.import_runs
+SET status = 'failed',
+    finished_at = now(),
+    notes = '$errorMessage'
+WHERE import_id = $importId;
+"@
+  }
+  throw
+} finally {
+  Close-ComObject $conn
+}
 exit 0

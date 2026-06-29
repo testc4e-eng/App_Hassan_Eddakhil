@@ -63,7 +63,7 @@
       "kpi3": "Active sensors"
     },
     "footer": {
-      "line1": "© 2024 Hassan Addakhil Dam - Hydrological Monitoring System",
+      "line1": "© 2026 Hassan Addakhil Dam - Hydrological Monitoring System",
       "line2": "Real-time updated data - Ministry of Equipment and Water"
     }
   },
@@ -93,7 +93,7 @@
     },
     "map": { "city": "Errachidia, Morocco" },
     "footer": {
-      "line1": "© 2024 Hassan Addakhil Dam - Hydrological Monitoring System",
+      "line1": "© 2026 Hassan Addakhil Dam - Hydrological Monitoring System",
       "line2": "Guir-Ziz-Rheris Hydraulic Basin Agency"
     }
   },
@@ -114,7 +114,7 @@
     "groupReporting": "Reporting",
     "climate": "Climate Monitoring",
     "hydraulic": "Hydrological Monitoring",
-    "erosion": "Erosion Monitoring",
+    "erosion": "Sediments",
     "spatial": "Spatial Analysis",
     "simulatedData": "Data Management",
     "scan": "Data Scan",
@@ -125,7 +125,7 @@
   "dashboard": {
     "climate": "Climate Monitoring",
     "hydro": "Hydrological Monitoring",
-    "erosion": "Erosion Monitoring",
+    "erosion": "Sediments",
     "spatial": "Spatial Analysis",
     "maps": "Thematic Maps",
     "simulatedData": "Data: Simulated Data",
@@ -161,6 +161,9 @@
     "month": "Month",
     "year": "Year",
     "reset": "Reset",
+    "variablesLoadError": "Unable to load variables right now. Try again after reloading.",
+    "noVariablesForSelection": "No variables are available for this station and scenario.",
+    "noSedimentForSelection": "No sediment data is available for this station and scenario.",
     "noSimulatedForStation": "No simulated series available for this station.",
     "sourceObserved": "Observed",
     "sourceSimulated": "Simulated"
@@ -184,6 +187,9 @@
     "date": "Date",
     "compareScenarios": "Scenarios to compare",
     "selectedScenarios": "Selected: {{count}} scenario(s)",
+    "compareVariables": "Variables to compare",
+    "selectedVariables": "Selected: {{count}} variable(s)",
+    "maxComparedVariables": "Maximum 2 variables compared at a time.",
     "temporalComparisonMode": "Temporal comparison mode",
     "compareFullPeriod": "Compare over full period",
     "compareCommonPeriod": "Compare over common period",
@@ -218,7 +224,8 @@
       "subbasins": "{{count}} project subbasins",
       "basins": "{{count}} project basin",
       "reaches": "{{count}} project reaches",
-      "barrages": "{{count}} project dam"
+      "barrages": "{{count}} project dam",
+      "hruSummary": "{{count}} HRU summaries"
     },
     "filters": {
       "basin": "Basin",
@@ -230,6 +237,9 @@
       "subbasin": "Subbasin",
       "chooseSubbasin": "Choose a subbasin",
       "allSubbasins": "All subbasins",
+      "station": "Station",
+      "chooseStation": "Choose a station",
+      "allStations": "All stations",
       "subbasinsShown": "Displayed subbasins: {{count}}"
     },
     "layers": {
@@ -238,12 +248,19 @@
       "basins": "Basins",
       "subbasins": "Subbasins",
       "reach": "Reach",
-      "stations": "Stations"
+      "stations": "Stations",
+      "hruSummary": "HRU Summary (LULC/SOIL/SLOPE)"
     },
     "tools": {
       "title": "Analysis tools",
       "navigation": "Navigation",
       "zoom": "Zoom",
+      "zoomSelection": "Zoom selection",
+      "fullView": "Full view",
+      "mapOnly": "Map only",
+      "exitMapOnly": "Exit map only",
+      "showAnalysisPanel": "Analysis",
+      "showToolsPanel": "Tools",
       "basemap": "Basemap",
       "chooseBasemap": "Choose a basemap",
       "measure": "Measure",
@@ -259,7 +276,8 @@
       "barrages": "Dams / reservoirs",
       "basinOutline": "Watershed boundary",
       "subbasins": "Subbasins",
-      "reach": "Reach / hydro network"
+      "reach": "Reach / hydro network",
+      "hruSummary": "Dominant HRU summary"
     }
   }
 }

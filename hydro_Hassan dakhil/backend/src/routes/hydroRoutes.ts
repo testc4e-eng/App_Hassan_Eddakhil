@@ -50,6 +50,7 @@ router.get(
 
 // ================ RESERVOIRS ================
 router.get("/reservoirs", hydroController.getReservoirs.bind(hydroController));
+router.get("/bathymetry", hydroController.getBathymetry.bind(hydroController));
 
 // ================ MODEL RUNS ================
 router.get("/model-runs", hydroController.getModelRuns.bind(hydroController));

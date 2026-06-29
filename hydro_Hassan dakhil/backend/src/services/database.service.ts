@@ -4,6 +4,7 @@ import { PoolClient } from "pg";
 
 export class DatabaseService {
   private pool = db.getPool();
+  private relationExistsCache = new Map<string, Promise<boolean>>();
 
   async query<T = any>(text: string, params?: any[]): Promise<T[]> {
     try {
@@ -24,6 +25,22 @@ export class DatabaseService {
   async queryOne<T = any>(text: string, params?: any[]): Promise<T | null> {
     const results = await this.query<T>(text, params);
     return results.length > 0 ? results[0] : null;
+  }
+
+  async relationExists(regclassName: string): Promise<boolean> {
+    const cached = this.relationExistsCache.get(regclassName);
+    if (cached) return cached;
+
+    const promise = this.queryOne<{ exists: boolean }>(
+      `SELECT to_regclass($1) IS NOT NULL AS exists`,
+      [regclassName]
+    ).then((row) => Boolean(row?.exists)).catch((error) => {
+      this.relationExistsCache.delete(regclassName);
+      throw error;
+    });
+
+    this.relationExistsCache.set(regclassName, promise);
+    return promise;
   }
 
   async execute(text: string, params?: any[]): Promise<number> {

@@ -1,17 +1,17 @@
 // frontend/src/pages/Dashboard.tsx
 import React, { useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
 import { type DashboardSection } from "@/components/dashboard/DashboardSidebar";
 import { DashboardSidebarV2 } from "@/components/dashboard/DashboardSidebarV2";
 
 import { ClimateModule } from "@/components/dashboard/modules/ClimateModule";
 import { HydraulicModule } from "@/components/dashboard/modules/HydraulicModule";
-import { ErosionSedimentsModuleV3 } from "@/components/dashboard/modules/ErosionSedimentsModuleV3";
+import { SedimentsDashboard } from "@/components/dashboard/modules/sediments/SedimentsDashboard";
 import { SpatialModule } from "@/components/dashboard/modules/SpatialModule";
 import { MapsModule } from "@/components/dashboard/modules/MapsModule";
 import { ReportsModule } from "@/components/dashboard/modules/ReportsModule";
-import { SimulatedDataModuleV2 } from "@/components/dashboard/modules/SimulatedDataModuleV2";
+import { DataManagementModule } from "@/components/dashboard/modules/DataManagementModule";
 import ScanDeDonneesPage from "@/pages/ScanDeDonneesPage";
 
 import { useHydroData } from "@/contexts/HydroDataContext";
@@ -22,10 +22,10 @@ import { useTranslation } from "react-i18next";
 const MODULE_COMPONENTS: Record<DashboardSection, React.ComponentType> = {
   climate: ClimateModule,
   hydraulic: HydraulicModule,
-  sediment: ErosionSedimentsModuleV3,
+  sediment: SedimentsDashboard,
   spatial: SpatialModule,
   maps: MapsModule,
-  simulatedData: SimulatedDataModuleV2,
+  simulatedData: DataManagementModule,
   dataScan: ScanDeDonneesPage,
   reports: ReportsModule,
 };
@@ -33,16 +33,13 @@ const MODULE_COMPONENTS: Record<DashboardSection, React.ComponentType> = {
 export default function Dashboard() {
   const { t } = useTranslation();
   const location = useLocation();
-  const [activeSection, setActiveSection] = useState<DashboardSection>("climate");
+  const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useState<DashboardSection>("spatial");
 
   const {
     loading,
     error,
     runs,
-    moduleProperties,
-    availabilityByModule,
-    stations,
-    getStationsForModule,
   } = useHydroData();
 
   const sectionTitles = useMemo(
@@ -65,30 +62,19 @@ export default function Dashboard() {
 
   const totalRuns = runs?.length || 0;
 
-  const totalProperties =
-    (moduleProperties?.climat?.length || 0) +
-    (moduleProperties?.hydro?.length || 0) +
-    (moduleProperties?.erosion?.length || 0);
-
-  // Stations (catalog) = stations déduites de availability (par module)
-  const stationsCatalogCount = useMemo(() => stations.length, [stations.length]);
-
-  // Cache availability: nombre de lignes (donne une idée si l’API répond)
-  const availabilityRowsCount = useMemo(() => {
-    const c = availabilityByModule?.climat?.length || 0;
-    const h = availabilityByModule?.hydro?.length || 0;
-    const e = availabilityByModule?.erosion?.length || 0;
-    return c + h + e;
-  }, [availabilityByModule]);
-
   useEffect(() => {
+    if (location.pathname.startsWith("/dashboard/data/")) {
+      setActiveSection("simulatedData");
+      return;
+    }
+
     const params = new URLSearchParams(location.search);
     const section = params.get("section");
     const validSections: DashboardSection[] = [
+      "spatial",
       "climate",
       "hydraulic",
       "sediment",
-      "spatial",
       "maps",
       "simulatedData",
       "dataScan",
@@ -96,8 +82,16 @@ export default function Dashboard() {
     ];
     if (section && validSections.includes(section as DashboardSection)) {
       setActiveSection(section as DashboardSection);
+      return;
     }
-  }, [location.search]);
+
+    setActiveSection("spatial");
+  }, [location.search, location.pathname]);
+
+  const handleSectionChange = (section: DashboardSection) => {
+    setActiveSection(section);
+    navigate(`/dashboard?section=${section}`);
+  };
 
   if (loading) {
     return (
@@ -137,36 +131,11 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
-      {/* Statistiques rapides */}
-      <div className="bg-muted/50 border-b px-4 py-1.5">
-        <div className="mx-auto flex w-full max-w-[1600px] items-center gap-4 text-xs flex-wrap justify-end lg:px-5">
-          <div>
-            <span className="text-muted-foreground">{t("dashboard.runs")}</span>
-            <span className="ml-2 font-medium">{totalRuns}</span>
-          </div>
-
-          <div>
-            <span className="text-muted-foreground">{t("dashboard.variablesLoaded")}</span>
-            <span className="ml-2 font-medium">{totalProperties}</span>
-          </div>
-
-          <div>
-            <span className="text-muted-foreground">{t("dashboard.stationsCatalog")}</span>
-            <span className="ml-2 font-medium">{stationsCatalogCount}</span>
-          </div>
-
-          <div>
-            <span className="text-muted-foreground">{t("dashboard.availabilityRowsCache")}</span>
-            <span className="ml-2 font-medium">{availabilityRowsCount}</span>
-          </div>
-        </div>
-      </div>
-
       <div className="flex flex-1">
         <aside className="sticky top-0 h-screen">
           <DashboardSidebarV2
             activeSection={activeSection}
-            onSectionChange={setActiveSection}
+            onSectionChange={handleSectionChange}
           />
         </aside>
 

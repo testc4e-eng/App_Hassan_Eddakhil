@@ -7,9 +7,18 @@ import L, { type Layer, type LatLngExpression, type LatLng } from "leaflet";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import { BASEMAPS, type BasemapId } from "@/config/basemaps";
+import { formatStationDisplayName, formatSubbasinDisplayName } from "@/lib/stationLabels";
+
+const AnyTileLayer = TileLayer as any;
 
 type ZoomToBasinRequest = { tick: number; basinName: string; barrageName?: string };
+type ResetViewRequest = { tick: number };
+type SelectionZoomRequest = { tick: number };
 type ExportPngRequest = { tick: number; filename?: string };
+type ViewportPadding = {
+  topLeft?: [number, number];
+  bottomRight?: [number, number];
+};
 
 type ThematicConfig = {
   stationValues: Map<number, number | null>;
@@ -30,17 +39,51 @@ type Props = {
     subBasins?: FeatureCollection | null;
     reach?: FeatureCollection | null;
     stations?: FeatureCollection | null;
+    hruSummary?: FeatureCollection | null;
   };
   barrages?: FeatureCollection | null;
   thematic?: ThematicConfig;
 
   zoomToBasinRequest?: ZoomToBasinRequest;
+  resetViewRequest?: ResetViewRequest;
+  selectionZoomRequest?: SelectionZoomRequest;
   activeTool?: "distance" | "area" | null;
   exportPngRequest?: ExportPngRequest;
   selectedBasinId?: number | null;
   selectedSubBasinId?: number | null;
   selectedBarrageId?: number | null;
+  selectedReachId?: number | null;
+  selectedStationId?: number | null;
+  onStationSelect?: (payload: {
+    stationId: number;
+    name: string;
+    code?: string;
+    catchmentId?: number | null;
+    stationType?: string | null;
+    properties: Record<string, any>;
+  }) => void;
+  onSubBasinSelect?: (payload: {
+    subbasinId: number;
+    name: string;
+    catchmentId?: number | null;
+    properties: Record<string, any>;
+  }) => void;
+  onReachSelect?: (payload: {
+    reachId: number;
+    name: string;
+    code?: string;
+    subbasinId?: number | null;
+    catchmentId?: number | null;
+    properties: Record<string, any>;
+  }) => void;
+  onBarrageSelect?: (payload: {
+    barrageId: number;
+    name: string;
+    catchmentId?: number | null;
+    properties: Record<string, any>;
+  }) => void;
   debugMode?: boolean;
+  viewportPadding?: ViewportPadding;
 };
 
 function clamp01(x: number) {
@@ -124,10 +167,12 @@ function getFeatureId(f: any) {
 
 function getFeatureName(f: any) {
   return (
-    f?.properties?.name ??
-    f?.properties?.nom ??
-    f?.properties?.subbasin_name ??
-    `Sous-bassin ${getFeatureId(f)}`
+    f?.properties?.subbasin_label ??
+    formatSubbasinDisplayName(
+      f?.properties?.name ?? f?.properties?.nom ?? f?.properties?.subbasin_name,
+      f?.properties?.subbasin_code,
+      getFeatureId(f),
+    )
   );
 }
 
@@ -205,6 +250,104 @@ function subBasinPopupHtml(feature: any) {
   </div>`;
 }
 
+function reachPopupHtml(feature: any) {
+  const p: any = feature?.properties || {};
+  if (p?.flow_out_cms !== undefined || p?.drainage_area_km2 !== undefined || p?.scenario_code !== undefined) {
+    const id = p?.id ?? p?.reach_id ?? feature?.id ?? "-";
+    const reachCode = p?.reach_code ?? id;
+    const subbasinId = p?.subbasin_id ?? "-";
+    const flowOut = p?.flow_out_cms;
+    const scenario = p?.scenario_code ?? "Etat actuel";
+    const lengthKm = typeof p?.length_m === "number" ? p.length_m / 1000 : p?.length_km;
+    const drainageArea = p?.drainage_area_km2;
+
+    return `
+    <div style="min-width:280px;max-width:380px;">
+      <div style="font-weight:900;font-size:14px;margin-bottom:8px;color:#0f172a;">
+        Reach : ${formatAny(reachCode)}
+      </div>
+      <div style="font-size:12px;color:#334155;line-height:1.55;">
+        <div><b>Subbasin :</b> ${formatAny(subbasinId)}</div>
+        <div><b>Debit simule :</b> ${
+          typeof flowOut === "number"
+            ? `${flowOut.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} m3/s`
+            : "-"
+        }</div>
+        <div><b>Scenario :</b> ${formatAny(scenario)}</div>
+        <div><b>Longueur :</b> ${
+          typeof lengthKm === "number"
+            ? `${lengthKm.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} km`
+            : "-"
+        }</div>
+        <div><b>Surface drainee :</b> ${
+          typeof drainageArea === "number"
+            ? `${drainageArea.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} km2`
+            : "-"
+        }</div>
+      </div>
+    </div>`;
+  }
+  const name = p?.reach_name ?? p?.name ?? p?.reach_code ?? `Reach ${p?.id ?? "—"}`;
+  const id = p?.id ?? p?.reach_id ?? feature?.id ?? "—";
+  const reachCode = p?.reach_code ?? "—";
+  const subbasinId = p?.subbasin_id ?? "—";
+  const catchmentId = p?.catchment_id ?? "—";
+  const lengthM = p?.length_m ?? "—";
+  const slopePct = p?.slope_pct ?? "—";
+
+  const entries = Object.entries(p)
+    .filter(([k]) => !["name", "nom", "reach_name"].includes(k))
+    .sort(([a], [b]) => a.localeCompare(b));
+
+  const rowsHtml = entries
+    .map(
+      ([k, v]) => `
+      <tr>
+        <td style="padding:6px 10px;border-top:1px solid #e2e8f0;color:#475569;font-weight:600;white-space:nowrap;">
+          ${prettyKey(k)}
+        </td>
+        <td style="padding:6px 10px;border-top:1px solid #e2e8f0;color:#0f172a;word-break:break-word;">
+          ${formatAny(v)}
+        </td>
+      </tr>`
+    )
+    .join("");
+
+  return `
+  <div style="min-width:340px;max-width:520px;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+      <div>
+        <div style="font-weight:900;font-size:14px;margin-bottom:6px;color:#0f172a;">
+          ${name}
+        </div>
+        <div style="font-size:12px;color:#334155;line-height:1.35;">
+          <div><b>ID:</b> ${formatAny(id)}</div>
+          <div><b>Reach code:</b> ${formatAny(reachCode)}</div>
+          <div><b>Sub-basin:</b> ${formatAny(subbasinId)}</div>
+          <div><b>Catchment:</b> ${formatAny(catchmentId)}</div>
+          <div><b>Length (m):</b> ${formatAny(lengthM)}</div>
+          <div><b>Slope (%):</b> ${formatAny(slopePct)}</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:10px;">
+      <div style="font-size:12px;font-weight:800;color:#0f172a;margin-bottom:6px;">
+        Propriétés du reach
+      </div>
+
+      <div style="max-height:260px;overflow:auto;border:1px solid #e2e8f0;border-radius:10px;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          ${
+            rowsHtml ||
+            `<tr><td style="padding:10px;color:#64748b;">Aucune propriété disponible.</td></tr>`
+          }
+        </table>
+      </div>
+    </div>
+  </div>`;
+}
+
 /* -------------------- Map helpers -------------------- */
 function CreatePanes() {
   const map = useMap();
@@ -218,6 +361,7 @@ function CreatePanes() {
 
     ensure("basinsPane", 401);
     ensure("subBasinsPane", 402);
+    ensure("hruPane", 402);
     ensure("reachPane", 403);
     ensure("barragesPane", 404);
     ensure("labelsPane", 9980);
@@ -244,13 +388,13 @@ function BasemapLayers({ basemap }: { basemap: BasemapId }) {
 
   return (
     <>
-      <TileLayer
+      <AnyTileLayer
         key={`base-${activeBasemap.id}`}
         url={activeBasemap.baseUrl}
         attribution={activeBasemap.attribution}
       />
       {showLabels && activeBasemap.labelsUrl && (
-        <TileLayer
+        <AnyTileLayer
           key={`labels-${activeBasemap.id}`}
           url={activeBasemap.labelsUrl}
           pane="labelsPane"
@@ -306,6 +450,194 @@ function ZoomToBasin({
       if (allBounds.isValid()) map.fitBounds(allBounds, { padding: [30, 30] });
     }
   }, [req?.tick, barrages, basins, req?.basinName, req?.barrageName, map]);
+
+  return null;
+}
+
+function featureId(feature: any, keys: string[]) {
+  for (const key of keys) {
+    const value = Number(feature?.properties?.[key]);
+    if (Number.isFinite(value)) return value;
+  }
+  return null;
+}
+
+function featureBounds(feature: any) {
+  const bounds = L.geoJSON(feature as any).getBounds();
+  return bounds.isValid() ? bounds : null;
+}
+
+function collectionBounds(collections: Array<FeatureCollection | null | undefined>) {
+  const bounds = L.latLngBounds([]);
+  for (const fc of collections) {
+    if (!fc?.features?.length) continue;
+    const fcBounds = L.geoJSON(fc as any).getBounds();
+    if (fcBounds.isValid()) bounds.extend(fcBounds);
+  }
+  return bounds.isValid() ? bounds : null;
+}
+
+function findFeatureById(
+  fc: FeatureCollection | null | undefined,
+  id: number | null | undefined,
+  keys: string[]
+) {
+  if (id == null || !fc?.features?.length) return null;
+  return (
+    fc.features.find((feature: any) => {
+      const candidate = featureId(feature, keys);
+      return candidate != null && candidate === id;
+    }) ?? null
+  );
+}
+
+function AutoMapView({
+  layers,
+  barrages,
+  resetViewRequest,
+  selectionZoomRequest,
+  selectedBasinId,
+  selectedSubBasinId,
+  selectedBarrageId,
+  selectedReachId,
+  selectedStationId,
+  viewportPadding,
+}: {
+  layers?: Props["layers"];
+  barrages?: FeatureCollection | null;
+  resetViewRequest?: ResetViewRequest;
+  selectionZoomRequest?: SelectionZoomRequest;
+  selectedBasinId?: number | null;
+  selectedSubBasinId?: number | null;
+  selectedBarrageId?: number | null;
+  selectedReachId?: number | null;
+  selectedStationId?: number | null;
+  viewportPadding?: ViewportPadding;
+}) {
+  const map = useMap();
+  const hasAutoFitOnceRef = useRef(false);
+  const lastResetTickRef = useRef<number | null>(null);
+  const lastSelectionZoomTickRef = useRef<number | null>(null);
+  const dataSignature = [
+    layers?.basins?.features?.length ?? 0,
+    layers?.subBasins?.features?.length ?? 0,
+    layers?.reach?.features?.length ?? 0,
+    layers?.stations?.features?.length ?? 0,
+    barrages?.features?.length ?? 0,
+  ].join("|");
+
+  useEffect(() => {
+    const hasData =
+      (layers?.basins?.features?.length ?? 0) +
+        (layers?.subBasins?.features?.length ?? 0) +
+        (layers?.reach?.features?.length ?? 0) +
+        (layers?.stations?.features?.length ?? 0) +
+        (barrages?.features?.length ?? 0) >
+      0;
+    if (!hasData) return;
+
+    const tick = resetViewRequest?.tick ?? null;
+    const isResetRequest = tick !== null && lastResetTickRef.current !== tick;
+    const shouldAutoFit = !hasAutoFitOnceRef.current || isResetRequest;
+    if (!shouldAutoFit) return;
+
+    const bounds = collectionBounds([
+      layers?.basins,
+      layers?.subBasins,
+      layers?.reach,
+      layers?.stations,
+      barrages,
+    ]);
+    if (!bounds) return;
+
+    if (import.meta.env.DEV) {
+      console.debug("[hydro-map] auto-fit bounds", {
+        reason: isResetRequest ? "reset" : "initial",
+        tick,
+      });
+    }
+
+    map.fitBounds(bounds, {
+      paddingTopLeft: viewportPadding?.topLeft ?? [36, 36],
+      paddingBottomRight: viewportPadding?.bottomRight ?? [36, 36],
+      maxZoom: 11,
+    });
+    hasAutoFitOnceRef.current = true;
+    if (isResetRequest) lastResetTickRef.current = tick;
+  }, [dataSignature, resetViewRequest?.tick, layers, barrages, map, viewportPadding]);
+
+  useEffect(() => {
+    const tick = selectionZoomRequest?.tick ?? null;
+    if (tick === null || lastSelectionZoomTickRef.current === tick) return;
+
+    const station = findFeatureById(layers?.stations, selectedStationId, [
+      "station_id",
+      "id",
+    ]);
+    const reach = findFeatureById(layers?.reach, selectedReachId, ["id", "reach_id"]);
+    const barrage = findFeatureById(barrages, selectedBarrageId, ["id", "barrage_id"]);
+    const subBasin = findFeatureById(layers?.subBasins, selectedSubBasinId, [
+      "id",
+      "subbasin_id",
+    ]);
+    const basin = findFeatureById(layers?.basins, selectedBasinId, [
+      "id",
+      "catchment_id",
+    ]);
+
+    const target = station ?? reach ?? subBasin ?? barrage ?? basin;
+    if (!target) return;
+
+    const geometryType = String(target?.geometry?.type ?? "");
+    if (import.meta.env.DEV) {
+      console.debug("[hydro-map] selection zoom", {
+        tick,
+        stationId: selectedStationId,
+        reachId: selectedReachId,
+        barrageId: selectedBarrageId,
+        subBasinId: selectedSubBasinId,
+        basinId: selectedBasinId,
+        geometryType,
+      });
+    }
+
+    if (geometryType.includes("Point")) {
+      const coords = target?.geometry?.coordinates;
+      const point = Array.isArray(coords?.[0]) ? coords[0] : coords;
+      if (Array.isArray(point) && point.length >= 2) {
+        const pointBounds = L.latLng(Number(point[1]), Number(point[0])).toBounds(1500);
+        map.fitBounds(pointBounds, {
+          paddingTopLeft: viewportPadding?.topLeft ?? [42, 42],
+          paddingBottomRight: viewportPadding?.bottomRight ?? [42, 42],
+          maxZoom: 12,
+        });
+        lastSelectionZoomTickRef.current = tick;
+      }
+      return;
+    }
+
+    const bounds = featureBounds(target);
+    if (bounds) {
+      map.fitBounds(bounds, {
+        paddingTopLeft: viewportPadding?.topLeft ?? [42, 42],
+        paddingBottomRight: viewportPadding?.bottomRight ?? [42, 42],
+        maxZoom: 12,
+      });
+      lastSelectionZoomTickRef.current = tick;
+    }
+  }, [
+    dataSignature,
+    layers,
+    barrages,
+    map,
+    selectedBasinId,
+    selectedSubBasinId,
+    selectedBarrageId,
+    selectedReachId,
+    selectedStationId,
+    selectionZoomRequest?.tick,
+    viewportPadding,
+  ]);
 
   return null;
 }
@@ -432,6 +764,7 @@ function MeasureTool({ activeTool }: { activeTool?: "distance" | "area" | null }
   const map = useMap();
   const ptsRef = useRef<LatLng[]>([]);
   const layerRef = useRef<L.Layer | null>(null);
+  const resultRef = useRef<L.Popup | null>(null);
 
   const active = useMemo(
     () => activeTool === "distance" || activeTool === "area",
@@ -446,18 +779,27 @@ function MeasureTool({ activeTool }: { activeTool?: "distance" | "area" | null }
       } catch {}
       layerRef.current = null;
     }
+    if (resultRef.current) {
+      try {
+        map.closePopup(resultRef.current);
+      } catch {}
+      resultRef.current = null;
+    }
 
     if (!active) {
       map.doubleClickZoom.enable();
+      map.getContainer().style.cursor = "";
       return;
     }
 
     map.doubleClickZoom.disable();
+    const container = map.getContainer();
+    container.style.cursor = "crosshair";
 
-    const onClick = (e: L.LeafletMouseEvent) => {
+    const commitPoint = (latlng: LatLng) => {
       if (!activeTool) return;
 
-      ptsRef.current.push(e.latlng);
+      ptsRef.current.push(latlng);
 
       if (layerRef.current) {
         try {
@@ -479,29 +821,53 @@ function MeasureTool({ activeTool }: { activeTool?: "distance" | "area" | null }
           fillOpacity: 0.18,
         }).addTo(map);
       }
-    };
-
-    const onDblClick = (e: L.LeafletMouseEvent) => {
-      if (!activeTool) return;
 
       const pts = ptsRef.current;
-      if (pts.length < (activeTool === "distance" ? 2 : 3)) return;
+      const ready =
+        (activeTool === "distance" && pts.length >= 2) ||
+        (activeTool === "area" && pts.length >= 3);
 
-      if (activeTool === "distance") {
-        let totalKm = 0;
-        for (let i = 0; i < pts.length - 1; i++) totalKm += haversineKm(pts[i], pts[i + 1]);
-        L.popup()
-          .setLatLng(e.latlng)
-          .setContent(`<b>Distance</b><br/>${totalKm.toFixed(3)} km`)
-          .openOn(map);
-      } else {
-        const areaKm2 = polygonAreaM2(map, pts) / 1_000_000;
-        L.popup()
-          .setLatLng(e.latlng)
-          .setContent(`<b>Surface</b><br/>${areaKm2.toFixed(3)} km²`)
-          .openOn(map);
+      if (!ready) return;
+
+      if (resultRef.current) {
+        try {
+          map.closePopup(resultRef.current);
+        } catch {}
+        resultRef.current = null;
       }
 
+      const content =
+        activeTool === "distance"
+          ? `<b>Distance</b><br/>${pts
+              .slice(1)
+              .reduce((sum, point, index) => sum + haversineKm(pts[index], point), 0)
+              .toFixed(3)} km`
+          : `<b>Surface</b><br/>${(polygonAreaM2(map, pts) / 1_000_000).toFixed(3)} km²`;
+
+      resultRef.current = L.popup({
+        closeButton: true,
+        autoClose: true,
+        closeOnClick: false,
+        className: "measurement-result-popup",
+      })
+        .setLatLng(latlng)
+        .setContent(content)
+        .openOn(map);
+    };
+
+    const onClick = (event: MouseEvent) => {
+      if (!activeTool) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      commitPoint(map.mouseEventToLatLng(event));
+    };
+
+    const onDblClick = (event: MouseEvent) => {
+      if (!activeTool) return;
+
+      event.preventDefault();
+      event.stopPropagation();
       ptsRef.current = [];
       if (layerRef.current) {
         try {
@@ -511,13 +877,20 @@ function MeasureTool({ activeTool }: { activeTool?: "distance" | "area" | null }
       }
     };
 
-    map.on("click", onClick);
-    map.on("dblclick", onDblClick);
+    container.addEventListener("click", onClick, true);
+    container.addEventListener("dblclick", onDblClick, true);
 
     return () => {
-      map.off("click", onClick);
-      map.off("dblclick", onDblClick);
+      container.removeEventListener("click", onClick, true);
+      container.removeEventListener("dblclick", onDblClick, true);
       map.doubleClickZoom.enable();
+      map.getContainer().style.cursor = "";
+      if (resultRef.current) {
+        try {
+          map.closePopup(resultRef.current);
+        } catch {}
+        resultRef.current = null;
+      }
     };
   }, [map, active, activeTool]);
 
@@ -534,17 +907,28 @@ export function HydroMap({
   barrages,
   thematic,
   zoomToBasinRequest,
+  resetViewRequest,
+  selectionZoomRequest,
   activeTool,
   exportPngRequest,
   selectedBasinId,
   selectedSubBasinId,
   selectedBarrageId,
+  selectedReachId,
+  selectedStationId,
+  onStationSelect,
+  onSubBasinSelect,
+  onReachSelect,
+  onBarrageSelect,
   debugMode,
+  viewportPadding,
 }: Props) {
   const o = clamp01(opacity);
   const isProjectMode = displayMode === "project_hassan_addakhil";
-  const center: LatLngExpression = [31.6, -6.9];
+  const center: LatLngExpression = [32.1, -4.8];
   const exportSelector = ".leaflet-container";
+  const layerKey = (name: string, fc?: FeatureCollection | null) =>
+    `${displayMode}-${name}-${fc?.features?.length ?? 0}`;
 
   // ✅ Styles lisibles (pas flashy)
   const basinsStyle = useMemo(
@@ -599,16 +983,63 @@ export function HydroMap({
   );
 
   const reachStyle = useMemo(
-    () => () => ({
-      color: "#3B82F6",
-      weight: 3,
-      opacity: 0.9,
-    }),
-    []
+    () => (feature: any) => {
+      const id = Number(feature?.properties?.id ?? feature?.properties?.reach_id);
+      const isSelected =
+        Number.isFinite(id) && selectedReachId != null && id === selectedReachId;
+      return {
+        color: isSelected ? "#F59E0B" : "#3B82F6",
+        weight: isSelected ? 4.5 : 3,
+        opacity: isSelected ? 1 : 0.9,
+      };
+    },
+    [selectedReachId]
+  );
+
+  const hruSummaryStyle = useMemo(
+    () => (feature: any) => {
+      const className = String(feature?.properties?.DOM_LANDUSE ?? "UNKNOWN");
+      const idx = hashToIndex(className, SUBBASIN_PALETTE.length);
+      return {
+        color: "#7C3AED",
+        weight: 1.8,
+        opacity: 0.95,
+        fillColor: SUBBASIN_PALETTE[idx] ?? "#A78BFA",
+        fillOpacity: Math.max(0.2, Math.min(0.34, o * 0.3)),
+      };
+    },
+    [o]
   );
 
   const onEachBasin = useMemo(
     () => (feature: any, layer: Layer) => {
+      const p: any = feature?.properties || {};
+      const name = p?.name ?? p?.nom ?? `Bassin ${p?.id ?? "hydrologique"}`;
+      const areaKm2 = p?.area_km2;
+      const areaLabel =
+        typeof areaKm2 === "number"
+          ? `${areaKm2.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} km2`
+          : formatAny(areaKm2);
+
+      (layer as any).bindTooltip(String(name), {
+        sticky: true,
+        direction: "top",
+        opacity: 0.95,
+      });
+      (layer as any).bindPopup(
+        `
+        <div style="min-width:260px;max-width:380px;">
+          <div style="font-weight:900;font-size:14px;margin-bottom:8px;color:#0f172a;">Bassin : ${formatAny(name)}</div>
+          <div style="font-size:12px;color:#334155;line-height:1.55;">
+            <div><b>Surface :</b> ${areaLabel}</div>
+            <div><b>Sous-bassins :</b> ${formatAny(p?.subbasins_count)}</div>
+            <div><b>Stations :</b> ${formatAny(p?.stations_count)}</div>
+            <div><b>Reaches :</b> ${formatAny(p?.reaches_count)}</div>
+          </div>
+        </div>
+        `,
+        { maxWidth: 420, closeButton: true, autoPan: true }
+      );
       layer.on({
         mouseover: () => {
           (layer as any).setStyle({
@@ -627,11 +1058,29 @@ export function HydroMap({
 
   const onEachReach = useMemo(
     () => (feature: any, layer: Layer) => {
+      const p: any = feature?.properties || {};
+      const name = p?.reach_name ?? p?.name ?? p?.reach_code ?? `Reach ${p?.id ?? "—"}`;
+      const code = p?.reach_code ?? "—";
+      const subbasinId = p?.subbasin_id ?? "—";
+      const catchmentId = p?.catchment_id ?? "—";
+
+      (layer as any).bindTooltip(`${name} • ${code}`, {
+        sticky: true,
+        direction: "top",
+        opacity: 0.95,
+      });
+
+      (layer as any).bindPopup(reachPopupHtml(feature), {
+        maxWidth: 560,
+        closeButton: true,
+        autoPan: true,
+      });
+
       layer.on({
         mouseover: () => {
           (layer as any).setStyle({
-            color: "#1D4ED8",
-            weight: 3.5,
+            color: selectedReachId === Number(p?.id ?? p?.reach_id) ? "#F59E0B" : "#1D4ED8",
+            weight: selectedReachId === Number(p?.id ?? p?.reach_id) ? 5 : 3.5,
             opacity: 1,
           });
           (layer as any).bringToFront?.();
@@ -639,9 +1088,23 @@ export function HydroMap({
         mouseout: () => {
           (layer as any).setStyle((reachStyle as any)(feature));
         },
+        click: () => {
+          const reachId = Number(p?.id ?? p?.reach_id);
+          const subbasinId = Number(p?.subbasin_id ?? NaN);
+          const catchmentId = Number(p?.catchment_id ?? NaN);
+          onReachSelect?.({
+            reachId,
+            name: String(name),
+            code: code === "—" ? undefined : String(code),
+            subbasinId: Number.isFinite(subbasinId) ? subbasinId : null,
+            catchmentId: Number.isFinite(catchmentId) ? catchmentId : null,
+            properties: p,
+          });
+          (layer as any).openPopup?.();
+        },
       });
     },
-    [reachStyle]
+    [onReachSelect, reachStyle, selectedReachId]
   );
 
   // ✅ popup + hover subbasins
@@ -649,17 +1112,12 @@ export function HydroMap({
     () => (feature: any, layer: Layer) => {
       const name = getFeatureName(feature);
       const id = getFeatureId(feature);
+      const p = feature?.properties ?? {};
 
       (layer as any).bindTooltip(`${name}`, {
         sticky: true,
         direction: "top",
         opacity: 0.95,
-      });
-
-      (layer as any).bindPopup(subBasinPopupHtml(feature), {
-        maxWidth: 560,
-        closeButton: true,
-        autoPan: true,
       });
 
       layer.on({
@@ -674,12 +1132,63 @@ export function HydroMap({
           (layer as any).setStyle((subBasinsStyle as any)(feature));
         },
         click: () => {
-          // pour être sûr d’ouvrir
-          (layer as any).openPopup?.();
+          onSubBasinSelect?.({
+            subbasinId: Number(p?.id ?? p?.subbasin_id ?? id),
+            name: String(name),
+            catchmentId: Number(p?.catchment_id ?? p?.catchment ?? p?.basin_id ?? null),
+            properties: p,
+          });
         },
       });
     },
-    [o, subBasinsStyle]
+    [o, subBasinsStyle, onSubBasinSelect]
+  );
+
+  const onEachHruSummary = useMemo(
+    () => (feature: any, layer: Layer) => {
+      const p: any = feature?.properties || {};
+      const title = p.name ?? `Subbasin ${p.Subbasin ?? p.id ?? "-"}`;
+      const landuse = p.DOM_LANDUSE ?? "-";
+      const soil = p.DOM_SOIL ?? "-";
+      const slope = p.DOM_SLOPE_BAND ?? "-";
+      const area = p.AREA_HA_TOTAL ?? "-";
+      const hruCount = p.HRU_COUNT ?? "-";
+
+      (layer as any).bindTooltip(`${title} • ${landuse}`, {
+        sticky: true,
+        direction: "top",
+        opacity: 0.95,
+      });
+
+      (layer as any).bindPopup(
+        `
+        <div style="min-width:280px;max-width:420px;">
+          <div style="font-weight:800;font-size:14px;margin-bottom:8px;">${title}</div>
+          <div style="font-size:12px;line-height:1.5;color:#334155;">
+            <div><b>HRU count:</b> ${formatAny(hruCount)}</div>
+            <div><b>Area total (ha):</b> ${formatAny(area)}</div>
+            <div><b>Dominant LULC:</b> ${formatAny(landuse)} (${formatAny(p.DOM_LANDUSE_PCT)}%)</div>
+            <div><b>Dominant SOIL:</b> ${formatAny(soil)} (${formatAny(p.DOM_SOIL_PCT)}%)</div>
+            <div><b>Dominant SLOPE:</b> ${formatAny(slope)} (${formatAny(p.DOM_SLOPE_BAND_PCT)}%)</div>
+          </div>
+        </div>
+        `
+      );
+
+      layer.on({
+        mouseover: () => {
+          (layer as any).setStyle({
+            weight: 2.6,
+            fillOpacity: Math.min(0.48, Math.max(0.26, o * 0.4)),
+          });
+          (layer as any).bringToFront?.();
+        },
+        mouseout: () => {
+          (layer as any).setStyle((hruSummaryStyle as any)(feature));
+        },
+      });
+    },
+    [o, hruSummaryStyle]
   );
 
   return (
@@ -700,6 +1209,19 @@ export function HydroMap({
           <ZoomToBasin barrages={barrages} basins={layers?.basins} req={zoomToBasinRequest} />
         )}
 
+        <AutoMapView
+          layers={layers}
+          barrages={barrages}
+          resetViewRequest={resetViewRequest}
+          selectionZoomRequest={selectionZoomRequest}
+          selectedBasinId={selectedBasinId}
+          selectedSubBasinId={selectedSubBasinId}
+          selectedBarrageId={selectedBarrageId}
+          selectedReachId={selectedReachId}
+          selectedStationId={selectedStationId}
+          viewportPadding={viewportPadding}
+        />
+
         {exportPngRequest && (
           <ExportPng req={exportPngRequest} containerSelector={exportSelector} />
         )}
@@ -710,6 +1232,7 @@ export function HydroMap({
 
         {barrages && (
           <GeoJSON
+            key={layerKey("barrages", barrages)}
             {...({
               data: barrages as any,
               style: barragesStyle,
@@ -758,6 +1281,16 @@ export function HydroMap({
                 );
 
                 layer.on({
+                  click: () => {
+                    const barrageId = Number(p.id ?? p.barrage_id);
+                    if (!Number.isFinite(barrageId)) return;
+                    onBarrageSelect?.({
+                      barrageId,
+                      name: String(name),
+                      catchmentId: Number.isFinite(Number(p.catchment_id)) ? Number(p.catchment_id) : null,
+                      properties: p,
+                    });
+                  },
                   mouseover: () => {
                     const anyLayer = layer as any;
                     if (typeof anyLayer.setStyle === "function") {
@@ -814,8 +1347,9 @@ export function HydroMap({
         )}
 
         {/* BASINS */}
-        {!isProjectMode && layers?.basins && (
+        {layers?.basins && (
           <GeoJSON
+            key={layerKey("basins", layers.basins)}
             {...({
               data: layers.basins as any,
               style: basinsStyle,
@@ -828,6 +1362,7 @@ export function HydroMap({
         {/* SUBBASINS */}
         {layers?.subBasins && (
           <GeoJSON
+            key={layerKey("subbasins", layers.subBasins)}
             {...({
               data: layers.subBasins as any,
               style: subBasinsStyle,
@@ -837,9 +1372,23 @@ export function HydroMap({
           />
         )}
 
+        {/* HRU SUMMARY (LULC/SOL/PENTE dominants par sous-bassin) */}
+        {layers?.hruSummary && (
+          <GeoJSON
+            key={layerKey("hru-summary", layers.hruSummary)}
+            {...({
+              data: layers.hruSummary as any,
+              style: hruSummaryStyle,
+              onEachFeature: onEachHruSummary,
+              pane: "hruPane",
+            } as any)}
+          />
+        )}
+
         {/* REACH */}
         {layers?.reach && (
           <GeoJSON
+            key={layerKey("reach", layers.reach)}
             {...({
               data: layers.reach as any,
               style: reachStyle,
@@ -852,12 +1401,17 @@ export function HydroMap({
         {/* STATIONS */}
         {layers?.stations && (
           <GeoJSON
+            key={layerKey("stations", layers.stations)}
             {...({
               data: layers.stations as any,
               pane: "stationsPane",
               pointToLayer: (feature: any, latlng: any) => {
                 const p: any = feature?.properties || {};
                 const stationId = Number(p.station_id ?? p.id);
+                const isSelected =
+                  Number.isFinite(stationId) &&
+                  selectedStationId != null &&
+                  stationId === selectedStationId;
                 const val = thematic?.stationValues?.get(stationId) ?? null;
                 const stationType = String(p.station_type_code ?? p.type_station ?? "").toLowerCase();
                 const baseRadius = 8;
@@ -896,20 +1450,20 @@ export function HydroMap({
                 }
 
                 const halo = L.circleMarker(latlng, {
-                  radius: radius + 5,
+                  radius: radius + (isSelected ? 8 : 5),
                   weight: 0,
-                  color: "#F97316",
-                  opacity: 0,
-                  fillColor: "#F97316",
-                  fillOpacity: 0.22,
+                  color: isSelected ? "#0EA5E9" : "#F97316",
+                  opacity: isSelected ? 0.9 : 0,
+                  fillColor: isSelected ? "#0EA5E9" : "#F97316",
+                  fillOpacity: isSelected ? 0.3 : 0.22,
                   interactive: false,
                   pane: "stationsPane",
                 });
 
                 const core = L.circleMarker(latlng, {
-                  radius,
-                  weight: 2,
-                  color: stroke,
+                  radius: isSelected ? radius + 2 : radius,
+                  weight: isSelected ? 3 : 2,
+                  color: isSelected ? "#0F172A" : stroke,
                   opacity: 1,
                   fillColor: fill,
                   fillOpacity: 1,
@@ -924,8 +1478,8 @@ export function HydroMap({
               onEachFeature: (feature: any, layer: Layer) => {
                 const p: any = feature?.properties || {};
                 const stationId = Number(p.station_id ?? p.id);
-                const name = p.station_name ?? p.name ?? "Station";
                 const code = p.station_code ?? "-";
+                const name = p.station_label ?? formatStationDisplayName(p.station_name ?? p.name ?? "Station", code);
                 const kind = p.station_type_code ?? p.type_station ?? "";
                 const label = kind ? `${name} • ${kind}` : name;
 
@@ -950,28 +1504,6 @@ export function HydroMap({
                   className: "station-tooltip",
                 });
 
-                anyLayer.bindPopup(`
-                  <div style="min-width:280px;max-width:420px;padding:4px 2px;">
-                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-                      <div style="width:14px;height:14px;border-radius:9999px;background:#F97316;border:2px solid #ffffff;box-shadow:0 0 0 4px rgba(249,115,22,0.22)"></div>
-                      <div>
-                        <div style="font-weight:900;font-size:14px;color:#0f172a">${name}</div>
-                        <div style="font-size:12px;color:#64748b">${kind || "Station"}</div>
-                      </div>
-                    </div>
-                    <div style="font-size:12px;color:#334155;line-height:1.5;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px;">
-                      <div><b>ID:</b> ${stationId}</div>
-                      <div><b>Code:</b> ${code}</div>
-                      ${kind ? `<div><b>Type:</b> ${kind}</div>` : ""}
-                      ${
-                        thematic
-                          ? `<div><b>${thematic.label}:</b> ${valHtml}</div>`
-                          : ""
-                      }
-                    </div>
-                  </div>
-                `);
-
                 anyLayer.on("mouseover", () => {
                   if (halo?.setStyle) {
                     halo.setStyle({ fillOpacity: 0.35, opacity: 0.95 });
@@ -986,10 +1518,13 @@ export function HydroMap({
 
                 anyLayer.on("mouseout", () => {
                   if (halo?.setStyle) {
-                    halo.setStyle({ fillOpacity: 0.22, opacity: 0 });
+                    halo.setStyle({
+                      fillOpacity: stationId === selectedStationId ? 0.3 : 0.22,
+                      opacity: stationId === selectedStationId ? 0.9 : 0,
+                    });
                   }
                   if (core?.setRadius) {
-                    core.setRadius(baseRadius);
+                    core.setRadius(stationId === selectedStationId ? baseRadius + 2 : baseRadius);
                   }
                   const map = anyLayer._map as L.Map | undefined;
                   if (map) map.getContainer().style.cursor = "";
@@ -1001,6 +1536,16 @@ export function HydroMap({
                     child?.bringToFront?.();
                   }
                   anyLayer.bringToFront?.();
+                });
+                anyLayer.on("click", () => {
+                  onStationSelect?.({
+                    stationId,
+                    name,
+                    code,
+                    catchmentId: Number(p?.catchment_id ?? null),
+                    stationType: kind || null,
+                    properties: p,
+                  });
                 });
               },
             } as any)}

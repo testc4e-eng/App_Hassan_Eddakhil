@@ -1,5 +1,6 @@
 // frontend/src/components/charts/MultiScenarioTimeSeriesChart.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import {
   CartesianGrid,
   Legend,
@@ -10,14 +11,22 @@ import {
   Line,
   LineChart,
 } from "recharts";
-import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
 import type { FilterState } from "@/types/hydro";
-import { useHydroData } from "@/contexts/HydroDataContext";
+import { timeseriesApi } from "@/api/timeseries";
+import { buildChartImageFileName, downloadChartAsImage } from "@/lib/chartExport";
+import { ChartExportMenu } from "@/components/charts/ChartExportMenu";
+import type { ChartDisplayMode } from "@/types/chart";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type AggRowAny = { period?: string; datetime?: string; avg_value?: number; value?: number; value_avg?: number };
 type BundleCatalogItem = { ts_id: number; property_id: number };
-type BundleResponse = { success: boolean; catalog: BundleCatalogItem[]; aggregated?: Record<string, AggRowAny[]>; error?: string };
+type BundleResponse = { catalog: BundleCatalogItem[]; aggregated?: Record<string, AggRowAny[]>; error?: string };
 
 const chartColors = [
   "hsl(200, 80%, 45%)",
@@ -60,6 +69,17 @@ function csvEscape(v: unknown): string {
   return s;
 }
 
+function minDateValue(...dates: Array<string | undefined>): string | undefined {
+  return dates.filter((value): value is string => Boolean(value)).sort()[0];
+}
+
+function maxDateValue(...dates: Array<string | undefined>): string | undefined {
+  return dates
+    .filter((value): value is string => Boolean(value))
+    .sort()
+    .slice(-1)[0];
+}
+
 export function MultiScenarioTimeSeriesChart({
   moduleCode,
   filters,
@@ -68,6 +88,10 @@ export function MultiScenarioTimeSeriesChart({
   runRanges, // Map runId -> {start,end}
   propertyIdByRun,
   compareWindow = "union",
+  title,
+  chartHeightClassName = "h-[340px] w-full md:h-[360px] xl:h-[380px]",
+  displayMode = "normal",
+  onDisplayModeChange,
 }: {
   moduleCode: "climat" | "hydro" | "erosion";
   filters: FilterState;
@@ -76,11 +100,17 @@ export function MultiScenarioTimeSeriesChart({
   runRanges: Map<number, { start?: string; end?: string }>;
   propertyIdByRun?: Map<number, number>;
   compareWindow?: "union" | "intersection";
+  title?: string;
+  chartHeightClassName?: string;
+  displayMode?: ChartDisplayMode;
+  onDisplayModeChange?: (mode: ChartDisplayMode) => void;
 }) {
-  const { apiBase } = useHydroData();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [seriesByRun, setSeriesByRun] = useState<Map<number, { date: string; v: number | null }[]>>(new Map());
+  const chartRef = useRef<HTMLDivElement>(null);
+  const uniqueRunIds = useMemo(() => Array.from(new Set(runIds)), [runIds]);
 
   const stationId = filters.stations?.[0];
   const propertyId = filters.variables?.[0]; // ✅ en multi, on compare une variable (la 1ère)
@@ -88,35 +118,35 @@ export function MultiScenarioTimeSeriesChart({
   const propertyIdByRunKey = useMemo(
     () =>
       JSON.stringify(
-        runIds.map((id) => ({
+        uniqueRunIds.map((id) => ({
           id,
           propertyId: propertyIdByRun?.get(id) ?? Number(propertyId),
         }))
       ),
-    [runIds, propertyIdByRun, propertyId]
+    [uniqueRunIds, propertyIdByRun, propertyId]
   );
   const runRangesKey = useMemo(
     () =>
       JSON.stringify(
-        runIds.map((id) => {
+        uniqueRunIds.map((id) => {
           const rr = runRanges.get(id) || {};
           return { id, start: rr.start ?? null, end: rr.end ?? null };
         })
       ),
-    [runIds, runRanges]
+    [uniqueRunIds, runRanges]
   );
   const overlapRange = useMemo<{ start?: string; end?: string; valid: boolean }>(() => {
-    const starts = runIds
+    const starts = uniqueRunIds
       .map((id) => runRanges.get(id)?.start)
       .filter((d): d is string => Boolean(d));
-    const ends = runIds
+    const ends = uniqueRunIds
       .map((id) => runRanges.get(id)?.end)
       .filter((d): d is string => Boolean(d));
     if (!starts.length || !ends.length) return { valid: false };
     const start = starts.sort().slice(-1)[0];
     const end = ends.sort()[0];
     return { start, end, valid: Boolean(start && end && start <= end) };
-  }, [runIds, runRanges]);
+  }, [uniqueRunIds, runRanges]);
 
   useEffect(() => {
     let alive = true;
@@ -124,7 +154,7 @@ export function MultiScenarioTimeSeriesChart({
     async function load() {
       setError(null);
 
-      if (!stationId || !propertyId || runIds.length === 0) {
+      if (!stationId || !propertyId || uniqueRunIds.length === 0) {
         setSeriesByRun(new Map());
         return;
       }
@@ -133,19 +163,19 @@ export function MultiScenarioTimeSeriesChart({
       try {
         const map = new Map<number, { date: string; v: number | null }[]>();
 
-        for (const runId of runIds) {
+        for (const runId of uniqueRunIds) {
           const effectivePropertyId = Number(
             propertyIdByRun?.get(runId) ?? propertyId
           );
           const rr = runRanges.get(runId) || {};
           const effStart =
             compareWindow === "intersection"
-              ? overlapRange.start
-              : rr.start || filters.startDate;
+              ? maxDateValue(filters.startDate || undefined, overlapRange.start)
+              : maxDateValue(filters.startDate || undefined, rr.start);
           const effEnd =
             compareWindow === "intersection"
-              ? overlapRange.end
-              : rr.end || filters.endDate;
+              ? minDateValue(filters.endDate || undefined, overlapRange.end)
+              : minDateValue(filters.endDate || undefined, rr.end);
 
           console.debug("[MultiScenario] request params", {
             moduleCode,
@@ -168,20 +198,14 @@ export function MultiScenarioTimeSeriesChart({
             continue;
           }
 
-          const qs = new URLSearchParams({
-            stationId: String(stationId),
-            runId: String(runId),
+          const json = (await timeseriesApi.bundle({
+            stationId,
+            runId,
             module: moduleCode,
             agg,
-          });
-          if (effStart) qs.set("startDate", effStart);
-          if (effEnd) qs.set("endDate", effEnd);
-
-          const url = `${apiBase}/timeseries/bundle?${qs.toString()}`;
-          const res = await fetch(url);
-          if (!res.ok) throw new Error(await res.text());
-          const json = (await res.json()) as BundleResponse;
-          if (!json.success) throw new Error(json.error || "Erreur bundle");
+            startDate: effStart || undefined,
+            endDate: effEnd || undefined,
+          })) as BundleResponse;
 
           // trouver ts_id de la variable
           const needPropertyId = Number(effectivePropertyId);
@@ -231,14 +255,13 @@ export function MultiScenarioTimeSeriesChart({
       alive = false;
     };
   }, [
-    apiBase,
     moduleCode,
     stationId,
     propertyId,
     agg,
     filters.startDate,
     filters.endDate,
-    JSON.stringify(runIds),
+    JSON.stringify(uniqueRunIds),
     propertyIdByRunKey,
     runRangesKey,
     compareWindow,
@@ -247,7 +270,7 @@ export function MultiScenarioTimeSeriesChart({
     overlapRange.valid,
   ]);
 
-  const chartData = useMemo(() => {
+  const baseChartData = useMemo(() => {
     // union des dates
     const dateSet = new Set<string>();
     for (const pts of seriesByRun.values()) for (const p of pts) dateSet.add(p.date);
@@ -255,19 +278,83 @@ export function MultiScenarioTimeSeriesChart({
 
     return dates.map((d) => {
       const row: any = { date: d };
-      for (const runId of runIds) {
-        const pts = seriesByRun.get(runId) || [];
-        const v = pts.find((p) => p.date === d)?.v ?? null;
-        row[`run_${runId}`] = v;
+    for (const runId of uniqueRunIds) {
+      const pts = seriesByRun.get(runId) || [];
+      const v = pts.find((p) => p.date === d)?.v ?? null;
+      row[`run_${runId}`] = v;
       }
       return row;
     });
-  }, [seriesByRun, runIds]);
+  }, [seriesByRun, uniqueRunIds]);
+
+  const transformed = useMemo(() => {
+    if (displayMode === "normal") {
+      return {
+        data: baseChartData,
+        xKey: "date" as const,
+        xLabel: "Date",
+        excludedForLog: 0,
+      };
+    }
+
+    if (displayMode === "logarithmic") {
+      let excludedForLog = 0;
+      const data = baseChartData.map((row) => {
+        const out: Record<string, any> = { ...row };
+        for (const runId of uniqueRunIds) {
+          const key = `run_${runId}`;
+          const value = out[key];
+          if (typeof value === "number" && value <= 0) {
+            out[key] = null;
+            excludedForLog += 1;
+          }
+        }
+        return out;
+      });
+      return {
+        data,
+        xKey: "date" as const,
+        xLabel: "Date",
+        excludedForLog,
+      };
+    }
+
+    const sortedByRun = uniqueRunIds.map((runId) => {
+      const key = `run_${runId}`;
+      const values = baseChartData
+        .map((row: any) => row[key])
+        .filter((value: any): value is number => typeof value === "number" && Number.isFinite(value))
+        .sort((a, b) => b - a);
+      return { key, values };
+    });
+    const maxLen = Math.max(0, ...sortedByRun.map((item) => item.values.length));
+    const data: Array<Record<string, string | number | null>> = [];
+    for (let i = 0; i < maxLen; i += 1) {
+      const probability = ((i + 1) / (maxLen + 1)) * 100;
+      const row: Record<string, string | number | null> = {
+        date: probability.toFixed(2),
+        probability: Number(probability.toFixed(2)),
+      };
+      for (const run of sortedByRun) {
+        row[run.key] = run.values[i] ?? null;
+      }
+      data.push(row);
+    }
+    return {
+      data,
+      xKey: "probability" as const,
+      xLabel: "Probabilité d'excédence (%)",
+      excludedForLog: 0,
+    };
+  }, [baseChartData, displayMode, uniqueRunIds]);
 
   const exportCSV = () => {
-    if (!chartData.length) return;
-    const headers = ["Date", ...runIds.map((id) => runLabels.get(id) ?? `Run ${id}`)];
-    const rows = chartData.map((r) => [r.date, ...runIds.map((id) => r[`run_${id}`] ?? "")]);
+    if (!transformed.data.length) return;
+    const headers = ["Date", ...uniqueRunIds.map((id) => runLabels.get(id) ?? `Run ${id}`)];
+    const rows = transformed.data.map((r: any) => [
+      transformed.xKey === "probability" ? `${Number(r.probability).toFixed(2)}%` : r.date,
+      ...uniqueRunIds.map((id) => r[`run_${id}`] ?? ""),
+    ]);
     const csv = [headers, ...rows].map((x) => x.map(csvEscape).join(",")).join("\n");
     const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -280,39 +367,95 @@ export function MultiScenarioTimeSeriesChart({
     URL.revokeObjectURL(url);
   };
 
-  if (loading) return <div className="p-4 text-sm text-muted-foreground">Chargement…</div>;
+  const chartFileName = useMemo(
+    () =>
+      buildChartImageFileName({
+        prefix: moduleCode,
+        station: stationId ? `station_${stationId}` : null,
+        scenario: uniqueRunIds.map((id) => runLabels.get(id) ?? `run_${id}`).join("_"),
+        variable: propertyId ? `property_${propertyId}` : null,
+        aggregation: agg,
+        mode: compareWindow,
+      }),
+    [moduleCode, stationId, uniqueRunIds, runLabels, propertyId, agg, compareWindow]
+  );
+
+  const handleDownload = useCallback(async () => {
+    await downloadChartAsImage(chartRef, chartFileName);
+  }, [chartFileName]);
+
+  if (loading) {
+    return <div className="p-4 text-sm text-muted-foreground">{t("common.loading")}</div>;
+  }
   if (error) return <div className="p-4 text-sm text-red-600">{error}</div>;
-  if (!chartData.length) return <div className="p-4 text-sm text-muted-foreground">Aucune donnée (plages de dates/scénarios).</div>;
+  if (!transformed.data.length) {
+    return (
+      <div className="p-4 text-sm text-muted-foreground">
+        Aucune donnée disponible pour cette agrégation.
+      </div>
+    );
+  }
 
   return (
     <div className="hydro-card">
       <div className="hydro-card-header">
-        <h3 className="font-semibold">Comparaison scénarios (plage par scénario)</h3>
-        <Button variant="outline" size="sm" onClick={exportCSV}>
-          <Download className="w-4 h-4 mr-2" />
-          Export CSV
-        </Button>
+        <h3 className="font-semibold">{title ?? t("panels.compareScenarios")}</h3>
+        <div className="flex items-center gap-2">
+          <Select value={displayMode} onValueChange={(value) => onDisplayModeChange?.(value as ChartDisplayMode)}>
+            <SelectTrigger className="h-8 w-[160px]">
+              <SelectValue placeholder="Mode graphe" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="normal">Normal</SelectItem>
+              <SelectItem value="logarithmic">Logarithmique</SelectItem>
+              <SelectItem value="fdc">FDC</SelectItem>
+            </SelectContent>
+          </Select>
+          <ChartExportMenu
+            onExportCsv={exportCSV}
+            onExportPng={handleDownload}
+            csvDisabled={!transformed.data.length}
+            pngDisabled={!transformed.data.length}
+          />
+        </div>
       </div>
 
       <div className="hydro-card-body">
-        <div className="h-[340px] w-full md:h-[360px] xl:h-[380px]">
+        {displayMode === "logarithmic" && transformed.excludedForLog > 0 ? (
+          <div className="mb-2 text-xs text-muted-foreground">
+            Les valeurs ≤ 0 sont exclues en mode logarithmique.
+          </div>
+        ) : null}
+        <div ref={chartRef} className={chartHeightClassName}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 40 }}>
+            <LineChart data={transformed.data} margin={{ top: 20, right: 30, left: 20, bottom: 40 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
               <XAxis
-                dataKey="date"
+                dataKey={transformed.xKey}
+                type={transformed.xKey === "probability" ? "number" : "category"}
+                domain={transformed.xKey === "probability" ? [0, 100] : undefined}
+                tickFormatter={(value) =>
+                  transformed.xKey === "probability" ? `${Number(value).toFixed(0)}%` : String(value)
+                }
                 tick={{ fontSize: 11 }}
                 minTickGap={20}
                 tickMargin={12}
                 height={52}
                 stroke="hsl(var(--muted-foreground))"
               />
-              <YAxis tick={{ fontSize: 11 }} tickMargin={8} width={52} stroke="hsl(var(--muted-foreground))" />
+              <YAxis
+                tick={{ fontSize: 11 }}
+                tickMargin={8}
+                width={52}
+                stroke="hsl(var(--muted-foreground))"
+                scale={displayMode === "logarithmic" ? "log" : "auto"}
+                domain={["auto", "auto"]}
+              />
               <Tooltip allowEscapeViewBox={{ x: true, y: true }} wrapperStyle={{ zIndex: 50 }} />
               <Legend wrapperStyle={{ fontSize: "12px" }} />
-              {runIds.map((runId, i) => (
+              {uniqueRunIds.map((runId, i) => (
                 <Line
-                  key={runId}
+                  key={`run-${runId}`}
                   type="monotone"
                   dataKey={`run_${runId}`}
                   name={runLabels.get(runId) ?? `Run ${runId}`}

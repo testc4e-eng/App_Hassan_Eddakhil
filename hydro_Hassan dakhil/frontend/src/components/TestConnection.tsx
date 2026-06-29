@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { checkHealth, getStations, getCatchments } from '../api/hydro';
+import { hydroApi } from '../api/hydro';
 
 export function TestConnection() {
   const [status, setStatus] = useState<string>('Testing...');
@@ -10,15 +10,15 @@ export function TestConnection() {
     const testConnection = async () => {
       try {
         // Test de santé
-        const health = await checkHealth();
-        setStatus(`✅ API is healthy - Database: ${health.database}`);
+        await hydroApi.health();
+        setStatus('✅ API is healthy');
         
         // Test stations
-        const stations = await getStations({ limit: 5 });
+        const stations = await hydroApi.getStations({ limit: 5 });
         setStationsCount(stations.length);
         
         // Test catchments
-        const catchments = await getCatchments();
+        const catchments = await hydroApi.getCatchments();
         setCatchmentsCount(catchments.length);
         
       } catch (error) {

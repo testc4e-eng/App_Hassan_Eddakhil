@@ -319,6 +319,18 @@ export class HydroController {
     }
   }
 
+  async getBathymetry(req: Request, res: Response, next: NextFunction) {
+    try {
+      const q = req.query as Record<string, unknown>;
+      const reservoirId = qInt(q["reservoirId"]);
+
+      const bathymetry = await hydroService.getBathymetry(reservoirId);
+      res.json({ success: true, data: bathymetry, count: bathymetry.length });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // ================ MODEL RUNS ================
   async getModelRuns(req: Request, res: Response, next: NextFunction) {
     try {

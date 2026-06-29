@@ -1,4 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  AGGREGATION_PRIORITY,
+  isAggregationSelectable,
+  resolveSelectableAggregations,
+} from "@/lib/aggregationAvailability";
 import {
   CartesianGrid,
   ComposedChart,
@@ -25,7 +30,10 @@ import {
   SolidYieldSubbasin,
   solidYieldService,
 } from "@/services/solidYieldService";
+import { deduplicateSelectOptions } from "@/lib/selectOptions";
 import { Calendar, Download, RefreshCw } from "lucide-react";
+import { ChartExportMenu } from "@/components/charts/ChartExportMenu";
+import { buildChartImageFileName, downloadChartAsImage } from "@/lib/chartExport";
 
 const EMPTY_DATE = "";
 
@@ -60,6 +68,7 @@ export function SolidYieldModule() {
   const [interval, setInterval] = useState<"day" | "month" | "year">("day");
   const [startDate, setStartDate] = useState(EMPTY_DATE);
   const [endDate, setEndDate] = useState(EMPTY_DATE);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let alive = true;
@@ -72,7 +81,7 @@ export function SolidYieldModule() {
           solidYieldService.availability(),
         ]);
         if (!alive) return;
-        setSubbasins(subs);
+        setSubbasins(deduplicateSelectOptions(subs, (item) => item.subbasin_station_id));
         setAvailability(av);
         if (subs.length) setSubbasinStationId(subs[0].subbasin_station_id);
       } catch (e: any) {
@@ -100,7 +109,10 @@ export function SolidYieldModule() {
         });
       }
     }
-    return Array.from(map.values()).sort((a, b) => a.run_id - b.run_id);
+    return deduplicateSelectOptions(
+      Array.from(map.values()).sort((a, b) => a.run_id - b.run_id),
+      (item) => item.run_id
+    );
   }, [availability, subbasinStationId]);
 
   const activeAvailability = useMemo(() => {
@@ -111,6 +123,27 @@ export function SolidYieldModule() {
       ) || null
     );
   }, [availability, subbasinStationId, runId]);
+
+  const selectedRunHasData = Boolean(activeAvailability && activeAvailability.points_count > 0);
+
+  const intervalAvailability = useMemo(
+    () =>
+      resolveSelectableAggregations({
+        daily: selectedRunHasData,
+        monthly: false,
+        annual: false,
+      }),
+    [selectedRunHasData]
+  );
+
+  useEffect(() => {
+    if (!isAggregationSelectable(interval, intervalAvailability)) {
+      const next = AGGREGATION_PRIORITY.find((candidate) =>
+        isAggregationSelectable(candidate, intervalAvailability)
+      );
+      if (next) setInterval(next);
+    }
+  }, [interval, intervalAvailability]);
 
   useEffect(() => {
     if (!runId && runsForSubbasin.length) {
@@ -220,7 +253,10 @@ export function SolidYieldModule() {
                 </SelectTrigger>
                 <SelectContent>
                   {subbasins.map((s) => (
-                    <SelectItem key={s.subbasin_station_id} value={String(s.subbasin_station_id)}>
+                    <SelectItem
+                      key={`subbasin-${s.subbasin_station_id}-${s.subbasin_name}`}
+                      value={String(s.subbasin_station_id)}
+                    >
                       {`Subbasin ${s.subbasin_id} - ${s.subbasin_name}`}
                     </SelectItem>
                   ))}
@@ -240,7 +276,10 @@ export function SolidYieldModule() {
                 </SelectTrigger>
                 <SelectContent>
                   {runsForSubbasin.map((r) => (
-                    <SelectItem key={r.run_id} value={String(r.run_id)}>
+                    <SelectItem
+                      key={`run-${r.run_id}-${r.scenario_code}`}
+                      value={String(r.run_id)}
+                    >
                       {`${r.scenario_name} (${r.scenario_code})`}
                     </SelectItem>
                   ))}
@@ -283,6 +322,7 @@ export function SolidYieldModule() {
                     key={a}
                     size="sm"
                     variant={interval === a ? "default" : "outline"}
+                    disabled={!isAggregationSelectable(a, intervalAvailability)}
                     onClick={() => setInterval(a)}
                   >
                     {a === "day" ? "Jour" : a === "month" ? "Mois" : "Année"}
@@ -364,10 +404,29 @@ export function SolidYieldModule() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Graphique</CardTitle>
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="text-base">Graphique</CardTitle>
+              <ChartExportMenu
+                onExportCsv={exportCsv}
+                onExportPng={() =>
+                  downloadChartAsImage(
+                    chartRef,
+                    buildChartImageFileName({
+                      prefix: "apport_solide",
+                      station: subbasinStationId ? `subbasin_${subbasinStationId}` : null,
+                      variable: "SYLDT_HA",
+                      aggregation: interval,
+                      mode: "single",
+                    })
+                  )
+                }
+                csvDisabled={!series.length}
+                pngDisabled={!series.length}
+              />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="h-[420px]">
+            <div ref={chartRef} className="h-[420px]">
               {!series.length ? (
                 <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
                   Aucune donnée graphique.
@@ -414,4 +473,7 @@ function StatCard({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+
+
 

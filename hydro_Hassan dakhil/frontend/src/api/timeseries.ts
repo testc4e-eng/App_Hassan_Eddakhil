@@ -41,12 +41,49 @@ export type TimeseriesBundleResponse = {
   aggregated: Record<string, TimeseriesAggPoint[]>;
 };
 
+export type AggregationAvailabilityResponse = {
+  daily: boolean;
+  monthly: boolean;
+  annual: boolean;
+};
+
+type TimeseriesQueryKey = string;
+
+const catalogCache = new Map<TimeseriesQueryKey, Promise<TimeseriesCatalogItem[]>>();
+const bundleCache = new Map<TimeseriesQueryKey, Promise<TimeseriesBundleResponse>>();
+
+function buildKey(prefix: string, args: Record<string, unknown>): string {
+  return `${prefix}:${Object.keys(args)
+    .sort()
+    .map((key) => `${key}=${String(args[key])}`)
+    .join("&")}`;
+}
+
+function cacheRequest<T>(
+  cache: Map<TimeseriesQueryKey, Promise<T>>,
+  key: TimeseriesQueryKey,
+  loader: () => Promise<T>
+): Promise<T> {
+  const existing = cache.get(key);
+  if (existing) return existing;
+
+  const promise = loader().catch((err) => {
+    cache.delete(key);
+    throw err;
+  });
+  cache.set(key, promise);
+  return promise;
+}
+
 export const timeseriesApi = {
   health: () => apiGet<any>("/timeseries/health"),
 
   catalog: (args: { stationId: number; runId: number; module: string }) => {
-    const query = qs(args);
-    return apiGet<TimeseriesCatalogItem[]>(`/timeseries/catalog${query}`);
+    const key = buildKey("catalog", args);
+    return cacheRequest(catalogCache, key, () => {
+      const query = qs(args);
+      return apiGet<TimeseriesCatalogItem[]>(`/timeseries/catalog${query}`);
+    });
   },
 
   bundle: (args: {
@@ -54,8 +91,30 @@ export const timeseriesApi = {
     runId: number;
     module: string;
     agg?: "day" | "month" | "year";
+    startDate?: string;
+    endDate?: string;
+  }) => {
+    const key = buildKey("bundle", args);
+    return cacheRequest(bundleCache, key, () => {
+      const query = qs(args);
+      return apiGet<TimeseriesBundleResponse>(`/timeseries/bundle${query}`);
+    });
+  },
+
+  availability: (args: {
+    stationId: number;
+    runId: number;
+    propertyId: number;
+    module: string;
+    startDate?: string;
+    endDate?: string;
   }) => {
     const query = qs(args);
-    return apiGet<TimeseriesBundleResponse>(`/timeseries/bundle${query}`);
+    return apiGet<AggregationAvailabilityResponse>(`/timeseries/availability${query}`);
+  },
+
+  clearCaches: () => {
+    catalogCache.clear();
+    bundleCache.clear();
   },
 };

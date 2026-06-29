@@ -58,7 +58,7 @@ const SIDEBAR_SECTIONS: SidebarGroup[] = [
       },
       {
         id: "sediment",
-        label: "Érosion / Sédiments",
+        label: "Sédiments",
         icon: Mountain,
         color: "text-amber-600",
       },
