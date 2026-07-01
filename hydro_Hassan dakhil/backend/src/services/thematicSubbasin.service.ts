@@ -98,7 +98,7 @@ export class ThematicSubbasinService {
       SELECT
         sb.subbasin_id AS id,
         sb.catchment_id,
-        sb.subbasin_name AS name,
+        COALESCE(NULLIF(sb.name, ''), 'Sous-bassin ' || sb.subbasin_id::text) AS name,
         ST_AsGeoJSON(sb.geom)::json AS geometry,
         agg.value
       FROM gis.subbasin_shapes sb

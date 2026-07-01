@@ -98,7 +98,7 @@ export class ThematicReachService {
       SELECT
         r.reach_id AS id,
         r.catchment_id,
-        r.reach_name AS name,
+        COALESCE(NULLIF(r.reach_code::text, ''), 'Tronçon ' || r.reach_id::text) AS name,
         ST_AsGeoJSON(r.geom)::json AS geometry,
         agg.value
       FROM gis.reach_shapes r
