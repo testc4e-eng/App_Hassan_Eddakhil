@@ -1,4 +1,5 @@
-import { Pool, PoolConfig } from "pg";
+import { Pool } from "pg";
+import Database from "../config/database.config";
 
 type EntityType = "sub" | "rch";
 
@@ -50,19 +51,7 @@ type AccessStatsRow = {
   last_period: string | null;
 };
 
-const poolConfig: PoolConfig = {
-  host: process.env.DB_HOST || "localhost",
-  port: Number.parseInt(process.env.DB_PORT || "5432", 10),
-  database: process.env.DB_NAME || "hydro_hd_1714",
-  user: process.env.DB_USER || "postgres",
-  password: process.env.DB_PASSWORD || "",
-  ssl: process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : false,
-  max: 10,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
-};
-
-const pool = new Pool(poolConfig);
+const pool = Database.getPool();
 
 const TABLE_BY_ENTITY: Record<EntityType, string> = {
   sub: "access.sub_results",

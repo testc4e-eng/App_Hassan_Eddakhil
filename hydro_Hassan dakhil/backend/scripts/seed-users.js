@@ -2,28 +2,37 @@ require("dotenv").config();
 const { Pool } = require("pg");
 
 const pool = new Pool({
-  host: process.env.DB_HOST || "localhost",
-  port: Number.parseInt(process.env.DB_PORT || "5432", 10),
-  database: process.env.DB_NAME || "hydro_hd_1714",
-  user: process.env.DB_USER || "postgres",
-  password: process.env.DB_PASSWORD || "",
+  host: process.env.DB_HOST,
+  port: Number.parseInt(process.env.DB_PORT, 10),
+  database: process.env.DB_NAME,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
   ssl: process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : false,
 });
 
-const seedPasswordHash =
-  "$2b$12$CqPlxY1FKB3SNHgBVdeR7eCgV7xXUGgsS5Ct71wl75AOzFIUOdJl.";
+const seedPasswordHash = process.env.SEED_USER_PASSWORD_HASH;
+const adminEmail = process.env.SEED_ADMIN_EMAIL;
+const userEmail = process.env.SEED_USER_EMAIL;
+
+if (!seedPasswordHash || !adminEmail || !userEmail) {
+  console.error(
+    "Seed utilisateurs échoué : SEED_USER_PASSWORD_HASH, SEED_ADMIN_EMAIL et SEED_USER_EMAIL sont requis."
+  );
+  process.exitCode = 1;
+  return;
+}
 
 const users = [
   {
     full_name: "C4E Admin",
-    email: "c4e.africa@gmail.com",
+    email: adminEmail,
     password_hash: seedPasswordHash,
     role: "ADMIN",
     status: "ACTIVE",
   },
   {
     full_name: "Ilham Qaidouh",
-    email: "ilhamqaidouh@gmail.com",
+    email: userEmail,
     password_hash: seedPasswordHash,
     role: "USER",
     status: "ACTIVE",

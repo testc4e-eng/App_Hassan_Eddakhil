@@ -2,16 +2,17 @@
 
 import { Pool, PoolConfig } from "pg";
 import dotenv from "dotenv";
+import { requireEnv, getEnvOrDefault } from "./env";
 
 dotenv.config();
 
 const dbConfig: PoolConfig = {
-  host: process.env.DB_HOST || "localhost",
-  port: parseInt(process.env.DB_PORT || "5432"),
-  database: process.env.DB_NAME || "hydro_hd_1714",
-  user: process.env.DB_USER || "postgres",
-  password: process.env.DB_PASSWORD || "",
-  ssl: process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : false,
+  host: requireEnv("DB_HOST"),
+  port: parseInt(requireEnv("DB_PORT")),
+  database: requireEnv("DB_NAME"),
+  user: requireEnv("DB_USER"),
+  password: requireEnv("DB_PASSWORD"),
+  ssl: getEnvOrDefault("DB_SSL", "false") === "true" ? { rejectUnauthorized: false } : false,
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,

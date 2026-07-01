@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:8b924b05488cd56bbc52ef89dfa92f6988a90d9d0bf783be266f3b4f4a56d374
-size 390
+-- Conserver uniquement les campagnes officielles Hassan Addakhil
+-- 1990, 1999, 2004, 2008, 2014, 2022
+
+DELETE FROM hydro.siltation_hsv
+WHERE dam_code = 'HASSAN_ADDAKHIL'
+  AND campaign_year NOT IN (1990, 1999, 2004, 2008, 2014, 2022);
+
+SELECT campaign_year, COUNT(*) AS hsv_points
+FROM hydro.siltation_hsv
+WHERE dam_code = 'HASSAN_ADDAKHIL'
+GROUP BY campaign_year
+ORDER BY campaign_year;

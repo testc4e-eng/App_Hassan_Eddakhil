@@ -7,6 +7,8 @@
 **/__pycache__/
 **/*.pyc
 **/backup/
+backups/
+.vscode/
 DATABASE_DOCUMENTATION/backup/
 hydro_Hassan dakhil/outputs/
 hydro_Hassan dakhil/frontend/vite.svg
