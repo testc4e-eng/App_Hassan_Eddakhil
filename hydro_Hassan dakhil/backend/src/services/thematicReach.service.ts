@@ -79,21 +79,22 @@ export class ThematicReachService {
     }>(`
       WITH annual AS (
         SELECT
-          reach_id,
+          sub_code,
           EXTRACT(YEAR FROM period_date) AS year,
           SUM(sed_out_tons) AS yearly_sum
         FROM access.rch_results
         WHERE LOWER(scenario_code) = LOWER($1)
           AND sed_out_tons IS NOT NULL
+          AND sub_code IS NOT NULL
           ${dateFilter}
-        GROUP BY reach_id, EXTRACT(YEAR FROM period_date)
+        GROUP BY sub_code, EXTRACT(YEAR FROM period_date)
       ),
       aggregated AS (
         SELECT
-          reach_id,
+          sub_code,
           ${aggFn}(yearly_sum) AS value
         FROM annual
-        GROUP BY reach_id
+        GROUP BY sub_code
       )
       SELECT
         r.reach_id AS id,
@@ -102,7 +103,7 @@ export class ThematicReachService {
         ST_AsGeoJSON(r.geom)::json AS geometry,
         agg.value
       FROM gis.reach_shapes r
-      LEFT JOIN aggregated agg ON agg.reach_id = r.reach_id
+      LEFT JOIN aggregated agg ON agg.sub_code = r.subbasin_id
       WHERE r.geom IS NOT NULL
       ORDER BY r.reach_id
     `, sqlParams);
