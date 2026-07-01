@@ -30,6 +30,13 @@ import {
   SolidYieldSubbasin,
   solidYieldService,
 } from "@/services/solidYieldService";
+import { SYLDT_HA_DISPLAY_LABEL } from "@/constants/syldtHa";
+import {
+  RECHARTS_LEGEND_BOTTOM,
+  RECHARTS_MARGIN_X_LABEL_LEGEND,
+  RECHARTS_X_AXIS_BOTTOM,
+  rechartsXAxisBottomLabel,
+} from "@/lib/chartLayout";
 import { deduplicateSelectOptions } from "@/lib/selectOptions";
 import { Calendar, Download, RefreshCw } from "lucide-react";
 import { ChartExportMenu } from "@/components/charts/ChartExportMenu";
@@ -199,7 +206,7 @@ export function SolidYieldModule() {
   const exportCsv = () => {
     if (!series.length) return;
     const rows = [
-      ["Date", "Apport solide simulé (SYLDT_HA)", "n"],
+      ["Date", SYLDT_HA_DISPLAY_LABEL, "n"],
       ...series.map((p) => [p.period, p.value ?? "", p.n]),
     ];
     const csv = rows.map((r) => r.map(csvEscape).join(",")).join("\n");
@@ -222,7 +229,7 @@ export function SolidYieldModule() {
   };
 
   if (loading) {
-    return <div className="text-sm text-muted-foreground">Chargement dashboard Apport solide…</div>;
+    return <div className="text-sm text-muted-foreground">Chargement dashboard {SYLDT_HA_DISPLAY_LABEL}…</div>;
   }
 
   return (
@@ -290,7 +297,7 @@ export function SolidYieldModule() {
             <div className="space-y-1">
               <div className="text-xs font-semibold">Variable</div>
               <div className="h-9 rounded-md border border-input bg-muted/40 px-3 flex items-center text-sm">
-                Apport solide simulé (SYLDT_HA)
+                {SYLDT_HA_DISPLAY_LABEL}
               </div>
             </div>
 
@@ -377,7 +384,7 @@ export function SolidYieldModule() {
                 <thead className="bg-muted/60 sticky top-0">
                   <tr>
                     <th className="px-3 py-2 text-left">Date</th>
-                    <th className="px-3 py-2 text-left">SYLDT_HA</th>
+                    <th className="px-3 py-2 text-left">{SYLDT_HA_DISPLAY_LABEL}</th>
                     <th className="px-3 py-2 text-left">n</th>
                   </tr>
                 </thead>
@@ -433,7 +440,7 @@ export function SolidYieldModule() {
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={series}>
+                  <ComposedChart data={series} margin={RECHARTS_MARGIN_X_LABEL_LEGEND}>
                     <defs>
                       <linearGradient id="syldtGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="hsl(28 92% 55%)" stopOpacity={0.35} />
@@ -441,14 +448,19 @@ export function SolidYieldModule() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.4} />
-                    <XAxis dataKey="period" tick={{ fontSize: 11 }} />
+                    <XAxis
+                      dataKey="period"
+                      tick={{ fontSize: 11 }}
+                      {...RECHARTS_X_AXIS_BOTTOM}
+                      label={rechartsXAxisBottomLabel("Période")}
+                    />
                     <YAxis tick={{ fontSize: 11 }} />
                     <Tooltip />
-                    <Legend />
+                    <Legend {...RECHARTS_LEGEND_BOTTOM} />
                     <Area
                       type="monotone"
                       dataKey="value"
-                      name="Apport solide simulé (SYLDT_HA)"
+                      name={SYLDT_HA_DISPLAY_LABEL}
                       stroke="hsl(28 92% 45%)"
                       fill="url(#syldtGradient)"
                       strokeWidth={2}

@@ -1,6 +1,10 @@
 import { DatabaseService } from "./database.service";
 import { NORMALIZED_SWAT_SCENARIOS } from "../constants/swatScenarios";
 import {
+  HASSAN_ADDAKHIL_STATION_IDS,
+  isHassanAddakhilStationId,
+} from "../constants/projectStations";
+import {
   getNativeGranularityFromRows,
   normalizeTimeStep,
   pickSourceTimeStep,
@@ -27,8 +31,34 @@ const EROSION_TIME_STEP_PRIORITY: Record<ErosionTimeStep, number> = {
   annual: 2,
 };
 
-const HASSAN_ADDAKHIL_STATION_IDS = [2, 3, 24, 29, 35] as const;
-const HASSAN_ADDAKHIL_STATION_ID_SET = new Set<number>(HASSAN_ADDAKHIL_STATION_IDS);
+function mergeSubbasinAvailabilityRows(
+  ...sources: ErosionSubbasinAvailabilityRow[][]
+): ErosionSubbasinAvailabilityRow[] {
+  const map = new Map<string, ErosionSubbasinAvailabilityRow>();
+
+  for (const rows of sources) {
+    for (const row of rows) {
+      const key = `${row.subbasin_station_id}:${row.run_id}`;
+      const existing = map.get(key);
+      const rowPoints = Number(row.points_count || 0);
+      const existingPoints = Number(existing?.points_count || 0);
+      const rowHasPeriod = Boolean(row.min_date && row.max_date);
+      const existingHasPeriod = Boolean(existing?.min_date && existing?.max_date);
+
+      if (
+        !existing ||
+        rowPoints > existingPoints ||
+        (rowPoints === existingPoints && rowHasPeriod && !existingHasPeriod)
+      ) {
+        map.set(key, row);
+      }
+    }
+  }
+
+  return Array.from(map.values()).sort(
+    (a, b) => a.subbasin_id - b.subbasin_id || a.run_id - b.run_id
+  );
+}
 
 type ErosionSourceTable = "access.rch_results" | "access.sub_results";
 type ErosionEntityType = "rch" | "sub";
@@ -203,7 +233,7 @@ export const EROSION_VARIABLE_DEFS: ErosionVariableDef[] = [
   {
     property_id: 33,
     standard_name: "SWAT_SYLDT_HA",
-    name: "Sediments specifiques",
+    name: "Dégradation spécifique (t/ha)",
     unit: "t/ha",
     description: "Simulated sediment yield by subbasin.",
     source_table: "access.sub_results",
@@ -333,7 +363,7 @@ export class ErosionSwatSeriesService {
   private async getDisplayStationMaps(): Promise<DisplayStationMaps> {
     if (!this.displayStationMapsCache) {
       this.displayStationMapsCache = (async () => {
-        const projectStationIds = Array.from(HASSAN_ADDAKHIL_STATION_ID_SET);
+        const projectStationIds = [...HASSAN_ADDAKHIL_STATION_IDS];
 
         const [subRows, reachRows] = await Promise.all([
           this.query<{
@@ -422,7 +452,7 @@ export class ErosionSwatSeriesService {
     entityType: ErosionEntityType,
     maps: DisplayStationMaps
   ): DisplayStationInfo {
-    if (HASSAN_ADDAKHIL_STATION_ID_SET.has(Number(row.station_id))) {
+    if (isHassanAddakhilStationId(row.station_id)) {
       return {
         station_id: Number(row.station_id),
         station_code: String(row.station_code),
@@ -968,268 +998,9 @@ export class ErosionSwatSeriesService {
         return this.getSimulatedAvailabilityRowsFromAccess();
       }
 
-      const defRows = new Map<number, ErosionVariableDef>();
-      for (const def of await this.getErosionVariableDefs()) {
-        defRows.set(def.property_id, def);
-      }
-
-      const rows = await this.query<{
-        station_id: number;
-        station_code: string;
-        station_name: string;
-        run_id: number;
-        scenario_code: string;
-        scenario_name: string;
-        time_step: string;
-        property_id: number;
-        property_name: string;
-        standard_name: string;
-        unit: string | null;
-        n_measures: string | number;
-        dt_min: string | null;
-        dt_max: string | null;
-        v_min: string | number | null;
-        v_max: string | number | null;
-        created_at: string | null;
-      }>(
-        `
-        WITH source AS (
-          SELECT
-            COALESCE(m.station_id, r.station_id) AS station_id,
-            st.station_code,
-            st.name AS station_name,
-            mr.run_id,
-            r.scenario_code,
-            mr.scenario_name,
-            r.time_step,
-            r.period_date,
-            r.import_date,
-            r.sed_in_tons,
-            r.sed_out_tons,
-            r.sedconc_mg_kg
-          FROM access.rch_results r
-          LEFT JOIN core.station_subbasin_map m
-            ON m.subbasin_id = r.sub_code
-           AND m.is_active = true
-          JOIN core.stations st
-            ON st.station_id = COALESCE(m.station_id, r.station_id)
-          JOIN core.model_runs mr
-            ON mr.scenario_code = r.scenario_code
-          WHERE r.scenario_code = ANY($1::text[])
-
-          UNION ALL
-
-          SELECT
-            COALESCE(m.station_id, s.station_id) AS station_id,
-            st.station_code,
-            st.name AS station_name,
-            mr.run_id,
-            s.scenario_code,
-            mr.scenario_name,
-            s.time_step,
-            s.period_date,
-            s.import_date,
-            NULL::double precision AS sed_in_tons,
-            NULL::double precision AS sed_out_tons,
-            NULL::double precision AS sedconc_mg_kg
-          FROM access.sub_results s
-          LEFT JOIN core.station_subbasin_map m
-            ON m.subbasin_id = s.sub_code
-           AND m.is_active = true
-          JOIN core.stations st
-            ON st.station_id = COALESCE(m.station_id, s.station_id)
-          JOIN core.model_runs mr
-            ON mr.scenario_code = s.scenario_code
-          WHERE s.scenario_code = ANY($1::text[])
-        ),
-        unpivot AS (
-          SELECT
-            station_id,
-            station_code,
-            station_name,
-            run_id,
-            scenario_code,
-            scenario_name,
-            time_step,
-            91010::int AS property_id,
-            'Sediments entrants'::text AS property_name,
-            'tons'::text AS unit,
-            'SWAT_SED_IN_TONS'::text AS standard_name,
-            sed_in_tons::double precision AS value,
-            period_date,
-            import_date
-          FROM source
-          WHERE sed_in_tons IS NOT NULL
-
-          UNION ALL
-
-          SELECT
-            station_id,
-            station_code,
-            station_name,
-            run_id,
-            scenario_code,
-            scenario_name,
-            time_step,
-            32::int AS property_id,
-            'Sediments sortants'::text AS property_name,
-            'tons'::text AS unit,
-            'SWAT_SED_TONS'::text AS standard_name,
-            sed_out_tons::double precision AS value,
-            period_date,
-            import_date
-          FROM source
-          WHERE sed_out_tons IS NOT NULL
-
-          UNION ALL
-
-          SELECT
-            station_id,
-            station_code,
-            station_name,
-            run_id,
-            scenario_code,
-            scenario_name,
-            time_step,
-            91011::int AS property_id,
-            'Concentration sediments'::text AS property_name,
-            'mg/kg'::text AS unit,
-            'SWAT_SED_CONC_MG_KG'::text AS standard_name,
-            sedconc_mg_kg::double precision AS value,
-            period_date,
-            import_date
-          FROM source
-          WHERE sedconc_mg_kg IS NOT NULL
-
-          UNION ALL
-
-          SELECT
-            m.station_id,
-            st.station_code,
-            st.name AS station_name,
-            mr.run_id,
-            s.scenario_code,
-            mr.scenario_name,
-            s.time_step,
-            33::int AS property_id,
-            'Sediments specifiques'::text AS property_name,
-            't/ha'::text AS unit,
-            'SWAT_SYLDT_HA'::text AS standard_name,
-            s.syld_t_ha::double precision AS value,
-            s.period_date,
-            s.import_date
-          FROM access.sub_results s
-          JOIN core.station_subbasin_map m
-            ON m.subbasin_id = s.sub_code
-           AND m.is_active = true
-          JOIN core.stations st
-            ON st.station_id = m.station_id
-          JOIN core.model_runs mr
-            ON mr.scenario_code = s.scenario_code
-          WHERE s.scenario_code = ANY($1::text[])
-            AND s.syld_t_ha IS NOT NULL
-        )
-        SELECT
-          station_id,
-          station_code,
-          station_name,
-          run_id,
-          scenario_code,
-          scenario_name,
-          time_step,
-          property_id,
-          property_name,
-          unit,
-          standard_name,
-          COUNT(*)::bigint AS n_measures,
-          MIN(period_date)::date::text AS dt_min,
-          MAX(period_date)::date::text AS dt_max,
-          MIN(value)::double precision AS v_min,
-          MAX(value)::double precision AS v_max,
-          MAX(import_date)::timestamptz::text AS created_at,
-          ROW_NUMBER() OVER (
-            PARTITION BY station_id, run_id, scenario_code, property_id
-            ORDER BY CASE time_step
-              WHEN 'daily' THEN 1
-              WHEN 'monthly' THEN 2
-              WHEN 'annual' THEN 3
-              ELSE 99
-            END
-          ) AS rn
-        FROM unpivot
-        WHERE value IS NOT NULL
-        GROUP BY
-          station_id,
-          station_code,
-          station_name,
-          run_id,
-          scenario_code,
-          scenario_name,
-          time_step,
-          property_id,
-          property_name,
-          unit,
-          standard_name
-        ORDER BY station_id, run_id, property_id;
-        `,
-        [EROSION_SCENARIO_CODES]
-      );
-
-      const availability: ErosionAvailabilityRow[] = [];
-      for (const row of rows) {
-        if (Number((row as any).rn) !== 1) {
-          continue;
-        }
-        const def = defRows.get(Number(row.property_id));
-        if (!def) continue;
-        const timeStep = (String(row.time_step) as ErosionTimeStep) || "daily";
-        const tsId = this.syntheticTsId(
-          Number(row.run_id),
-          Number(row.station_id),
-          def.property_id,
-          timeStep
-        );
-        const nPoints = toNumber(row.n_measures) ?? 0;
-        availability.push({
-          ts_id: tsId,
-          module_code: "erosion",
-          station_id: Number(row.station_id),
-          station_code: String(row.station_code),
-          station_name: String(row.station_name),
-          station_label: `${row.station_code} - ${row.station_name}`,
-          property_id: def.property_id,
-          property_name: def.name,
-          unit: def.unit,
-          standard_name: def.standard_name,
-          run_id: Number(row.run_id),
-          scenario_code: String(row.scenario_code),
-          scenario_name: String(row.scenario_name),
-          source_type: "simulated",
-          time_step: timeStep,
-          n_measures: nPoints,
-          dt_min: row.dt_min,
-          dt_max: row.dt_max,
-          v_min: toNumber(row.v_min),
-          v_max: toNumber(row.v_max),
-          created_at: row.created_at,
-          period_days:
-            row.dt_min && row.dt_max
-              ? Math.max(
-                  0,
-                  Math.round(
-                    (new Date(row.dt_max).getTime() - new Date(row.dt_min).getTime()) / 86400000
-                  )
-                )
-              : null,
-        });
-      }
-
-      return availability.sort(
-        (a, b) =>
-          a.station_id - b.station_id ||
-          a.run_id - b.run_id ||
-          a.property_id - b.property_id
-      );
+      // Legacy DB dumps (access.rch_results / access.sub_results) do not expose
+      // time_step, import_date or station_id columns — reuse the access fallback.
+      return this.getSimulatedAvailabilityRowsFromAccess();
     })();
 
     this.availabilityCache = promise.catch((error) => {
@@ -1656,15 +1427,35 @@ export class ErosionSwatSeriesService {
   }
 
   async getSubbasinAvailability(subbasinStationId?: number): Promise<ErosionSubbasinAvailabilityRow[]> {
+    const sources: ErosionSubbasinAvailabilityRow[][] = [];
+
+    try {
+      const accessRows = await this.getSubbasinAvailabilityFromAccessModelRuns(subbasinStationId);
+      if (accessRows.length) sources.push(accessRows);
+    } catch (error) {
+      console.error("[erosion] subbasin availability from access.sub_results failed", error);
+    }
+
     if (await this.db.relationExists("public.v_ts_catalog_enriched")) {
-      const rows = await this.getSubbasinAvailabilityFromCatalog(subbasinStationId);
-      if (rows.length) return rows;
+      try {
+        const catalogRows = await this.getSubbasinAvailabilityFromCatalog(subbasinStationId);
+        if (catalogRows.length) sources.push(catalogRows);
+      } catch (error) {
+        console.error("[erosion] subbasin availability from catalog failed", error);
+      }
     }
 
     if (await this.db.relationExists("api.mv_hydro_station_stats")) {
-      const rows = await this.getSubbasinAvailabilityFromMatView(subbasinStationId);
-      if (rows.length) return rows;
+      try {
+        const matRows = await this.getSubbasinAvailabilityFromMatView(subbasinStationId);
+        if (matRows.length) sources.push(matRows);
+      } catch (error) {
+        console.error("[erosion] subbasin availability from matview failed", error);
+      }
     }
+
+    const merged = mergeSubbasinAvailabilityRows(...sources);
+    if (merged.length) return merged;
 
     return this.getSubbasinAvailabilityFromAccessVirtual(subbasinStationId);
   }
@@ -1742,7 +1533,7 @@ export class ErosionSwatSeriesService {
         source_type: "simulated",
         time_step: "daily" as ErosionTimeStep,
         property_id: 33,
-        property_name: "Sediments specifiques",
+        property_name: "Dégradation spécifique (t/ha)",
         standard_name: "SWAT_SYLDT_HA",
         unit: "t/ha",
         points_count: Number(row.points_count || 0),
@@ -1762,7 +1553,7 @@ export class ErosionSwatSeriesService {
         source_type: "observed",
         time_step: "daily" as ErosionTimeStep,
         property_id: 33,
-        property_name: "Sediments specifiques",
+        property_name: "Dégradation spécifique (t/ha)",
         standard_name: "SWAT_SYLDT_HA",
         unit: "t/ha",
         points_count: 0,
@@ -1778,7 +1569,7 @@ export class ErosionSwatSeriesService {
         source_type: "simulated",
         time_step: "daily" as ErosionTimeStep,
         property_id: 33,
-        property_name: "Sediments specifiques",
+        property_name: "Dégradation spécifique (t/ha)",
         standard_name: "SWAT_SYLDT_HA",
         unit: "t/ha",
         points_count: Number(row.points_count || 0),
@@ -1792,35 +1583,38 @@ export class ErosionSwatSeriesService {
 
   private async getSubbasinAvailabilityFromAccessModelRuns(subbasinStationId?: number): Promise<ErosionSubbasinAvailabilityRow[]> {
     const params: unknown[] = [EROSION_SCENARIO_CODES];
-    const where: string[] = ["s.scenario_code = ANY($1::text[])"];
+    const where: string[] = [
+      "s.scenario_code = ANY($1::text[])",
+      "s.syld_t_ha IS NOT NULL",
+    ];
 
     if (subbasinStationId) {
       params.push(subbasinStationId);
-      where.push(`COALESCE(s.station_id, m.station_id) = $${params.length}`);
+      where.push(`st.station_id = $${params.length}`);
     }
 
     const q = `
       WITH source AS (
         SELECT
-          COALESCE(s.station_id, m.station_id) AS subbasin_station_id,
-          COALESCE(m.subbasin_id, s.sub_code, st.station_id) AS subbasin_id,
+          st.station_id AS subbasin_station_id,
+          s.sub_code::int AS subbasin_id,
           st.station_code,
           st.name AS subbasin_name,
           mr.run_id,
           s.scenario_code,
           mr.scenario_name,
-          s.time_step,
+          CASE
+            WHEN s.scenario_code LIKE '%\\_annual' ESCAPE '\\' THEN 'annual'
+            WHEN s.scenario_code LIKE '%\\_monthly' ESCAPE '\\' THEN 'monthly'
+            ELSE 'daily'
+          END AS time_step,
           s.period_date,
-          s.import_date,
           s.syld_t_ha
         FROM access.sub_results s
         JOIN gis.subbasin_shapes valid_sb
           ON valid_sb.subbasin_id = s.sub_code
-        LEFT JOIN core.station_subbasin_map m
-          ON m.subbasin_id = s.sub_code
-         AND m.is_active = true
         JOIN core.stations st
-          ON st.station_id = COALESCE(s.station_id, m.station_id)
+          ON st.station_code = ('swat_sub_' || s.sub_code::text)
         JOIN core.model_runs mr
           ON mr.scenario_code = s.scenario_code
         WHERE ${where.join(" AND ")}
@@ -1837,7 +1631,7 @@ export class ErosionSwatSeriesService {
           time_step,
           'simulated'::text AS source_type,
           33::int AS property_id,
-          'Sediments specifiques'::text AS property_name,
+          'Dégradation spécifique (t/ha)'::text AS property_name,
           'SWAT_SYLDT_HA'::text AS standard_name,
           't/ha'::text AS unit,
           COUNT(*)::bigint AS points_count,
@@ -1942,7 +1736,7 @@ export class ErosionSwatSeriesService {
           v.source_type,
           v.time_step,
           33::int AS property_id,
-          'Sediments specifiques'::text AS property_name,
+          'Dégradation spécifique (t/ha)'::text AS property_name,
           'SWAT_SYLDT_HA'::text AS standard_name,
           't/ha'::text AS unit,
           COALESCE(v.n_points, 0)::bigint AS points_count,
@@ -2142,9 +1936,20 @@ export class ErosionSwatSeriesService {
       }
     }
 
+    const catalogRows = await this.loadSubbasinSeriesFromCatalogMeasurements(
+      filter.subbasinStationId,
+      filter.runId,
+      unit,
+      filter.startDate,
+      filter.endDate
+    );
+    if (catalogRows.length) {
+      return catalogRows;
+    }
+
     const params: unknown[] = [
       subbasinId,
-      "etat_actuel",
+      selected.scenario_code,
       unit,
     ];
     const where: string[] = [
@@ -2245,9 +2050,19 @@ export class ErosionSwatSeriesService {
       if (row && Number(row.n_points || 0) > 0) return row;
     }
 
+    const catalogStats = await this.loadSubbasinStatsFromCatalogMeasurements(
+      filter.subbasinStationId,
+      filter.runId,
+      filter.startDate,
+      filter.endDate
+    );
+    if (catalogStats && Number(catalogStats.n_points || 0) > 0) {
+      return catalogStats;
+    }
+
     const params: unknown[] = [
       subbasinId,
-      "etat_actuel",
+      selected.scenario_code,
     ];
     const where: string[] = [
       "s.sub_code = $1",
@@ -2278,6 +2093,115 @@ export class ErosionSwatSeriesService {
     `;
 
     return this.queryOne<ErosionSeriesStats>(sql, params);
+  }
+
+  private async resolveSubbasinCatalogTsId(
+    subbasinStationId: number,
+    runId: number
+  ): Promise<number | null> {
+    if (!(await this.db.relationExists("public.v_ts_catalog_enriched"))) {
+      return null;
+    }
+
+    const row = await this.queryOne<{ ts_id: number }>(
+      `
+      SELECT v.ts_id
+      FROM public.v_ts_catalog_enriched v
+      WHERE v.station_id = $1
+        AND v.run_id = $2
+        AND v.standard_name = 'SWAT_SYLDT_HA'
+        AND v.source_type = 'simulated'
+      ORDER BY CASE v.time_step
+        WHEN 'daily' THEN 1
+        WHEN 'monthly' THEN 2
+        WHEN 'annual' THEN 3
+        ELSE 99
+      END
+      LIMIT 1
+      `,
+      [subbasinStationId, runId]
+    );
+
+    return row?.ts_id != null ? Number(row.ts_id) : null;
+  }
+
+  private async loadSubbasinSeriesFromCatalogMeasurements(
+    subbasinStationId: number,
+    runId: number,
+    unit: AggInterval,
+    startDate?: string,
+    endDate?: string
+  ): Promise<ErosionSeriesPoint[]> {
+    const tsId = await this.resolveSubbasinCatalogTsId(subbasinStationId, runId);
+    if (tsId == null) return [];
+
+    const params: unknown[] = [tsId, unit];
+    const where = ["m.ts_id = $1"];
+    if (startDate) {
+      params.push(startDate);
+      where.push(`m.datetime::date >= $${params.length}::date`);
+    }
+    if (endDate) {
+      params.push(endDate);
+      where.push(`m.datetime::date <= $${params.length}::date`);
+    }
+
+    const rows = await this.query<{ period: string; value: number | string | null; n: number | string }>(
+      `
+      SELECT
+        date_trunc($2, m.datetime::timestamp)::date::text AS period,
+        AVG(m.value)::double precision AS value,
+        COUNT(*)::int AS n
+      FROM core.measurements m
+      WHERE ${where.join(" AND ")}
+      GROUP BY 1
+      ORDER BY 1
+      `,
+      params
+    );
+
+    return rows.map((row) => ({
+      date: toDateKey(row.period),
+      value: toNumber(row.value),
+      n: Number(row.n || 0),
+    }));
+  }
+
+  private async loadSubbasinStatsFromCatalogMeasurements(
+    subbasinStationId: number,
+    runId: number,
+    startDate?: string,
+    endDate?: string
+  ): Promise<ErosionSeriesStats | null> {
+    const tsId = await this.resolveSubbasinCatalogTsId(subbasinStationId, runId);
+    if (tsId == null) return null;
+
+    const params: unknown[] = [tsId];
+    const where = ["m.ts_id = $1"];
+    if (startDate) {
+      params.push(startDate);
+      where.push(`m.datetime::date >= $${params.length}::date`);
+    }
+    if (endDate) {
+      params.push(endDate);
+      where.push(`m.datetime::date <= $${params.length}::date`);
+    }
+
+    return this.queryOne<ErosionSeriesStats>(
+      `
+      SELECT
+        MIN(m.value)::double precision AS min_value,
+        MAX(m.value)::double precision AS max_value,
+        AVG(m.value)::double precision AS avg_value,
+        SUM(m.value)::double precision AS sum_value,
+        COUNT(*)::int AS n_points,
+        MIN(m.datetime)::date::text AS min_date,
+        MAX(m.datetime)::date::text AS max_date
+      FROM core.measurements m
+      WHERE ${where.join(" AND ")};
+      `,
+      params
+    );
   }
 }
 

@@ -18,16 +18,11 @@ import { Download, FileText, Search } from "lucide-react";
 import { CircleMarker, MapContainer, Polygon, TileLayer } from "react-leaflet";
 import { siltationApi, type BathymetryCampaignsResponse, type SiltationAvailabilityResponse, type SiltationEvolutionRow, type SiltationHsvRow, type SiltationSummaryResponse } from "@/api/siltation";
 import { fetchProjectHassanAddakhil } from "@/api/spatial";
-import { ChartModeSelect } from "@/components/charts/ChartModeSelect";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import type { ChartDisplayMode } from "@/types/chart";
-import { BATHY_PERIOD_DEFINITIONS } from "@/constants/bathymetryCampaigns";
-import {
-  hasStrictlyPositiveValues,
-  transformSeriesForDisplayMode,
-} from "@/lib/chartDisplayMode";
+import { BATHY_HAD_NORMAL_LEVEL_M, BATHY_PERIOD_DEFINITIONS } from "@/constants/bathymetryCampaigns";
+import { rechartsXAxisBottomLabel, RECHARTS_X_AXIS_BOTTOM } from "@/lib/chartLayout";
 
 type DamMapData = {
   basinCoords: [number, number][];
@@ -73,6 +68,14 @@ const CircleMarkerUnsafe = CircleMarker as unknown as ComponentType<any>;
 function fmt(value: number | null | undefined, digits = 2): string {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return "-";
   return new Intl.NumberFormat("fr-FR", { maximumFractionDigits: digits }).format(Number(value));
+}
+
+function fmtFixed(value: number | null | undefined, digits = 2): string {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return "-";
+  return new Intl.NumberFormat("fr-FR", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(Number(value));
 }
 
 function finiteNumber(value: unknown): number | null {
@@ -137,8 +140,6 @@ export function RecapitulatifEnvasement() {
   const [sortKey, setSortKey] = useState<"campaign_year" | "level_m" | "surface_km2" | "volume_mhm3">("campaign_year");
   const [sortAsc, setSortAsc] = useState(true);
   const [page, setPage] = useState(1);
-  const [hsvDisplayMode, setHsvDisplayMode] = useState<ChartDisplayMode>("normal");
-  const [evolutionDisplayMode, setEvolutionDisplayMode] = useState<ChartDisplayMode>("normal");
 
   useEffect(() => {
     let active = true;
@@ -203,6 +204,13 @@ export function RecapitulatifEnvasement() {
 
   const campaigns = campaignYears;
 
+  const normalLevelM = useMemo(() => {
+    const apiNormalLevel = finiteNumber(bathyCampaigns?.normal_level_m);
+    if (apiNormalLevel !== null) return apiNormalLevel;
+    const campaignNormalLevel = finiteNumber(bathyCampaigns?.campaigns?.[0]?.normal_level_m);
+    return campaignNormalLevel ?? BATHY_HAD_NORMAL_LEVEL_M;
+  }, [bathyCampaigns]);
+
   const campaignColors = useMemo(() => {
     const map = new Map<number, string>();
     campaigns.forEach((year, index) => {
@@ -212,66 +220,88 @@ export function RecapitulatifEnvasement() {
   }, [campaigns]);
 
   const hsvChartData = useMemo(() => {
-    const byLevel = new Map<number, HsvChartPoint>();
+    const EPSILON = 1e-9;
+    const byCampaign = new Map<number, Array<{ level: number; volume: number }>>();
 
     displayHsv.forEach((row) => {
-      const level = finiteNumber(row.level_m);
       const year = finiteNumber(row.campaign_year);
+      const level = finiteNumber(row.level_m);
       const volume = finiteNumber(row.volume_mhm3);
-      if (level === null || year === null || volume === null) return;
+      if (year === null || level === null || volume === null) return;
+      const values = byCampaign.get(year) ?? [];
+      values.push({ level, volume });
+      byCampaign.set(year, values);
+    });
 
-      const current = byLevel.get(level) ?? { level_m: level };
-      current[`campaign_${year}`] = volume;
-      byLevel.set(level, current);
+    const byLevel = new Map<number, HsvChartPoint>();
+
+    byCampaign.forEach((campaignRows, year) => {
+      const sorted = [...campaignRows].sort((a, b) => a.level - b.level);
+      if (!sorted.length) return;
+
+      const filteredAtNormal = sorted.filter((row) => row.level <= normalLevelM + EPSILON);
+      let normalLevelVolume: number | null = null;
+
+      for (let index = 0; index < sorted.length - 1; index += 1) {
+        const start = sorted[index];
+        const end = sorted[index + 1];
+
+        if (Math.abs(start.level - normalLevelM) <= EPSILON) {
+          normalLevelVolume = start.volume;
+          break;
+        }
+        if (Math.abs(end.level - normalLevelM) <= EPSILON) {
+          normalLevelVolume = end.volume;
+          break;
+        }
+
+        if (normalLevelM > start.level && normalLevelM < end.level) {
+          const ratio = (normalLevelM - start.level) / (end.level - start.level);
+          normalLevelVolume = start.volume + ratio * (end.volume - start.volume);
+          break;
+        }
+      }
+
+      const clipped = filteredAtNormal.filter(
+        (row) => Math.abs(row.level - normalLevelM) > EPSILON
+      );
+      if (normalLevelVolume !== null) {
+        clipped.push({ level: normalLevelM, volume: normalLevelVolume });
+      }
+
+      clipped.forEach((row) => {
+        const current = byLevel.get(row.level) ?? { level_m: row.level };
+        current[`campaign_${year}`] = row.volume;
+        byLevel.set(row.level, current);
+      });
     });
 
     return Array.from(byLevel.values()).sort((a, b) => Number(a.level_m) - Number(b.level_m));
-  }, [displayHsv]);
+  }, [displayHsv, normalLevelM]);
 
   const hsvVolumeMax = useMemo(() => {
     const max = displayHsv.reduce((acc, row) => {
       const volume = finiteNumber(row.volume_mhm3);
       return volume === null ? acc : Math.max(acc, volume);
     }, 0);
-    return Math.max(560, Math.ceil(max / 50) * 50);
+    return Math.max(100, Math.ceil(max / 50) * 50);
   }, [displayHsv]);
 
   const hsvLevelRange = useMemo(() => {
-    const levels = displayHsv
+    const levels = hsvChartData
       .map((row) => finiteNumber(row.level_m))
       .filter((value): value is number => value !== null);
 
-    if (!levels.length) return { min: 1070, max: 1132 };
+    if (!levels.length) return { min: 1070, max: normalLevelM };
 
     const range = minMaxFinite(levels);
-    if (range.min === null || range.max === null) return { min: 1070, max: 1132 };
+    if (range.min === null || range.max === null) return { min: 1070, max: normalLevelM };
 
     return {
       min: Math.min(1070, Math.floor(range.min)),
-      max: Math.max(1132, Math.ceil(range.max)),
+      max: normalLevelM,
     };
-  }, [displayHsv]);
-
-  const hsvTransformed = useMemo(
-    () =>
-      transformSeriesForDisplayMode({
-        mode: hsvDisplayMode,
-        rows: hsvChartData,
-        xKey: "level_m",
-        valueKeys: campaigns.map((campaign) => `campaign_${campaign}`),
-        normalLabel: "Cote (m)",
-      }),
-    [campaigns, hsvChartData, hsvDisplayMode]
-  );
-
-  const hsvHasLoggableValues = useMemo(
-    () =>
-      hasStrictlyPositiveValues(
-        hsvChartData as Array<Record<string, unknown>>,
-        campaigns.map((campaign) => `campaign_${campaign}`)
-      ),
-    [campaigns, hsvChartData]
-  );
+  }, [hsvChartData, normalLevelM]);
 
   const sortedRows = useMemo(() => {
     const filtered = displayHsv.filter((row) => {
@@ -316,27 +346,6 @@ export function RecapitulatifEnvasement() {
     const max = evolutionPeriodData.reduce((acc, row) => Math.max(acc, row.volume_silted_mhm3), 0);
     return Math.max(10, Math.ceil(max / 10) * 10);
   }, [evolutionPeriodData]);
-
-  const evolutionChartTransformed = useMemo(
-    () =>
-      transformSeriesForDisplayMode({
-        mode: evolutionDisplayMode,
-        rows: evolutionPeriodData,
-        xKey: "period",
-        valueKeys: ["volume_silted_mhm3"],
-        normalLabel: "Periode",
-      }),
-    [evolutionDisplayMode, evolutionPeriodData]
-  );
-
-  const evolutionHasLoggableValues = useMemo(
-    () =>
-      hasStrictlyPositiveValues(
-        evolutionPeriodData as Array<Record<string, unknown>>,
-        ["volume_silted_mhm3"]
-      ),
-    [evolutionPeriodData]
-  );
 
   const hsvAvailabilityMessage = useMemo(() => {
     if (!campaigns.length) return null;
@@ -415,51 +424,28 @@ export function RecapitulatifEnvasement() {
             <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.2fr_0.8fr]">
               <Card className="border">
                 <CardHeader className="py-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <CardTitle className="text-sm">Courbes HSV (Volume vs Cote)</CardTitle>
-                    <ChartModeSelect value={hsvDisplayMode} onValueChange={setHsvDisplayMode} />
-                  </div>
+                  <CardTitle className="text-sm">Courbes HSV (Volume vs Cote)</CardTitle>
                 </CardHeader>
                 <CardContent className="h-[320px]">
-                  {hsvDisplayMode === "logarithmic" && hsvTransformed.excludedForLog > 0 ? (
-                    <p className="mb-2 text-xs text-muted-foreground">
-                      Les valeurs inferieures ou egales a 0 sont exclues en mode logarithmique.
-                    </p>
-                  ) : null}
-                  {hsvDisplayMode === "logarithmic" && !hsvHasLoggableValues && hsvChartData.length ? (
-                    <p className="mb-2 text-xs text-amber-700">
-                      Mode logarithmique impossible : aucune valeur strictement positive.
-                    </p>
-                  ) : null}
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={hsvTransformed.data} margin={{ top: 34, right: 18, left: 8, bottom: 18 }}>
+                    <LineChart data={hsvChartData} margin={{ top: 34, right: 18, left: 8, bottom: 32 }}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis
-                        dataKey={hsvTransformed.xKey}
+                        dataKey="level_m"
                         name="Cote"
                         type="number"
-                        domain={hsvTransformed.xKey === "probability" ? [0, 100] : [hsvLevelRange.min, hsvLevelRange.max]}
+                        domain={[hsvLevelRange.min, hsvLevelRange.max]}
                         tick={{ fontSize: 11 }}
-                        tickFormatter={(value) =>
-                          hsvTransformed.xKey === "probability"
-                            ? `${Number(value).toFixed(0)}%`
-                            : fmt(Number(value), 0)
-                        }
-                        label={{ value: hsvTransformed.xLabel, position: "insideBottom", offset: -12 }}
+                        tickFormatter={(value) => fmt(Number(value), 0)}
+                        {...RECHARTS_X_AXIS_BOTTOM}
+                        label={rechartsXAxisBottomLabel("Cote (m)")}
                       />
                       <YAxis
-                        domain={hsvDisplayMode === "logarithmic" ? ["auto", "auto"] : [0, hsvVolumeMax]}
-                        scale={hsvDisplayMode === "logarithmic" ? "log" : "auto"}
+                        domain={[0, hsvVolumeMax]}
                         tick={{ fontSize: 11 }}
                         label={{ value: "Volume (Mm3)", angle: -90, position: "insideLeft" }}
                       />
-                      <Tooltip
-                        labelFormatter={(value) =>
-                          hsvTransformed.xKey === "probability"
-                            ? `Probabilite de depassement: ${Number(value).toFixed(2)}%`
-                            : `Cote ${fmt(Number(value), 2)} m`
-                        }
-                      />
+                      <Tooltip labelFormatter={(value) => `Cote ${fmtFixed(Number(value), 2)} m`} />
                       <Legend
                         verticalAlign="top"
                         align="center"
@@ -517,63 +503,13 @@ export function RecapitulatifEnvasement() {
                 <CardTitle className="text-sm">Évolution de l'envasement du barrage (Ve) - Somme par période</CardTitle>
               </CardHeader>
               <CardContent className="h-[320px]">
-                <div className="mb-2 flex justify-end">
-                  <ChartModeSelect value={evolutionDisplayMode} onValueChange={setEvolutionDisplayMode} />
-                </div>
-                {evolutionDisplayMode === "logarithmic" && evolutionChartTransformed.excludedForLog > 0 ? (
-                  <p className="mb-2 text-xs text-muted-foreground">
-                    Les valeurs inferieures ou egales a 0 sont exclues en mode logarithmique.
-                  </p>
-                ) : null}
-                {evolutionDisplayMode === "logarithmic" &&
-                !evolutionHasLoggableValues &&
-                evolutionPeriodData.length ? (
-                  <p className="mb-2 text-xs text-amber-700">
-                    Mode logarithmique impossible : aucune valeur strictement positive.
-                  </p>
-                ) : null}
                 <div className="h-full rounded-md border border-slate-100 p-3" style={evolutionBackgroundStyle}>
                   <ResponsiveContainer width="100%" height="100%">
-                    {evolutionDisplayMode === "fdc" ? (
-                      <LineChart data={evolutionChartTransformed.data} margin={{ top: 12, right: 18, left: 10, bottom: 22 }}>
-                        <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#cbd5e1" opacity={0.7} />
-                        <XAxis
-                          dataKey={evolutionChartTransformed.xKey}
-                          type="number"
-                          domain={[0, 100]}
-                          tickLine={false}
-                          axisLine={{ stroke: "#64748b" }}
-                          tick={{ fontSize: 12, fontWeight: 600, fill: "#0f172a" }}
-                          tickFormatter={(value) => `${Number(value).toFixed(0)}%`}
-                          label={{ value: evolutionChartTransformed.xLabel, position: "insideBottom", offset: -14 }}
-                        />
-                        <YAxis
-                          tickLine={false}
-                          axisLine={false}
-                          tick={{ fontSize: 12, fill: "#475569" }}
-                          tickFormatter={(value) => fmt(Number(value), 0)}
-                          label={{ value: "Volume envasÃ© (Mm3)", angle: -90, position: "insideLeft" }}
-                        />
-                        <Tooltip
-                          labelFormatter={(value) => `Probabilite de depassement: ${Number(value).toFixed(2)}%`}
-                          formatter={evolutionTooltipFormatter}
-                        />
-                        <Legend />
-                        <Line
-                          type="monotone"
-                          dataKey="volume_silted_mhm3"
-                          name="Volume envasÃ© (Mm3)"
-                          stroke="#0f3d91"
-                          strokeWidth={2.5}
-                          dot={false}
-                        />
-                      </LineChart>
-                    ) : (
-                      <BarChart
-                        data={evolutionChartTransformed.data}
-                        margin={{ top: 28, right: 18, left: 10, bottom: 22 }}
-                        barCategoryGap="18%"
-                      >
+                    <BarChart
+                      data={evolutionPeriodData}
+                      margin={{ top: 28, right: 18, left: 10, bottom: 48 }}
+                      barCategoryGap="18%"
+                    >
                       <defs>
                         {EVOLUTION_BAR_GRADIENTS.map((gradient, index) => (
                           <linearGradient
@@ -591,16 +527,16 @@ export function RecapitulatifEnvasement() {
                       </defs>
                       <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#cbd5e1" opacity={0.7} />
                       <XAxis
-                        dataKey={evolutionChartTransformed.xKey}
+                        dataKey="period"
                         interval={0}
                         tickLine={false}
                         axisLine={{ stroke: "#64748b" }}
                         tick={{ fontSize: 12, fontWeight: 600, fill: "#0f172a" }}
-                        label={{ value: "Période", position: "insideBottom", offset: -14 }}
+                        {...RECHARTS_X_AXIS_BOTTOM}
+                        label={rechartsXAxisBottomLabel("Période")}
                       />
                       <YAxis
-                        domain={evolutionDisplayMode === "logarithmic" ? ["auto", "auto"] : [0, evolutionMax]}
-                        scale={evolutionDisplayMode === "logarithmic" ? "log" : "auto"}
+                        domain={[0, evolutionMax]}
                         tickLine={false}
                         axisLine={false}
                         tick={{ fontSize: 12, fill: "#475569" }}
@@ -633,7 +569,6 @@ export function RecapitulatifEnvasement() {
                         />
                       </Bar>
                     </BarChart>
-                    )}
                   </ResponsiveContainer>
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">

@@ -16,6 +16,8 @@ import { timeseriesApi } from "@/api/timeseries";
 import { buildChartImageFileName, downloadChartAsImage } from "@/lib/chartExport";
 import { ChartExportMenu } from "@/components/charts/ChartExportMenu";
 import type { ChartDisplayMode } from "@/types/chart";
+import { usesLogarithmicYAxis } from "@/lib/chartDisplayMode";
+import { RECHARTS_LEGEND_BOTTOM, RECHARTS_MARGIN_STANDARD, RECHARTS_X_AXIS_BOTTOM } from "@/lib/chartLayout";
 import {
   Select,
   SelectContent,
@@ -323,7 +325,7 @@ export function MultiScenarioTimeSeriesChart({
       const key = `run_${runId}`;
       const values = baseChartData
         .map((row: any) => row[key])
-        .filter((value: any): value is number => typeof value === "number" && Number.isFinite(value))
+        .filter((value: any): value is number => typeof value === "number" && Number.isFinite(value) && value > 0)
         .sort((a, b) => b - a);
       return { key, values };
     });
@@ -421,14 +423,14 @@ export function MultiScenarioTimeSeriesChart({
       </div>
 
       <div className="hydro-card-body">
-        {displayMode === "logarithmic" && transformed.excludedForLog > 0 ? (
+        {usesLogarithmicYAxis(displayMode) && transformed.excludedForLog > 0 ? (
           <div className="mb-2 text-xs text-muted-foreground">
             Les valeurs ≤ 0 sont exclues en mode logarithmique.
           </div>
         ) : null}
         <div ref={chartRef} className={chartHeightClassName}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={transformed.data} margin={{ top: 20, right: 30, left: 20, bottom: 40 }}>
+            <LineChart data={transformed.data} margin={RECHARTS_MARGIN_STANDARD}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
               <XAxis
                 dataKey={transformed.xKey}
@@ -439,8 +441,8 @@ export function MultiScenarioTimeSeriesChart({
                 }
                 tick={{ fontSize: 11 }}
                 minTickGap={20}
-                tickMargin={12}
-                height={52}
+                tickMargin={RECHARTS_X_AXIS_BOTTOM.tickMargin}
+                height={RECHARTS_X_AXIS_BOTTOM.height}
                 stroke="hsl(var(--muted-foreground))"
               />
               <YAxis
@@ -448,11 +450,11 @@ export function MultiScenarioTimeSeriesChart({
                 tickMargin={8}
                 width={52}
                 stroke="hsl(var(--muted-foreground))"
-                scale={displayMode === "logarithmic" ? "log" : "auto"}
+                scale={usesLogarithmicYAxis(displayMode) ? "log" : "auto"}
                 domain={["auto", "auto"]}
               />
               <Tooltip allowEscapeViewBox={{ x: true, y: true }} wrapperStyle={{ zIndex: 50 }} />
-              <Legend wrapperStyle={{ fontSize: "12px" }} />
+              <Legend {...RECHARTS_LEGEND_BOTTOM} />
               {uniqueRunIds.map((runId, i) => (
                 <Line
                   key={`run-${runId}`}

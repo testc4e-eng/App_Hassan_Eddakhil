@@ -1,30 +1,3 @@
--- Verification des campagnes officielles Hassan Addakhil
--- Campagnes attendues: 1990, 1999, 2004, 2008, 2014, 2022
-
-SELECT
-  campaign_year,
-  COUNT(*) AS hsv_points,
-  MIN(level_m) AS cote_min,
-  MAX(level_m) AS cote_max,
-  MAX(volume_mhm3) AS volume_max_mhm3
-FROM hydro.siltation_hsv
-WHERE dam_code = 'HASSAN_ADDAKHIL'
-GROUP BY campaign_year
-ORDER BY campaign_year;
-
-SELECT
-  CASE
-    WHEN campaign_year = 2014 THEN 'OK - campagne 2014 presente'
-    ELSE 'autre campagne'
-  END AS statut_2014,
-  COUNT(*) AS points
-FROM hydro.siltation_hsv
-WHERE dam_code = 'HASSAN_ADDAKHIL'
-  AND campaign_year = 2014
-GROUP BY campaign_year;
-
-SELECT year, annual_silted_mhm3, cumulative_silted_mhm3
-FROM hydro.siltation_evolution
-WHERE dam_code = 'HASSAN_ADDAKHIL'
-  AND year IN (1990, 1999, 2004, 2008, 2014, 2022, 2000, 2005, 2009)
-ORDER BY year;
+version https://git-lfs.github.com/spec/v1
+oid sha256:3f8a7c5261c5b0a706415fd4cdb1bdf4c218c3286f716182e5cbf7bd498095c9
+size 836

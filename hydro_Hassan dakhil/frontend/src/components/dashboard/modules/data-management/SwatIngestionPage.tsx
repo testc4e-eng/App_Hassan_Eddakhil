@@ -12,9 +12,9 @@ import { IngestionPageShell } from "./IngestionPageShell";
 type ImportMode = "skipAccess" | "import" | "reload" | "preview";
 
 const SWAT_VARIABLES = [
-  "SWAT Flow Out (FLOW_OUT / flow_m3s)",
-  "SWAT Sediment Out (SED_OUT / sed_tons)",
-  "SWAT Sediment Yield (SYLDT_HA / syldt_ha)",
+  "SWAT Débits m³/s (FLOW_OUT / flow_m3s)",
+  "SWAT Sediment (t) (SED_OUT / sed_tons)",
+  "SWAT Dégradation spécifique (t/ha) (SYLDT_HA / syldt_ha)",
 ];
 
 function buildAuditReport(

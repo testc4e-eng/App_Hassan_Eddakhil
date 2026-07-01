@@ -54,13 +54,13 @@ export type ReachVariableDef = {
 
 /** Liste métier fixe pour un reach — ne jamais filtrer selon l'API. */
 export const REACH_VARIABLE_DEFS: ReachVariableDef[] = [
-  { code: "SED_OUT", label: "SED_OUT simulé" },
-  { code: "FLOW_OUT", label: "FLOW_OUT simulé" },
+  { code: "SED_OUT", label: "Sediment (t)" },
+  { code: "FLOW_OUT", label: "Débits m³/s" },
 ];
 
 export const SUBBASIN_VARIABLE = {
   code: "SYLDT",
-  label: "SYLDT simulé",
+  label: "Dégradation spécifique (t/ha)",
 } as const;
 
 export const SPATIAL_SCENARIO_OPTIONS = NORMALIZED_SWAT_SCENARIOS.map((item) => ({

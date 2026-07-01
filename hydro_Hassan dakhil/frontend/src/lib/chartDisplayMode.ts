@@ -22,6 +22,10 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+export function usesLogarithmicYAxis(mode: ChartDisplayMode): boolean {
+  return mode === "logarithmic" || mode === "fdc";
+}
+
 export function hasStrictlyPositiveValues(
   rows: ChartRow[],
   valueKeys: readonly string[]
@@ -77,18 +81,21 @@ export function transformSeriesForDisplayMode<T extends ChartRow, K extends stri
     key,
     values: rows
       .map((row) => row[key])
-      .filter(isFiniteNumber)
+      .filter((value): value is number => isFiniteNumber(value) && value > 0)
       .sort((a, b) => b - a),
   }));
   const maxLen = Math.max(0, ...seriesByKey.map((series) => series.values.length));
   const data: Array<T & { probability?: number }> = [];
+  let excludedForLog = 0;
 
   for (let index = 0; index < maxLen; index += 1) {
     const probability = Number((((index + 1) / (maxLen + 1)) * 100).toFixed(2));
     const row: Record<string, unknown> = { probability };
 
     for (const series of seriesByKey) {
-      row[series.key] = series.values[index] ?? null;
+      const value = series.values[index] ?? null;
+      row[series.key] = value;
+      if (value === null) excludedForLog += 1;
     }
 
     data.push(row as T & { probability?: number });
@@ -98,6 +105,6 @@ export function transformSeriesForDisplayMode<T extends ChartRow, K extends stri
     data,
     xKey: "probability",
     xLabel: fdcLabel,
-    excludedForLog: 0,
+    excludedForLog,
   };
 }

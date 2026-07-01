@@ -1190,9 +1190,9 @@ export class SpatialService {
 
     const variable = String(args.variable || "SED_OUT").toUpperCase();
     const mapping: Record<string, { key: keyof ReachTimeseriesRow; unit: string; label: string }> = {
-      SED_OUT: { key: "sed_out_tons", unit: "tons", label: "SED_OUT" },
+      SED_OUT: { key: "sed_out_tons", unit: "tons", label: "Sediment (t)" },
       SED_IN: { key: "sed_in_tons", unit: "tons", label: "SED_IN" },
-      FLOW_OUT: { key: "flow_out_cms", unit: "m3/s", label: "FLOW_OUT" },
+      FLOW_OUT: { key: "flow_out_cms", unit: "m3/s", label: "Débits m³/s" },
       FLOW_IN: { key: "flow_in_cms", unit: "m3/s", label: "FLOW_IN" },
     };
     const selected = mapping[variable] || mapping.SED_OUT;

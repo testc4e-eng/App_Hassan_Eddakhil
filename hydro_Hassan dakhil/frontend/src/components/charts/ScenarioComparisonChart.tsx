@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { FilterState } from "@/types/hydro";
 import { useHydroData } from "@/contexts/HydroDataContext";
+import { resolveSwatScenarioLabel } from "@/constants/swatScenarios";
 import { MultiScenarioTimeSeriesChart } from "@/components/charts/MultiScenarioTimeSeriesChart";
 import type { ChartDisplayMode } from "@/types/chart";
 
@@ -33,7 +34,10 @@ export function ScenarioComparisonChart({
     const map = new Map<number, string>();
     for (const id of compareRunIds) {
       const run = runs.find((item) => item.run_id === id);
-      map.set(id, run?.scenario_name || run?.scenario_code || `Run ${id}`);
+      map.set(
+        id,
+        resolveSwatScenarioLabel(run?.scenario_code, run?.scenario_name, id) || `Run ${id}`
+      );
     }
     return map;
   }, [compareRunIds, runs]);

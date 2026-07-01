@@ -19,8 +19,17 @@ import { ChartExportMenu } from "@/components/charts/ChartExportMenu";
 import {
   hasStrictlyPositiveValues,
   transformSeriesForDisplayMode,
+  usesLogarithmicYAxis,
 } from "@/lib/chartDisplayMode";
+import { resolveSyldtHaDisplayLabel } from "@/constants/syldtHa";
+import { resolveSedimentDisplayLabel } from "@/constants/sediment";
 import { buildChartImageFileName, downloadChartAsImage } from "@/lib/chartExport";
+import {
+  RECHARTS_LEGEND_BOTTOM,
+  RECHARTS_MARGIN_X_LABEL_LEGEND,
+  RECHARTS_X_AXIS_BOTTOM,
+  rechartsXAxisBottomLabel,
+} from "@/lib/chartLayout";
 import { downsampleSeriesPoints } from "@/lib/downsampleSeries";
 
 import { isAggregationSelectable, type AggInterval } from "@/lib/aggregationAvailability";
@@ -49,6 +58,7 @@ type Props = {
   requestKey: string;
   defaultAggregation?: Aggregation;
   exportBaseName?: string;
+  hideExportControls?: boolean;
   loadSeries: (
     aggregation: Aggregation,
     context?: { signal?: AbortSignal }
@@ -138,7 +148,7 @@ const SpatialInspectorChart = memo(function SpatialInspectorChart({
   return (
     <div className={heightClassName}>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={transformed.data} margin={{ top: 8, right: 16, left: 6, bottom: 18 }}>
+        <LineChart data={transformed.data} margin={RECHARTS_MARGIN_X_LABEL_LEGEND}>
           <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" opacity={0.5} />
           <XAxis
             dataKey={transformed.xKey}
@@ -149,12 +159,13 @@ const SpatialInspectorChart = memo(function SpatialInspectorChart({
             }
             tick={{ fontSize: 11 }}
             minTickGap={20}
-            label={{ value: transformed.xLabel, position: "insideBottom", offset: -10 }}
+            {...RECHARTS_X_AXIS_BOTTOM}
+            label={rechartsXAxisBottomLabel(transformed.xLabel)}
           />
           <YAxis
             tick={{ fontSize: 11 }}
             width={58}
-            scale={mode === "logarithmic" ? "log" : "auto"}
+            scale={usesLogarithmicYAxis(mode) ? "log" : "auto"}
             domain={yDomain}
             allowDataOverflow={false}
             label={{ value: `${variableLabel} (${unit})`, angle: -90, position: "insideLeft" }}
@@ -167,7 +178,7 @@ const SpatialInspectorChart = memo(function SpatialInspectorChart({
             }
             formatter={(value: unknown) => [String(value ?? "-"), `${variableLabel} (${unit})`]}
           />
-          <Legend />
+          <Legend {...RECHARTS_LEGEND_BOTTOM} />
           <Line
             type="monotone"
             dataKey="value"
@@ -187,6 +198,7 @@ export function SpatialTimeseriesPanel({
   requestKey,
   defaultAggregation = "year",
   exportBaseName = "series_spatiale",
+  hideExportControls = false,
   loadSeries,
 }: Props) {
   const chartRef = useRef<HTMLDivElement | null>(null);
@@ -298,7 +310,7 @@ export function SpatialTimeseriesPanel({
   const effectiveStats = response?.stats ?? stats;
 
   const yDomain = useMemo<["auto", "auto"] | [number, number]>(() => {
-    if (mode === "logarithmic") return ["auto", "auto"];
+    if (usesLogarithmicYAxis(mode)) return ["auto", "auto"];
 
     const rawValues = chartSourcePoints
       .map((row) => row.value)
@@ -323,7 +335,10 @@ export function SpatialTimeseriesPanel({
   const tableTruncated = rawPoints.length > TABLE_ROW_LIMIT;
 
   const unit = response?.unit || "-";
-  const variableLabel = response?.variable || "Valeur";
+  const variableLabel = resolveSedimentDisplayLabel(
+    resolveSyldtHaDisplayLabel(response?.variable, response?.variable),
+    response?.variable
+  );
   const chartReady = !loading && !error && transformed.data.length > 0;
 
   const exportCsv = useCallback(() => {
@@ -375,19 +390,23 @@ export function SpatialTimeseriesPanel({
         <div className="text-sm font-semibold text-slate-800">{title}</div>
         <div className="flex flex-wrap items-center gap-2">
           <ChartModeSelect value={mode} onValueChange={setMode} />
-          <ChartExportMenu
-            onExportCsv={exportCsv}
-            onExportPng={exportPng}
-            csvDisabled={!rawPoints.length}
-            pngDisabled={!chartReady}
-          />
-          <Button size="sm" variant="outline" onClick={exportXls} disabled={!rawPoints.length}>
-            <FileSpreadsheet className="mr-1.5 h-3.5 w-3.5" />
-            Excel
-          </Button>
-          <Button size="sm" variant="outline" onClick={exportPdf} disabled={!rawPoints.length}>
-            PDF
-          </Button>
+          {!hideExportControls ? (
+            <>
+              <ChartExportMenu
+                onExportCsv={exportCsv}
+                onExportPng={exportPng}
+                csvDisabled={!rawPoints.length}
+                pngDisabled={!chartReady}
+              />
+              <Button size="sm" variant="outline" onClick={exportXls} disabled={!rawPoints.length}>
+                <FileSpreadsheet className="mr-1.5 h-3.5 w-3.5" />
+                Excel
+              </Button>
+              <Button size="sm" variant="outline" onClick={exportPdf} disabled={!rawPoints.length}>
+                PDF
+              </Button>
+            </>
+          ) : null}
           <Button size="sm" variant="outline" onClick={() => setChartOpen(true)} disabled={!chartReady}>
             <Maximize2 className="mr-1.5 h-3.5 w-3.5" />
             Agrandir
@@ -429,13 +448,13 @@ export function SpatialTimeseriesPanel({
         <div className="py-6 text-sm text-muted-foreground">Aucune donnée disponible pour cet élément.</div>
       ) : null}
 
-      {!loading && !error && mode === "logarithmic" && transformed.excludedForLog > 0 ? (
+      {!loading && !error && usesLogarithmicYAxis(mode) && transformed.excludedForLog > 0 ? (
         <div className="mb-2 text-xs text-muted-foreground">
           Les valeurs ≤ 0 sont exclues en mode logarithmique.
         </div>
       ) : null}
 
-      {!loading && !error && mode === "logarithmic" && !hasStrictlyPositiveValues(rawPoints, ["value"]) && response?.data.length ? (
+      {!loading && !error && usesLogarithmicYAxis(mode) && !hasStrictlyPositiveValues(rawPoints, ["value"]) && response?.data.length ? (
         <div className="mb-2 text-xs text-amber-700">
           Mode logarithmique impossible: aucune valeur strictement positive.
         </div>
@@ -484,7 +503,7 @@ export function SpatialTimeseriesPanel({
         <div className="mb-3 flex justify-end">
           <ChartModeSelect value={mode} onValueChange={setMode} />
         </div>
-        {mode === "logarithmic" && transformed.excludedForLog > 0 ? (
+        {usesLogarithmicYAxis(mode) && transformed.excludedForLog > 0 ? (
           <div className="mb-2 text-xs text-muted-foreground">
             Les valeurs ≤ 0 sont exclues en mode logarithmique.
           </div>

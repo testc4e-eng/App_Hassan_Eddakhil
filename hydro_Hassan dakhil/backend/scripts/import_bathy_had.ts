@@ -4,7 +4,6 @@ import xlsx from "xlsx";
 import db from "../src/config/database.config";
 import {
   BATHY_HAD_NORMAL_LEVEL_M,
-  resolveCampaignYear,
 } from "../src/constants/bathymetryCampaigns";
 
 type Mode = "audit" | "dry-run" | "execute";
@@ -71,14 +70,7 @@ function parseWorkbook(sourceFile: string): ParsedCampaign[] {
     const volume = toFinite(row[1]);
     if (measurementYear === null || measurementYear < 1900 || volume === null) continue;
 
-    const campaignYear = resolveCampaignYear(measurementYear);
-    const metadata: Record<string, unknown> = {};
-    if (campaignYear !== measurementYear) {
-      metadata.measurement_year_excel = measurementYear;
-      metadata.campaign_year_display = campaignYear;
-      metadata.mapping_note =
-        "Le fichier Excel porte l'annee de mesure 2013 ; l'application conserve la campagne 2014 conformement au referentiel bathymetrique du barrage.";
-    }
+    const campaignYear = measurementYear;
 
     parsedRows.push({
       dam_code: "HASSAN_ADDAKHIL",
@@ -93,7 +85,7 @@ function parseWorkbook(sourceFile: string): ParsedCampaign[] {
       source_file: sourceFile,
       source_sheet: sheetName,
       source_row: index + 1,
-      metadata,
+      metadata: {},
     });
   }
 

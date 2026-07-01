@@ -10,7 +10,10 @@ import {
   NORMALIZED_SWAT_SCENARIOS,
   NORMALIZED_SWAT_SCENARIO_ORDER,
   isNormalizedSwatScenarioCode,
+  resolveSwatScenarioLabel,
 } from "@/constants/swatScenarios";
+import { resolveSyldtHaDisplayLabel } from "@/constants/syldtHa";
+import { resolveSedimentDisplayLabel } from "@/constants/sediment";
 import {
   isModulePropertyVisibleForModule,
   isVariableVisibleForModule,
@@ -21,6 +24,7 @@ import {
   extractSelectNumericPart,
 } from "@/lib/selectOptions";
 import { cleanStationLabel } from "@/lib/stationLabels";
+import { isHassanAddakhilStationId } from "@/constants/projectStations";
 import {
   selectableAggregationModes,
   AGGREGATION_PRIORITY,
@@ -125,6 +129,30 @@ function areEquivalentHydroVariables(a?: string | null, b?: string | null) {
   return flowNames.has(left) && flowNames.has(right);
 }
 
+function normalizeVariableToken(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isHydroSimulatedFlowVariable(option: {
+  variable_code: string;
+  name: string;
+}) {
+  const code = normalizeVariableToken(String(option.variable_code || ""));
+  const name = normalizeVariableToken(String(option.name || ""));
+  if (code === "swat_flow_m3s" || code === "streamflow") return true;
+  return (
+    name.includes("debit simule") ||
+    name.includes("debit simul") ||
+    name.includes("debit simule (m3/s)") ||
+    name.includes("debit simulé (m3/s)")
+  );
+}
+
 export function FilterBar({
   moduleCode,
   filters,
@@ -180,7 +208,8 @@ export function FilterBar({
       if (moduleCode === "hydro" && isSwatSyntheticStation(row)) continue;
       if (selectedRunId && Number(row.run_id) !== selectedRunId) continue;
       const stationId = Number(row.station_id);
-      if (Number.isFinite(stationId)) availableIds.add(stationId);
+      if (!Number.isFinite(stationId) || !isHassanAddakhilStationId(stationId)) continue;
+      availableIds.add(stationId);
     }
 
     return deduplicateSelectOptions(
@@ -238,7 +267,6 @@ export function FilterBar({
       if (!Number.isFinite(runId) || map.has(runId)) continue;
 
       const scenarioCode = String(row.scenario_code || runById.get(runId)?.scenario_code || runId);
-      const normalized = NORMALIZED_SWAT_SCENARIOS.find((scenario) => scenario.code === scenarioCode);
       const fromCatalog = runById.get(runId);
       map.set(runId, {
         run_id: runId,
@@ -246,7 +274,11 @@ export function FilterBar({
         scenario_name:
           scenarioCode === "OBSERVED"
             ? t("filters.sourceObserved")
-            : normalized?.label || String(row.scenario_name || fromCatalog?.scenario_name || scenarioCode),
+            : resolveSwatScenarioLabel(
+                scenarioCode,
+                String(row.scenario_name || fromCatalog?.scenario_name || scenarioCode),
+                runId
+              ),
         source_type: String(row.source_type || (fromCatalog?.is_observed ? "observed" : "simulated")) as
           | "observed"
           | "simulated",
@@ -417,7 +449,7 @@ export function FilterBar({
       runId: undefined,
       compareRunIds: [],
       compareWindow: "union",
-      variables: [],
+      variables: moduleCode === "hydro" ? (filters.variables || []) : [],
       startDate: EMPTY_DATE,
       endDate: EMPTY_DATE,
       resolution: "day",
@@ -438,7 +470,15 @@ export function FilterBar({
       const variableCode = String(
         r.standard_name ?? r.property_code ?? r.property_name ?? `property_${propertyId}`
       );
-      const name = String(r.property_name ?? r.name ?? `Variable ${propertyId}`);
+      const name = resolveSedimentDisplayLabel(
+        resolveSyldtHaDisplayLabel(
+          String(r.property_name ?? r.name ?? `Variable ${propertyId}`),
+          variableCode,
+          r.standard_name
+        ),
+        variableCode,
+        r.standard_name
+      );
       const unit = r.unit ?? null;
       const value = makeVariableSelectValue(moduleCode, {
         property_id: propertyId,
@@ -476,7 +516,15 @@ export function FilterBar({
         return {
           property_id: Number(p.property_id),
           variable_code: variableCode,
-          name: String(p.name || `Variable ${p.property_id}`),
+          name: resolveSedimentDisplayLabel(
+            resolveSyldtHaDisplayLabel(
+              String(p.name || `Variable ${p.property_id}`),
+              variableCode,
+              p.standard_name
+            ),
+            variableCode,
+            p.standard_name
+          ),
           unit: p.unit ?? null,
           key: value,
           value,
@@ -688,6 +736,7 @@ export function FilterBar({
   useEffect(() => {
     if (!selectedStationId || !selectedRunId) return;
     if (!variableOptions.length) {
+      if (moduleCode === "hydro") return;
       if (selectedVarId !== undefined) {
         onFiltersChange({
           ...filters,
@@ -703,12 +752,43 @@ export function FilterBar({
 
     if (currentIsValid) return;
 
+    const preferredByIdentity = variableOptions.find((option) => {
+      if (!selectedVariableIdentity) return false;
+      if (Number(option.property_id) === Number(selectedVariableIdentity.propertyId)) return true;
+      const optionCode = String(option.variable_code || "");
+      const optionName = String(option.name || "");
+      return (
+        (selectedVariableIdentity.standardName &&
+          (optionCode === selectedVariableIdentity.standardName ||
+            (moduleCode === "hydro" &&
+              areEquivalentHydroVariables(optionCode, selectedVariableIdentity.standardName)))) ||
+        (selectedVariableIdentity.propertyName &&
+          optionName === selectedVariableIdentity.propertyName)
+      );
+    });
+    const preferredHydroFlow =
+      moduleCode === "hydro"
+        ? variableOptions.find((option) => isHydroSimulatedFlowVariable(option))
+        : null;
+    const nextVariableId =
+      preferredByIdentity?.property_id ??
+      preferredHydroFlow?.property_id ??
+      variableOptions[0]?.property_id;
+    if (!nextVariableId) return;
+
     onFiltersChange({
       ...filters,
-      variables: [variableOptions[0].property_id],
+      variables: [nextVariableId],
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedStationId, selectedRunId, selectedVarId, variableOptions]);
+  }, [
+    selectedStationId,
+    selectedRunId,
+    selectedVarId,
+    variableOptions,
+    selectedVariableIdentity,
+    moduleCode,
+  ]);
 
   const period = useMemo(() => {
     if (availableRange?.min && availableRange?.max) {
@@ -941,7 +1021,7 @@ export function FilterBar({
       runId,
       compareRunIds: runId !== undefined ? [runId] : [],
       compareWindow: "union",
-      variables: [],
+      variables: filters.variables || [],
       startDate: EMPTY_DATE,
       endDate: EMPTY_DATE,
     });

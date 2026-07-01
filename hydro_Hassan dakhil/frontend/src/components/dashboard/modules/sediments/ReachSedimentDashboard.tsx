@@ -27,15 +27,24 @@ import type { ChartDisplayMode } from "@/types/chart";
 import {
   hasStrictlyPositiveValues,
   transformSeriesForDisplayMode,
+  usesLogarithmicYAxis,
   type DisplayModeTransformResult,
 } from "@/lib/chartDisplayMode";
 import { fetchReachTimeseries, fetchReaches, type Feature, type FeatureCollection } from "@/api/spatial";
 import { NORMALIZED_SWAT_SCENARIOS } from "@/constants/swatScenarios";
+import { SEDIMENT_DISPLAY_LABEL } from "@/constants/sediment";
 import {
   AGGREGATION_PRIORITY,
   isAggregationSelectable,
   resolveSelectableAggregations,
 } from "@/lib/aggregationAvailability";
+import {
+  RECHARTS_LEGEND_BOTTOM,
+  RECHARTS_LEGEND_CUSTOM_WRAPPER_CLASS,
+  RECHARTS_MARGIN_X_LABEL_LEGEND,
+  RECHARTS_X_AXIS_BOTTOM,
+  rechartsXAxisBottomLabel,
+} from "@/lib/chartLayout";
 
 type Interval = "day" | "month" | "year";
 
@@ -208,7 +217,7 @@ function ReachTimeSeriesChart({
 
   return (
     <div className={heightClassName}>
-      {displayMode === "logarithmic" && chartData.excludedForLog > 0 ? (
+      {usesLogarithmicYAxis(displayMode) && chartData.excludedForLog > 0 ? (
         <div className="mb-2 text-xs text-muted-foreground">
           Les valeurs inferieures ou egales a 0 sont exclues en mode logarithmique.
         </div>
@@ -219,7 +228,7 @@ function ReachTimeSeriesChart({
         </div>
       ) : null}
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={chartData.data}>
+        <LineChart data={chartData.data} margin={RECHARTS_MARGIN_X_LABEL_LEGEND}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey={chartData.xKey}
@@ -229,11 +238,12 @@ function ReachTimeSeriesChart({
             tickFormatter={(value) =>
               chartData.xKey === "probability" ? `${Number(value).toFixed(0)}%` : String(value)
             }
-            label={{ value: chartData.xLabel, position: "insideBottom", offset: -10 }}
+            {...RECHARTS_X_AXIS_BOTTOM}
+            label={rechartsXAxisBottomLabel(chartData.xLabel)}
           />
           <YAxis
             tick={{ fontSize: 11 }}
-            scale={displayMode === "logarithmic" ? "log" : "auto"}
+            scale={usesLogarithmicYAxis(displayMode) ? "log" : "auto"}
             domain={["auto", "auto"]}
           />
           <Tooltip
@@ -245,8 +255,9 @@ function ReachTimeSeriesChart({
           />
           {isComparisonMode ? (
             <Legend
+              {...RECHARTS_LEGEND_BOTTOM}
               content={() => (
-                <div className="flex flex-wrap items-center justify-center gap-4 pt-2 text-xs">
+                <div className={RECHARTS_LEGEND_CUSTOM_WRAPPER_CLASS}>
                   {scenarioSeries.map((item, idx) => {
                     const hasData = hasReachSeriesData(item);
                     return (
@@ -269,7 +280,7 @@ function ReachTimeSeriesChart({
               )}
             />
           ) : (
-            <Legend />
+            <Legend {...RECHARTS_LEGEND_BOTTOM} />
           )}
           {isComparisonMode ? (
             plottedSeries.map((item) => {
@@ -291,7 +302,7 @@ function ReachTimeSeriesChart({
             <Line
               type="monotone"
               dataKey="value"
-              name="SYDOUT / SED_OUT (tons)"
+              name={SEDIMENT_DISPLAY_LABEL}
               stroke="#f97316"
               strokeWidth={2}
               dot={false}
@@ -520,7 +531,7 @@ export function ReachSedimentDashboard() {
   const exportCsv = () => {
     if (!exportablePoints.length) return;
     const rows = [
-      ["Date", "Reach", "SYDOUT / SED_OUT", "Scenario"],
+      ["Date", "Reach", SEDIMENT_DISPLAY_LABEL, "Scenario"],
       ...exportablePoints.map((p) => [p.period, p.reach, p.value, p.scenario]),
     ];
     downloadBlob(
@@ -590,7 +601,7 @@ export function ReachSedimentDashboard() {
               </div>
               <div className="space-y-1">
                 <div className="text-xs font-semibold">Variable</div>
-                <div className="flex h-10 items-center rounded-md border bg-muted/30 px-3 text-sm">SYDOUT / SED_OUT (tons)</div>
+                <div className="flex h-10 items-center rounded-md border bg-muted/30 px-3 text-sm">{SEDIMENT_DISPLAY_LABEL}</div>
               </div>
             </div>
 
@@ -675,22 +686,29 @@ export function ReachSedimentDashboard() {
       </div>
 
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between gap-2">
-            <CardTitle className="text-base">
-              Graphique temporel SYDOUT - {selectedReachLabel}
-              {isComparisonMode ? " (comparaison)" : ""}
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <ChartModeSelect value={displayMode} onValueChange={setDisplayMode} />
-              <Button variant="outline" size="sm" onClick={() => setChartOpen(true)}>
-                <Maximize2 className="mr-2 h-4 w-4" />
-                Agrandir
-              </Button>
-            </div>
-          </div>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">
+            Graphique temporel {SEDIMENT_DISPLAY_LABEL} - {selectedReachLabel}
+            {isComparisonMode ? " (comparaison)" : ""}
+          </CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
+            <ChartModeSelect value={displayMode} onValueChange={setDisplayMode} />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setChartOpen(true)}
+              disabled={
+                isComparisonMode
+                  ? comparisonData.length === 0
+                  : (plottedSeries[0]?.points.length ?? 0) === 0
+              }
+            >
+              <Maximize2 className="mr-2 h-4 w-4" />
+              Agrandir
+            </Button>
+          </div>
           {comparisonLoading ? (
             <div className="mb-2 text-xs text-muted-foreground">Chargement des séries scénarios...</div>
           ) : null}
@@ -716,10 +734,14 @@ export function ReachSedimentDashboard() {
       <ExpandableDialog
         open={chartOpen}
         onOpenChange={setChartOpen}
-        title={`Graphique temporel SYDOUT - ${selectedReachLabel}${isComparisonMode ? " - comparaison multi-scénarios" : ""}`}
+        title={`Graphique temporel ${SEDIMENT_DISPLAY_LABEL} - ${selectedReachLabel}${isComparisonMode ? " - comparaison multi-scénarios" : ""}`}
       >
-        <div className="mb-3 flex justify-end">
+        <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
           <ChartModeSelect value={displayMode} onValueChange={setDisplayMode} />
+          <Button variant="outline" size="sm" onClick={() => setChartOpen(true)}>
+            <Maximize2 className="mr-2 h-4 w-4" />
+            Agrandir
+          </Button>
         </div>
         {emptyScenarioAlerts.map((message) => (
           <div
@@ -781,7 +803,7 @@ export function ReachSedimentDashboard() {
                 {!exportablePoints.length ? (
                   <tr>
                     <td colSpan={4} className="px-3 py-4 text-muted-foreground">
-                      Aucune donnée SYDOUT pour cette sélection.
+                      Aucune donnée {SEDIMENT_DISPLAY_LABEL} pour cette sélection.
                     </td>
                   </tr>
                 ) : null}

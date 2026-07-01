@@ -2,6 +2,7 @@
 import { Router, Request, Response } from "express";
 import Database from "../config/database.config";
 import { isStandardNameVisibleForModule } from "../constants/moduleVariables";
+import { filterHassanAddakhilStations, HASSAN_ADDAKHIL_STATION_IDS } from "../constants/projectStations";
 import { erosionSwatSeriesService } from "../services/erosionSwatSeries.service";
 import { hydroSwatSeriesService } from "../services/hydroSwatSeries.service";
 
@@ -76,10 +77,13 @@ router.get("/catalog/availability", async (req: Request, res: Response) => {
          AND mp.module_code = 'hydro'
          AND mp.is_enabled = true
         WHERE c.source_type = 'observed'
+          AND c.station_id = ANY($1::int[])
       `;
 
+      const projectStationIds = [...HASSAN_ADDAKHIL_STATION_IDS];
+
       const [observedResult, simulatedRows] = await Promise.all([
-        pool.query(observedQuery),
+        pool.query(observedQuery, [projectStationIds]),
         hydroSwatSeriesService.getAvailability({
           stationId: stationId ?? undefined,
           scenarioCode:
@@ -116,8 +120,8 @@ router.get("/catalog/availability", async (req: Request, res: Response) => {
 
       return res.json({
         success: true,
-        data: filtered,
-        count: filtered.length,
+        data: filterHassanAddakhilStations(filtered),
+        count: filterHassanAddakhilStations(filtered).length,
       });
     }
 
@@ -149,10 +153,13 @@ router.get("/catalog/availability", async (req: Request, res: Response) => {
          AND mp.module_code = 'erosion'
          AND mp.is_enabled = true
         WHERE c.source_type = 'observed'
+          AND c.station_id = ANY($1::int[])
       `;
 
+      const projectStationIds = [...HASSAN_ADDAKHIL_STATION_IDS];
+
       const [observedResult, simulatedRows] = await Promise.all([
-        pool.query(observedQuery),
+        pool.query(observedQuery, [projectStationIds]),
         erosionSwatSeriesService.getAvailability({
           stationId: stationId ?? undefined,
           scenarioCode:
@@ -189,8 +196,8 @@ router.get("/catalog/availability", async (req: Request, res: Response) => {
 
       return res.json({
         success: true,
-        data: filtered,
-        count: filtered.length,
+        data: filterHassanAddakhilStations(filtered),
+        count: filterHassanAddakhilStations(filtered).length,
       });
     }
 
@@ -234,6 +241,9 @@ router.get("/catalog/availability", async (req: Request, res: Response) => {
       params.push(propertyId);
       where.push(`c.property_id = $${params.length}`);
     }
+
+    params.push([...HASSAN_ADDAKHIL_STATION_IDS]);
+    where.push(`c.station_id = ANY($${params.length}::int[])`);
 
     const sql = `
       WITH station_catalog AS (
@@ -344,8 +354,10 @@ router.get("/catalog/availability", async (req: Request, res: Response) => {
 
     const pool = Database.getPool();
     const { rows } = await pool.query(sql, params);
-    const data = rows.filter((row) =>
-      isStandardNameVisibleForModule(moduleCode, row.standard_name)
+    const data = filterHassanAddakhilStations(
+      rows.filter((row) =>
+        isStandardNameVisibleForModule(moduleCode, row.standard_name)
+      )
     );
 
     res.json({ success: true, data, count: data.length });

@@ -6,6 +6,7 @@ import {
 import {
   NORMALIZED_SWAT_SCENARIOS,
   NORMALIZED_SWAT_SCENARIO_CODES,
+  NORMALIZED_SWAT_SCENARIO_BY_CODE,
   NORMALIZED_SWAT_SCENARIO_BY_RUN_ID,
   type NormalizedSwatScenarioCode,
 } from "../constants/swatScenarios";
@@ -150,7 +151,7 @@ const BASE_VARIABLE_DEFS: HydroVariableDef[] = [
     standard_name: "SWAT_FLOW_M3S",
     name: "Débit simulé",
     unit: "m3/s",
-    description: "SWAT simulated flow out at reach outlet.",
+    description: "SWAT simulated Débits m³/s at reach outlet.",
     source_table: "access.rch_results",
     source_column: "flow_out_cms",
     entity_type: "rch",
@@ -459,7 +460,6 @@ export class HydroSwatSeriesService {
         if (matRows.length) return matRows;
       }
 
-      const accessScenarioCode = await this.resolveAccessScenarioCode("etat_actuel");
       const propertyRows = new Map<number, HydroVariableDef>();
       for (const def of await this.getHydroVariableDefs()) {
         propertyRows.set(def.property_id, def);
@@ -473,9 +473,7 @@ export class HydroSwatSeriesService {
               sim.station_id AS station_id,
               sim.station_code,
               sim.name AS station_name,
-              2::int AS run_id,
-              'etat_actuel'::text AS scenario_code,
-              'Scénario état actuel'::text AS scenario_name,
+              r.scenario_code,
               'daily'::text AS time_step,
               r.period_date,
               r.flow_out_cms
@@ -485,16 +483,14 @@ export class HydroSwatSeriesService {
              AND m.is_active = true
             JOIN core.stations sim
               ON sim.station_id = m.station_id
-            WHERE r.scenario_code = $1
+            WHERE r.scenario_code = ANY($1::text[])
           ),
           grouped AS (
             SELECT
               station_id,
               station_code,
               station_name,
-              run_id,
               scenario_code,
-              scenario_name,
               time_step,
               31::int AS property_id,
               'Débit simulé'::text AS property_name,
@@ -512,18 +508,14 @@ export class HydroSwatSeriesService {
               station_id,
               station_code,
               station_name,
-              run_id,
               scenario_code,
-              scenario_name,
               time_step
           )
           SELECT
             station_id,
             station_code,
             station_name,
-            run_id,
             scenario_code,
-            scenario_name,
             time_step,
             property_id,
             property_name,
@@ -538,7 +530,7 @@ export class HydroSwatSeriesService {
           FROM grouped
           ORDER BY
             station_id,
-            run_id,
+            scenario_code,
             property_id,
             CASE time_step
               WHEN 'daily' THEN 1
@@ -547,22 +539,25 @@ export class HydroSwatSeriesService {
               ELSE 99
             END;
           `,
-          [accessScenarioCode]
+          [CANONICAL_SCENARIOS]
         ),
       ]);
 
       const allRows: HydroAvailabilityRow[] = [];
       const seenKeys = new Set<string>();
       for (const row of results[0]) {
+        const scenarioCode = String(row.scenario_code);
+        const scenarioMeta = NORMALIZED_SWAT_SCENARIO_BY_CODE.get(scenarioCode);
+        if (!scenarioMeta) continue;
         const timeStep = String(row.time_step) as HydroTimeStep;
-        const key = `${row.station_id}:${row.run_id}:${row.property_id}:${timeStep}`;
+        const key = `${row.station_id}:${scenarioMeta.run_id}:${row.property_id}:${timeStep}`;
         if (seenKeys.has(key)) continue;
         seenKeys.add(key);
 
         const def = propertyRows.get(Number(row.property_id));
         if (!def) continue;
         const tsId = this.syntheticTsId(
-          Number(row.run_id),
+          scenarioMeta.run_id,
           Number(row.station_id),
           def.property_id,
           timeStep
@@ -579,9 +574,9 @@ export class HydroSwatSeriesService {
           property_name: def.name,
           unit: def.unit,
           standard_name: def.standard_name,
-          run_id: Number(row.run_id),
-          scenario_code: String(row.scenario_code),
-          scenario_name: String(row.scenario_name),
+          run_id: scenarioMeta.run_id,
+          scenario_code: scenarioMeta.scenario_code,
+          scenario_name: scenarioMeta.scenario_name,
           source_type: "simulated",
           time_step: timeStep,
           n_measures: nPoints,
@@ -601,7 +596,7 @@ export class HydroSwatSeriesService {
         });
       }
 
-      return this.expandVirtualScenarioRows(allRows).sort((a, b) =>
+      return allRows.sort((a, b) =>
         a.station_id - b.station_id ||
         a.run_id - b.run_id ||
         a.property_id - b.property_id

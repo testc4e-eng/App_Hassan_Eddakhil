@@ -771,6 +771,7 @@ function SpatialInspectorPanelComponent({ selection, onClear, className }: Props
               requestKey={panelConfig.requestKey}
               defaultAggregation={panelConfig.defaultAggregation}
               exportBaseName={panelConfig.exportBaseName}
+              hideExportControls
               loadSeries={loadSeries}
             />
           )

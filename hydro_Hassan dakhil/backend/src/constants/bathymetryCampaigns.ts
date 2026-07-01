@@ -4,23 +4,16 @@ export const BATHY_PERIOD_DEFINITIONS = [
   { label: "1990 - 1999", startYear: 1990, endYear: 1999 },
   { label: "1999 - 2004", startYear: 1999, endYear: 2004 },
   { label: "2004 - 2008", startYear: 2004, endYear: 2008 },
-  { label: "2008 - 2014", startYear: 2008, endYear: 2014 },
-  { label: "2014 - 2022", startYear: 2014, endYear: 2022 },
+  { label: "2008 - 2013", startYear: 2008, endYear: 2013 },
+  { label: "2013 - 2022", startYear: 2013, endYear: 2022 },
 ] as const;
 
-/**
- * Le fichier bathy_HAD.xlsx porte l'annee de mesure 2013 pour la campagne
- * intermediaire. L'application conserve l'etiquette 2014 (referentiel campagne ABH).
- */
-export const MEASUREMENT_TO_CAMPAIGN_YEAR: Record<number, number> = {
-  2013: 2014,
-};
-
 export function resolveCampaignYear(measurementYear: number): number {
-  return MEASUREMENT_TO_CAMPAIGN_YEAR[measurementYear] ?? measurementYear;
+  return measurementYear;
 }
 
 export type BathymetryCampaignLike = {
+  measurement_year?: number;
   campaign_year: number;
   silted_since_previous_mhm3?: number | null;
 };
@@ -36,7 +29,7 @@ export function buildPeriodVolumesFromBathymetryCampaigns(
   campaigns: BathymetryCampaignLike[]
 ): BathymetryPeriodVolume[] {
   const byCampaignYear = new Map(
-    campaigns.map((row) => [Number(row.campaign_year), row])
+    campaigns.map((row) => [Number(row.measurement_year ?? row.campaign_year), row])
   );
 
   return BATHY_PERIOD_DEFINITIONS.map((period) => {

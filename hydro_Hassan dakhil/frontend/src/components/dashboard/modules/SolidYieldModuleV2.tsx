@@ -3,7 +3,7 @@ import {
   resolveSelectableAggregations,
   AGGREGATION_PRIORITY,
 } from "@/lib/aggregationAvailability";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import {
   Area,
   CartesianGrid,
@@ -38,20 +38,30 @@ import {
   NORMALIZED_SWAT_SCENARIO_ORDER,
   isNormalizedSwatScenarioCode,
 } from "@/constants/swatScenarios";
+import { SYLDT_HA_DISPLAY_LABEL } from "@/constants/syldtHa";
 import {
   composeSelectValue,
   deduplicateSelectOptions,
   extractSelectNumericPart,
 } from "@/lib/selectOptions";
 import { useHydroData } from "@/contexts/HydroDataContext";
-import { Calendar, Download, RefreshCw } from "lucide-react";
+import { Calendar, Download, Maximize2, RefreshCw } from "lucide-react";
 import { ChartExportMenu } from "@/components/charts/ChartExportMenu";
+import { ExpandableDialog } from "@/components/dashboard/analytics/ExpandableDialog";
 import { buildChartImageFileName, downloadChartAsImage } from "@/lib/chartExport";
 import type { ChartDisplayMode } from "@/types/chart";
 import {
   hasStrictlyPositiveValues,
   transformSeriesForDisplayMode,
+  usesLogarithmicYAxis,
+  type DisplayModeTransformResult,
 } from "@/lib/chartDisplayMode";
+import {
+  RECHARTS_LEGEND_BOTTOM,
+  RECHARTS_MARGIN_X_LABEL_LEGEND,
+  RECHARTS_X_AXIS_BOTTOM,
+  rechartsXAxisBottomLabel,
+} from "@/lib/chartLayout";
 
 const EMPTY_DATE = "";
 const MULTI_COLORS = ["#f97316", "#06b6d4", "#8b5cf6", "#22c55e", "#ef4444", "#eab308"];
@@ -106,10 +116,221 @@ function csvEscape(v: unknown): string {
   return s;
 }
 
+type SolidYieldChartPanelProps = {
+  chartRef?: RefObject<HTMLDivElement | null>;
+  heightClassName: string;
+  gradientId: string;
+  mode: Mode;
+  chartDisplayMode: ChartDisplayMode;
+  activeChartState: {
+    data: DisplayModeTransformResult<Record<string, unknown>, string>;
+    rawRows: Array<Record<string, unknown>>;
+    valueKeys: readonly string[];
+  };
+  activeChartHasLoggableValues: boolean;
+  multiChartData: Array<Record<string, unknown>>;
+  multiChartTransformed: DisplayModeTransformResult<Record<string, unknown>, string>;
+  multiSeries: MultiSeries[];
+  compareRunIds: number[];
+  scenarioCompareData: Array<Record<string, unknown>>;
+  scenarioChartTransformed: DisplayModeTransformResult<Record<string, unknown>, string>;
+  scenarioSeries: ScenarioSeries[];
+  series: SolidYieldPoint[];
+  singleChartTransformed: DisplayModeTransformResult<Record<string, unknown>, string>;
+};
+
+function SolidYieldChartPanel({
+  chartRef,
+  heightClassName,
+  gradientId,
+  mode,
+  chartDisplayMode,
+  activeChartState,
+  activeChartHasLoggableValues,
+  multiChartData,
+  multiChartTransformed,
+  multiSeries,
+  compareRunIds,
+  scenarioCompareData,
+  scenarioChartTransformed,
+  scenarioSeries,
+  series,
+  singleChartTransformed,
+}: SolidYieldChartPanelProps) {
+  return (
+    <div ref={chartRef} className={heightClassName}>
+      {usesLogarithmicYAxis(chartDisplayMode) && activeChartState.data.excludedForLog > 0 ? (
+        <div className="mb-2 text-xs text-muted-foreground">
+          Les valeurs inferieures ou egales a 0 sont exclues en mode logarithmique.
+        </div>
+      ) : null}
+      {usesLogarithmicYAxis(chartDisplayMode) &&
+      !activeChartHasLoggableValues &&
+      activeChartState.rawRows.length ? (
+        <div className="mb-2 text-xs text-amber-700">
+          Mode logarithmique impossible : aucune valeur strictement positive.
+        </div>
+      ) : null}
+      {mode === "multi" ? (
+        !multiChartData.length ? (
+          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+            Aucune donnée graphique multicouche.
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={multiChartTransformed.data} margin={RECHARTS_MARGIN_X_LABEL_LEGEND}>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.4} />
+              <XAxis
+                dataKey={multiChartTransformed.xKey}
+                type={multiChartTransformed.xKey === "probability" ? "number" : "category"}
+                domain={multiChartTransformed.xKey === "probability" ? [0, 100] : undefined}
+                tick={{ fontSize: 11 }}
+                {...RECHARTS_X_AXIS_BOTTOM}
+                tickFormatter={(value) =>
+                  multiChartTransformed.xKey === "probability"
+                    ? `${Number(value).toFixed(0)}%`
+                    : String(value)
+                }
+                label={rechartsXAxisBottomLabel(multiChartTransformed.xLabel)}
+              />
+              <YAxis
+                tick={{ fontSize: 11 }}
+                scale={usesLogarithmicYAxis(chartDisplayMode) ? "log" : "auto"}
+                domain={["auto", "auto"]}
+              />
+              <Tooltip
+                labelFormatter={(value) =>
+                  multiChartTransformed.xKey === "probability"
+                    ? `Probabilite de depassement: ${Number(value).toFixed(2)}%`
+                    : String(value)
+                }
+              />
+              <Legend {...RECHARTS_LEGEND_BOTTOM} />
+              {multiSeries.map((item, idx) => (
+                <Line
+                  key={item.subbasinStationId}
+                  type="monotone"
+                  dataKey={`sb_${item.subbasinStationId}`}
+                  name={item.label}
+                  stroke={MULTI_COLORS[idx % MULTI_COLORS.length]}
+                  strokeWidth={2}
+                  dot={false}
+                />
+              ))}
+            </ComposedChart>
+          </ResponsiveContainer>
+        )
+      ) : compareRunIds.length > 1 ? (
+        !scenarioCompareData.length ? (
+          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+            Aucune donnée graphique pour la comparaison de scénarios.
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={scenarioChartTransformed.data} margin={RECHARTS_MARGIN_X_LABEL_LEGEND}>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.4} />
+              <XAxis
+                dataKey={scenarioChartTransformed.xKey}
+                type={scenarioChartTransformed.xKey === "probability" ? "number" : "category"}
+                domain={scenarioChartTransformed.xKey === "probability" ? [0, 100] : undefined}
+                tick={{ fontSize: 11 }}
+                {...RECHARTS_X_AXIS_BOTTOM}
+                tickFormatter={(value) =>
+                  scenarioChartTransformed.xKey === "probability"
+                    ? `${Number(value).toFixed(0)}%`
+                    : String(value)
+                }
+                label={rechartsXAxisBottomLabel(scenarioChartTransformed.xLabel)}
+              />
+              <YAxis
+                tick={{ fontSize: 11 }}
+                scale={usesLogarithmicYAxis(chartDisplayMode) ? "log" : "auto"}
+                domain={["auto", "auto"]}
+              />
+              <Tooltip
+                labelFormatter={(value) =>
+                  scenarioChartTransformed.xKey === "probability"
+                    ? `Probabilite de depassement: ${Number(value).toFixed(2)}%`
+                    : String(value)
+                }
+              />
+              <Legend {...RECHARTS_LEGEND_BOTTOM} />
+              {scenarioSeries.map((item, idx) => (
+                <Line
+                  key={item.runId}
+                  type="monotone"
+                  dataKey={`run_${item.runId}`}
+                  name={item.label}
+                  stroke={MULTI_COLORS[idx % MULTI_COLORS.length]}
+                  strokeWidth={2}
+                  dot={false}
+                  connectNulls={false}
+                />
+              ))}
+            </ComposedChart>
+          </ResponsiveContainer>
+        )
+      ) : !series.length ? (
+        <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+          Aucune donnée graphique.
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={singleChartTransformed.data} margin={RECHARTS_MARGIN_X_LABEL_LEGEND}>
+            <defs>
+              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="hsl(28 92% 55%)" stopOpacity={0.35} />
+                <stop offset="95%" stopColor="hsl(28 92% 55%)" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.4} />
+            <XAxis
+              dataKey={singleChartTransformed.xKey}
+              type={singleChartTransformed.xKey === "probability" ? "number" : "category"}
+              domain={singleChartTransformed.xKey === "probability" ? [0, 100] : undefined}
+              tick={{ fontSize: 11 }}
+              {...RECHARTS_X_AXIS_BOTTOM}
+              tickFormatter={(value) =>
+                singleChartTransformed.xKey === "probability"
+                  ? `${Number(value).toFixed(0)}%`
+                  : String(value)
+              }
+              label={rechartsXAxisBottomLabel(singleChartTransformed.xLabel)}
+            />
+            <YAxis
+              tick={{ fontSize: 11 }}
+              scale={usesLogarithmicYAxis(chartDisplayMode) ? "log" : "auto"}
+              domain={["auto", "auto"]}
+            />
+            <Tooltip
+              labelFormatter={(value) =>
+                singleChartTransformed.xKey === "probability"
+                  ? `Probabilite de depassement: ${Number(value).toFixed(2)}%`
+                  : String(value)
+              }
+            />
+            <Legend {...RECHARTS_LEGEND_BOTTOM} />
+            <Area
+              type="monotone"
+              dataKey="value"
+              name={SYLDT_HA_DISPLAY_LABEL}
+              stroke="hsl(28 92% 45%)"
+              fill={`url(#${gradientId})`}
+              strokeWidth={2}
+              dot={false}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      )}
+    </div>
+  );
+}
+
 export function SolidYieldModuleV2() {
   const { runs } = useHydroData();
   const [mode, setMode] = useState<Mode>("simple");
   const [chartDisplayMode, setChartDisplayMode] = useState<ChartDisplayMode>("normal");
+  const [chartOpen, setChartOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -216,17 +437,30 @@ export function SolidYieldModuleV2() {
     const map = new Map<string, { run_id: number; scenario_name: string; scenario_code: string }>();
 
     for (const scenario of NORMALIZED_SWAT_SCENARIOS) {
-      const row = runs.find(
+      const candidates = runs.filter(
         (r) =>
           !r.is_observed &&
           r.scenario_code === scenario.code &&
           isNormalizedSwatScenarioCode(String(r.scenario_code || ""))
       );
+      if (!candidates.length) continue;
 
-      if (!row) continue;
+      const availabilityMatch = availability
+        .filter(
+          (row) =>
+            row.scenario_code === scenario.code &&
+            hasAvailabilityData(row) &&
+            (subbasinStationId == null || row.subbasin_station_id === subbasinStationId)
+        )
+        .sort((a, b) => Number(b.points_count || 0) - Number(a.points_count || 0))[0];
+
+      const row =
+        (availabilityMatch
+          ? candidates.find((candidate) => candidate.run_id === availabilityMatch.run_id)
+          : null) ?? [...candidates].sort((a, b) => a.run_id - b.run_id)[0];
 
       map.set(scenario.code, {
-        run_id: row.run_id,
+        run_id: availabilityMatch?.run_id ?? row.run_id,
         scenario_name: scenario.label,
         scenario_code: scenario.code,
       });
@@ -238,9 +472,9 @@ export function SolidYieldModuleV2() {
         const rankB = NORMALIZED_SWAT_SCENARIO_ORDER.get(b.scenario_code as any) ?? 999;
         return rankA - rankB;
       }),
-      (run) => run.run_id
+      (run) => run.scenario_code
     );
-  }, [runs]);
+  }, [runs, availability, subbasinStationId]);
 
   const availableSubbasins = useMemo(() => {
     if (!subbasins.length) return [];
@@ -307,12 +541,35 @@ export function SolidYieldModuleV2() {
 
   const activeAvailability = useMemo(() => {
     if (!subbasinStationId || !runId) return null;
+    const selectedRun = runOptions.find((run) => run.run_id === runId);
+    const rows = availability.filter((row) => row.subbasin_station_id === subbasinStationId);
     return (
-      availability.find(
-        (r) => r.subbasin_station_id === subbasinStationId && r.run_id === runId
-      ) || null
+      rows.find((row) => row.run_id === runId) ??
+      (selectedRun
+        ? rows.find(
+            (row) =>
+              row.scenario_code === selectedRun.scenario_code && hasAvailabilityData(row)
+          )
+        : null) ??
+      null
     );
-  }, [availability, subbasinStationId, runId]);
+  }, [availability, subbasinStationId, runId, runOptions]);
+
+  const availabilityByScenarioCode = useMemo(() => {
+    const map = new Map<string, SolidYieldAvailability>();
+    if (!subbasinStationId) return map;
+    for (const row of availability) {
+      if (row.subbasin_station_id !== subbasinStationId) continue;
+      const existing = map.get(row.scenario_code);
+      if (
+        !existing ||
+        Number(row.points_count || 0) > Number(existing.points_count || 0)
+      ) {
+        map.set(row.scenario_code, row);
+      }
+    }
+    return map;
+  }, [availability, subbasinStationId]);
 
   const availabilityByRunId = useMemo(() => {
     const map = new Map<number, SolidYieldAvailability>();
@@ -322,8 +579,12 @@ export function SolidYieldModuleV2() {
         map.set(row.run_id, row);
       }
     }
+    for (const run of runOptions) {
+      const row = availabilityByScenarioCode.get(run.scenario_code);
+      if (row) map.set(run.run_id, row);
+    }
     return map;
-  }, [availability, subbasinStationId]);
+  }, [availability, subbasinStationId, runOptions, availabilityByScenarioCode]);
 
   const selectedRunHasData = hasAvailabilityData(activeAvailability);
 
@@ -361,6 +622,8 @@ export function SolidYieldModuleV2() {
     setCompareSubbasins([fallback.subbasin_station_id]);
   }, [availableSubbasins, subbasinStationId]);
 
+  const effectiveRunId = activeAvailability?.run_id ?? runId;
+
   useEffect(() => {
     if (!subbasinStationId) return;
 
@@ -369,9 +632,14 @@ export function SolidYieldModuleV2() {
 
     if (!runIds.length) return;
     if (!runId || !runIds.includes(runId)) {
-      setRunId((rows.find(hasAvailabilityData) ?? rows[0]).run_id);
+      const preferred = runOptions.find((run) =>
+        hasAvailabilityData(availabilityByScenarioCode.get(run.scenario_code))
+      );
+      setRunId(
+        preferred?.run_id ?? (rows.find(hasAvailabilityData) ?? rows[0]).run_id
+      );
     }
-  }, [availability, subbasinStationId, runId]);
+  }, [availability, availabilityByScenarioCode, subbasinStationId, runId, runOptions]);
 
   useEffect(() => {
     if (!runId && runOptions.length) {
@@ -435,7 +703,7 @@ export function SolidYieldModuleV2() {
     let alive = true;
     (async () => {
       try {
-        if (!subbasinStationId || !runId) {
+        if (!subbasinStationId || !effectiveRunId) {
           setSeries([]);
           setStats(null);
           return;
@@ -448,14 +716,14 @@ export function SolidYieldModuleV2() {
         const [ts, st] = await Promise.all([
           solidYieldService.timeseries({
             subbasinStationId,
-            runId,
+            runId: effectiveRunId,
             interval,
             startDate,
             endDate,
           }),
           solidYieldService.stats({
             subbasinStationId,
-            runId,
+            runId: effectiveRunId,
             startDate,
             endDate,
           }),
@@ -471,7 +739,7 @@ export function SolidYieldModuleV2() {
     return () => {
       alive = false;
     };
-  }, [activeAvailability, subbasinStationId, runId, interval, startDate, endDate]);
+  }, [activeAvailability, effectiveRunId, subbasinStationId, interval, startDate, endDate]);
 
   useEffect(() => {
     let alive = true;
@@ -524,9 +792,15 @@ export function SolidYieldModuleV2() {
         const results = await Promise.all(
           dataRunIds.map(async (id) => {
             const run = runOptions.find((item) => item.run_id === id);
+            const resolvedRunId =
+              availabilityByRunId.get(id)?.run_id ??
+              (run
+                ? availabilityByScenarioCode.get(run.scenario_code)?.run_id
+                : undefined) ??
+              id;
             const points = await solidYieldService.timeseries({
               subbasinStationId,
-              runId: id,
+              runId: resolvedRunId,
               interval,
               startDate,
               endDate,
@@ -680,6 +954,13 @@ export function SolidYieldModuleV2() {
     [activeChartState]
   );
 
+  const chartReady =
+    mode === "multi"
+      ? multiChartData.length > 0
+      : compareRunIds.length > 1
+        ? scenarioCompareData.length > 0
+        : series.length > 0;
+
   const toggleCompareSubbasin = (id: number) => {
     setCompareSubbasins((prev) =>
       prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]
@@ -715,7 +996,7 @@ export function SolidYieldModuleV2() {
 
     if (!series.length) return;
     const rows = [
-      ["Date", "Apport solide simulé (SYLDT_HA)", "n"],
+      ["Date", SYLDT_HA_DISPLAY_LABEL, "n"],
       ...series.map((p) => [p.period, p.value ?? "", p.n]),
     ];
     const csv = rows.map((r) => r.map(csvEscape).join(",")).join("\n");
@@ -743,7 +1024,7 @@ export function SolidYieldModuleV2() {
   if (loading) {
     return (
       <div className="text-sm text-muted-foreground">
-        Chargement du tableau de bord Apport solide...
+        Chargement du tableau de bord {SYLDT_HA_DISPLAY_LABEL}...
       </div>
     );
   }
@@ -895,7 +1176,7 @@ export function SolidYieldModuleV2() {
             <div className="space-y-1">
               <div className="text-xs font-semibold">Variable</div>
               <div className="h-9 rounded-md border border-input bg-muted/40 px-3 flex items-center text-sm">
-                Apport solide simulé (SYLDT_HA)
+                {SYLDT_HA_DISPLAY_LABEL}
               </div>
             </div>
 
@@ -1022,7 +1303,7 @@ export function SolidYieldModuleV2() {
                   <thead className="bg-muted/60 sticky top-0">
                     <tr>
                       <th className="px-3 py-2 text-left">Date</th>
-                      <th className="px-3 py-2 text-left">SYLDT_HA</th>
+                      <th className="px-3 py-2 text-left">{SYLDT_HA_DISPLAY_LABEL}</th>
                       <th className="px-3 py-2 text-left">n</th>
                     </tr>
                   </thead>
@@ -1050,204 +1331,91 @@ export function SolidYieldModuleV2() {
 
         <Card>
           <CardHeader className="pb-2">
-            <div className="flex items-center justify-between gap-2">
-              <CardTitle className="text-base">
-                {mode === "multi" ? "Graphique (multicouche)" : "Graphique"}
-              </CardTitle>
-              <div className="flex items-center gap-2">
-                <ChartModeSelect value={chartDisplayMode} onValueChange={setChartDisplayMode} />
-                <ChartExportMenu
-                  onExportCsv={exportCsv}
-                  onExportPng={() =>
-                    downloadChartAsImage(
-                      chartRef,
-                      buildChartImageFileName({
-                        prefix: "apport_solide",
-                        station: subbasinStationId ? `subbasin_${subbasinStationId}` : null,
-                        scenario: runId ? `run_${runId}` : null,
-                        variable: mode === "multi" ? "multicouche" : "SYLDT_HA",
-                        aggregation: interval,
-                        mode: `${mode}_${chartDisplayMode}`,
-                      })
-                    )
-                  }
-                  csvDisabled={mode === "multi" ? !multiTable.length : !series.length}
-                  pngDisabled={
-                    mode === "multi"
-                      ? !multiChartData.length
-                      : compareRunIds.length > 1
-                      ? !scenarioCompareData.length
-                      : !series.length
-                  }
-                />
-              </div>
-            </div>
+            <CardTitle className="text-base">
+              {mode === "multi" ? "Graphique (multicouche)" : "Graphique"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div ref={chartRef} className="h-[420px]">
-              {chartDisplayMode === "logarithmic" && activeChartState.data.excludedForLog > 0 ? (
-                <div className="mb-2 text-xs text-muted-foreground">
-                  Les valeurs inferieures ou egales a 0 sont exclues en mode logarithmique.
-                </div>
-              ) : null}
-              {chartDisplayMode === "logarithmic" &&
-              !activeChartHasLoggableValues &&
-              activeChartState.rawRows.length ? (
-                <div className="mb-2 text-xs text-amber-700">
-                  Mode logarithmique impossible : aucune valeur strictement positive.
-                </div>
-              ) : null}
-              {mode === "multi" ? (
-                !multiChartData.length ? (
-                  <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-                    Aucune donnée graphique multicouche.
-                  </div>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={multiChartTransformed.data}>
-                      <CartesianGrid strokeDasharray="3 3" opacity={0.4} />
-                      <XAxis
-                        dataKey={multiChartTransformed.xKey}
-                        type={multiChartTransformed.xKey === "probability" ? "number" : "category"}
-                        domain={multiChartTransformed.xKey === "probability" ? [0, 100] : undefined}
-                        tick={{ fontSize: 11 }}
-                        tickFormatter={(value) =>
-                          multiChartTransformed.xKey === "probability"
-                            ? `${Number(value).toFixed(0)}%`
-                            : String(value)
-                        }
-                        label={{ value: multiChartTransformed.xLabel, position: "insideBottom", offset: -10 }}
-                      />
-                      <YAxis
-                        tick={{ fontSize: 11 }}
-                        scale={chartDisplayMode === "logarithmic" ? "log" : "auto"}
-                        domain={["auto", "auto"]}
-                      />
-                      <Tooltip
-                        labelFormatter={(value) =>
-                          multiChartTransformed.xKey === "probability"
-                            ? `Probabilite de depassement: ${Number(value).toFixed(2)}%`
-                            : String(value)
-                        }
-                      />
-                      <Legend />
-                      {multiSeries.map((item, idx) => (
-                        <Line
-                          key={item.subbasinStationId}
-                          type="monotone"
-                          dataKey={`sb_${item.subbasinStationId}`}
-                          name={item.label}
-                          stroke={MULTI_COLORS[idx % MULTI_COLORS.length]}
-                          strokeWidth={2}
-                          dot={false}
-                        />
-                      ))}
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                )
-              ) : compareRunIds.length > 1 ? (
-                !scenarioCompareData.length ? (
-                  <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-                    Aucune donnée graphique pour la comparaison de scénarios.
-                  </div>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={scenarioChartTransformed.data}>
-                      <CartesianGrid strokeDasharray="3 3" opacity={0.4} />
-                      <XAxis
-                        dataKey={scenarioChartTransformed.xKey}
-                        type={scenarioChartTransformed.xKey === "probability" ? "number" : "category"}
-                        domain={scenarioChartTransformed.xKey === "probability" ? [0, 100] : undefined}
-                        tick={{ fontSize: 11 }}
-                        tickFormatter={(value) =>
-                          scenarioChartTransformed.xKey === "probability"
-                            ? `${Number(value).toFixed(0)}%`
-                            : String(value)
-                        }
-                        label={{ value: scenarioChartTransformed.xLabel, position: "insideBottom", offset: -10 }}
-                      />
-                      <YAxis
-                        tick={{ fontSize: 11 }}
-                        scale={chartDisplayMode === "logarithmic" ? "log" : "auto"}
-                        domain={["auto", "auto"]}
-                      />
-                      <Tooltip
-                        labelFormatter={(value) =>
-                          scenarioChartTransformed.xKey === "probability"
-                            ? `Probabilite de depassement: ${Number(value).toFixed(2)}%`
-                            : String(value)
-                        }
-                      />
-                      <Legend />
-                      {scenarioSeries.map((item, idx) => (
-                        <Line
-                          key={item.runId}
-                          type="monotone"
-                          dataKey={`run_${item.runId}`}
-                          name={item.label}
-                          stroke={MULTI_COLORS[idx % MULTI_COLORS.length]}
-                          strokeWidth={2}
-                          dot={false}
-                          connectNulls={false}
-                        />
-                      ))}
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                )
-              ) : !series.length ? (
-                <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-                  Aucune donnée graphique.
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={singleChartTransformed.data}>
-                    <defs>
-                      <linearGradient id="syldtGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(28 92% 55%)" stopOpacity={0.35} />
-                        <stop offset="95%" stopColor="hsl(28 92% 55%)" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.4} />
-                    <XAxis
-                      dataKey={singleChartTransformed.xKey}
-                      type={singleChartTransformed.xKey === "probability" ? "number" : "category"}
-                      domain={singleChartTransformed.xKey === "probability" ? [0, 100] : undefined}
-                      tick={{ fontSize: 11 }}
-                      tickFormatter={(value) =>
-                        singleChartTransformed.xKey === "probability"
-                          ? `${Number(value).toFixed(0)}%`
-                          : String(value)
-                      }
-                      label={{ value: singleChartTransformed.xLabel, position: "insideBottom", offset: -10 }}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 11 }}
-                      scale={chartDisplayMode === "logarithmic" ? "log" : "auto"}
-                      domain={["auto", "auto"]}
-                    />
-                    <Tooltip
-                      labelFormatter={(value) =>
-                        singleChartTransformed.xKey === "probability"
-                          ? `Probabilite de depassement: ${Number(value).toFixed(2)}%`
-                          : String(value)
-                      }
-                    />
-                    <Legend />
-                    <Area
-                      type="monotone"
-                      dataKey="value"
-                      name="Apport solide simulé (SYLDT_HA)"
-                      stroke="hsl(28 92% 45%)"
-                      fill="url(#syldtGradient)"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              )}
+            <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
+              <ChartModeSelect value={chartDisplayMode} onValueChange={setChartDisplayMode} />
+              <ChartExportMenu
+                onExportCsv={exportCsv}
+                onExportPng={() =>
+                  downloadChartAsImage(
+                    chartRef,
+                    buildChartImageFileName({
+                      prefix: "apport_solide",
+                      station: subbasinStationId ? `subbasin_${subbasinStationId}` : null,
+                      scenario: runId ? `run_${runId}` : null,
+                      variable: mode === "multi" ? "multicouche" : "SYLDT_HA",
+                      aggregation: interval,
+                      mode: `${mode}_${chartDisplayMode}`,
+                    })
+                  )
+                }
+                csvDisabled={mode === "multi" ? !multiTable.length : !series.length}
+                pngDisabled={
+                  mode === "multi"
+                    ? !multiChartData.length
+                    : compareRunIds.length > 1
+                      ? !scenarioCompareData.length
+                      : !series.length
+                }
+              />
+              <Button variant="outline" size="sm" onClick={() => setChartOpen(true)} disabled={!chartReady}>
+                <Maximize2 className="mr-2 h-4 w-4" />
+                Agrandir
+              </Button>
             </div>
+            <SolidYieldChartPanel
+              chartRef={chartRef}
+              heightClassName="h-[420px]"
+              gradientId="syldtGradient-main"
+              mode={mode}
+              chartDisplayMode={chartDisplayMode}
+              activeChartState={activeChartState}
+              activeChartHasLoggableValues={activeChartHasLoggableValues}
+              multiChartData={multiChartData}
+              multiChartTransformed={multiChartTransformed}
+              multiSeries={multiSeries}
+              compareRunIds={compareRunIds}
+              scenarioCompareData={scenarioCompareData}
+              scenarioChartTransformed={scenarioChartTransformed}
+              scenarioSeries={scenarioSeries}
+              series={series}
+              singleChartTransformed={singleChartTransformed}
+            />
           </CardContent>
         </Card>
+
+        <ExpandableDialog
+          open={chartOpen}
+          onOpenChange={setChartOpen}
+          title={`${SYLDT_HA_DISPLAY_LABEL} - Vue agrandie`}
+        >
+          <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
+            <ChartModeSelect value={chartDisplayMode} onValueChange={setChartDisplayMode} />
+          </div>
+          <div className="h-[72vh] min-h-[520px] w-full">
+            <SolidYieldChartPanel
+              heightClassName="h-full"
+              gradientId="syldtGradient-expanded"
+              mode={mode}
+              chartDisplayMode={chartDisplayMode}
+              activeChartState={activeChartState}
+              activeChartHasLoggableValues={activeChartHasLoggableValues}
+              multiChartData={multiChartData}
+              multiChartTransformed={multiChartTransformed}
+              multiSeries={multiSeries}
+              compareRunIds={compareRunIds}
+              scenarioCompareData={scenarioCompareData}
+              scenarioChartTransformed={scenarioChartTransformed}
+              scenarioSeries={scenarioSeries}
+              series={series}
+              singleChartTransformed={singleChartTransformed}
+            />
+          </div>
+        </ExpandableDialog>
       </div>
     </div>
   );

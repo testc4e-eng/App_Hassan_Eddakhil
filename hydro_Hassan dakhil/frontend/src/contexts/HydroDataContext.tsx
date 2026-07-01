@@ -11,6 +11,11 @@ import React, {
 import type { ApiResponse, AvailabilityRow } from "@/types/hydro";
 import { deduplicateSelectOptions } from "@/lib/selectOptions";
 import { formatStationDisplayName } from "@/lib/stationLabels";
+import { resolveSwatScenarioLabel } from "@/constants/swatScenarios";
+import {
+  filterHassanAddakhilStations,
+  isHassanAddakhilStationId,
+} from "@/constants/projectStations";
 
 export type ModuleCode = "climat" | "hydro" | "erosion";
 
@@ -165,7 +170,14 @@ export function HydroDataProvider({ children }: { children: React.ReactNode }) {
             throw new Error(runsResp.error || "Erreur catalog/runs");
           if (!cancelled) {
             setRuns(
-              deduplicateSelectOptions(runsResp.data || [], (run) => run.run_id)
+              deduplicateSelectOptions(runsResp.data || [], (run) => run.run_id).map((run) => ({
+                ...run,
+                scenario_name: resolveSwatScenarioLabel(
+                  run.scenario_code,
+                  run.scenario_name,
+                  run.run_id
+                ),
+              }))
             );
           }
         } catch (e: any) {
@@ -304,7 +316,7 @@ export function HydroDataProvider({ children }: { children: React.ReactNode }) {
         (station) => station.station_id
       );
 
-      setStations(list);
+      setStations(filterHassanAddakhilStations(list));
     })();
 
     stationsLoadPromiseRef.current = promise;
@@ -333,9 +345,8 @@ export function HydroDataProvider({ children }: { children: React.ReactNode }) {
       for (const r of rows) {
         if (runId && Number(r.run_id) !== runId) continue;
         const stationId = Number(r.station_id);
-        if (Number.isFinite(stationId)) {
-          availableIds.add(stationId);
-        }
+        if (!Number.isFinite(stationId) || !isHassanAddakhilStationId(stationId)) continue;
+        availableIds.add(stationId);
       }
 
       const list = deduplicateSelectOptions(

@@ -24,9 +24,14 @@ import { TrendingUp } from "lucide-react";
 import { useHydroData } from "@/contexts/HydroDataContext";
 import { timeseriesApi } from "@/api/timeseries";
 import { useTranslation } from "react-i18next";
+import { usesLogarithmicYAxis } from "@/lib/chartDisplayMode";
+import { formatDateByAggregation } from "@/lib/seriesGranularity";
 import {
-  formatDateByAggregation,
-} from "@/lib/seriesGranularity";
+  RECHARTS_LEGEND_BOTTOM,
+  RECHARTS_MARGIN_STANDARD,
+  RECHARTS_X_AXIS_BOTTOM,
+  rechartsXAxisBottomLabel,
+} from "@/lib/chartLayout";
 import { AnalyticsChartContainer } from "@/components/dashboard/analytics/AnalyticsChartContainer";
 import { ChartExportMenu } from "@/components/charts/ChartExportMenu";
 import {
@@ -395,7 +400,7 @@ function TimeSeriesChart(
     const seriesByVar = varMetas.map((meta) => {
       const values = displayChartData
         .map((row) => toFiniteNumber(row[meta.key]))
-        .filter((v): v is number => v !== null)
+        .filter((v): v is number => v !== null && v > 0)
         .sort((a, b) => b - a);
       return { key: meta.key, values };
     });
@@ -461,7 +466,7 @@ function TimeSeriesChart(
   }, [isDualAxisMode, primaryVarMeta, rawChartData, transformed.data, varMetas]);
 
   const leftAxisDomain = useMemo<YAxisDomainTuple>(() => {
-    if (displayMode === "logarithmic") return ["auto", "auto"];
+    if (usesLogarithmicYAxis(displayMode)) return ["auto", "auto"];
 
     const maxCandidates = [axisMetrics.rawMaxY, axisMetrics.displayedMaxY].filter(
       (v): v is number => typeof v === "number" && Number.isFinite(v)
@@ -606,7 +611,7 @@ function TimeSeriesChart(
       </div>
 
       <div className="hydro-card-body flex-1 min-h-0">
-        {displayMode === "logarithmic" && transformed.logExcludedCount > 0 && (
+        {usesLogarithmicYAxis(displayMode) && transformed.logExcludedCount > 0 && (
           <div className="mb-2 text-xs text-muted-foreground">
             Les valeurs ≤ 0 sont exclues en mode logarithmique.
           </div>
@@ -617,8 +622,8 @@ function TimeSeriesChart(
               data={transformed.data}
               margin={
                 isDualAxisMode
-                  ? { top: 20, right: 48, left: 32, bottom: 40 }
-                  : { top: 20, right: 30, left: 20, bottom: 40 }
+                  ? { top: 20, right: 48, left: 32, bottom: RECHARTS_MARGIN_STANDARD.bottom }
+                  : RECHARTS_MARGIN_STANDARD
               }
               style={{ overflow: "visible" }}
             >
@@ -647,22 +652,14 @@ function TimeSeriesChart(
                 domain={transformed.xKey === "probability" ? [0, 100] : undefined}
                 tick={{ fontSize: 11 }}
                 minTickGap={20}
-                tickMargin={12}
-                height={xAxisLabel ? 52 : 40}
+                tickMargin={RECHARTS_X_AXIS_BOTTOM.tickMargin}
+                height={xAxisLabel ? RECHARTS_X_AXIS_BOTTOM.height : 40}
                 tickFormatter={(value) => {
                   if (transformed.xKey === "probability") return `${Number(value).toFixed(0)}%`;
                   return formatDateByAggregation(String(value), displayAgg);
                 }}
                 stroke="hsl(var(--muted-foreground))"
-                label={
-                  xAxisLabel
-                    ? {
-                        value: xAxisLabel,
-                        position: "insideBottom",
-                        offset: -12,
-                      }
-                    : undefined
-                }
+                label={xAxisLabel ? rechartsXAxisBottomLabel(xAxisLabel) : undefined}
               />
 
               <YAxis
@@ -675,7 +672,7 @@ function TimeSeriesChart(
                     ? chartColors[0]
                     : "hsl(var(--muted-foreground))"
                 }
-                scale={displayMode === "logarithmic" ? "log" : "auto"}
+                scale={usesLogarithmicYAxis(displayMode) ? "log" : "auto"}
                 domain={leftAxisDomain}
                 allowDataOverflow={false}
                 label={
@@ -736,7 +733,7 @@ function TimeSeriesChart(
                 }}
               />
 
-              <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "12px" }} />
+              <Legend {...RECHARTS_LEGEND_BOTTOM} />
 
               {varMetas.map((v, i) => (
                 isDualAxisMode ? (

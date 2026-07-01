@@ -286,3 +286,50 @@ export function fetchSpatialScenariosAvailability(
 export function fetchSubbasinHruSummary() {
   return getRawJSON<FeatureCollection>("/data/hassan/subbasin_hru_summary.geojson");
 }
+
+export function fetchNvStreamNetwork() {
+  return getRawJSON<FeatureCollection>("/data/hassan/nv_stream.geojson");
+}
+
+export function normalizeNvStreamReachCollection(
+  collection: FeatureCollection,
+  apiReaches?: FeatureCollection | null
+): FeatureCollection {
+  const apiBySubbasin = new Map<number, Record<string, unknown>>();
+  for (const feature of apiReaches?.features ?? []) {
+    const subbasinId = Number(
+      feature?.properties?.subbasin_id ?? feature?.properties?.Subbasin ?? NaN
+    );
+    if (Number.isFinite(subbasinId)) {
+      apiBySubbasin.set(subbasinId, (feature.properties ?? {}) as Record<string, unknown>);
+    }
+  }
+
+  return {
+    type: "FeatureCollection",
+    features: collection.features.map((feature) => {
+      const properties = (feature.properties ?? {}) as Record<string, unknown>;
+      const subbasinId = Number(properties.Subbasin ?? properties.subbasin_id ?? properties.id);
+      const apiProps = Number.isFinite(subbasinId) ? apiBySubbasin.get(subbasinId) ?? {} : {};
+      const reachId = Number(apiProps.id ?? apiProps.reach_id ?? subbasinId);
+      const reachCode = apiProps.reach_code ?? properties.reach_code ?? subbasinId;
+
+      return {
+        type: "Feature",
+        geometry: feature.geometry,
+        properties: {
+          ...apiProps,
+          ...properties,
+          id: Number.isFinite(reachId) ? reachId : subbasinId,
+          reach_id: Number.isFinite(reachId) ? reachId : subbasinId,
+          subbasin_id: subbasinId,
+          reach_code: reachCode,
+          name:
+            properties.name ??
+            apiProps.name ??
+            (reachCode != null ? `Troncon ${reachCode}` : `Troncon ${subbasinId}`),
+        },
+      };
+    }),
+  };
+}

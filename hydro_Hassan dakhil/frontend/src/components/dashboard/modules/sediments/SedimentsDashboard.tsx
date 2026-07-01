@@ -22,13 +22,13 @@ const MODES: Array<{
   {
     id: "specific",
     title: "Dégradation spécifique",
-    subtitle: "SYLDT_HA par sous-bassin et scénarios",
+    subtitle: "Dégradation spécifique (t/ha) par sous-bassin et scénarios",
     icon: Mountain,
   },
   {
     id: "reach",
     title: "Transport solide Reach",
-    subtitle: "SYDOUT / SED_OUT au niveau des 19 reaches",
+    subtitle: "Sediment (t) au niveau des 19 reaches",
     icon: Route,
   },
 ];

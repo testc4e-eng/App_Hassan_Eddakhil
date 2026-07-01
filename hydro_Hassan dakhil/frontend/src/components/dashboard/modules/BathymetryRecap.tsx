@@ -34,7 +34,14 @@ import type { ChartDisplayMode } from "@/types/chart";
 import {
   hasStrictlyPositiveValues,
   transformSeriesForDisplayMode,
+  usesLogarithmicYAxis,
 } from "@/lib/chartDisplayMode";
+import {
+  RECHARTS_LEGEND_BOTTOM,
+  RECHARTS_MARGIN_X_LABEL_LEGEND,
+  RECHARTS_X_AXIS_BOTTOM,
+  rechartsXAxisBottomLabel,
+} from "@/lib/chartLayout";
 
 type ReservoirOption = {
   key: string;
@@ -390,12 +397,12 @@ export function BathymetryRecap() {
                 </div>
 
                 <div className="h-[320px]">
-                  {profileDisplayMode === "logarithmic" && profileChartTransformed.excludedForLog > 0 ? (
+                  {usesLogarithmicYAxis(profileDisplayMode) && profileChartTransformed.excludedForLog > 0 ? (
                     <div className="mb-2 text-xs text-muted-foreground">
                       Les valeurs inferieures ou egales a 0 sont exclues en mode logarithmique.
                     </div>
                   ) : null}
-                  {profileDisplayMode === "logarithmic" && !profileHasLoggableValues && chartData.length ? (
+                  {usesLogarithmicYAxis(profileDisplayMode) && !profileHasLoggableValues && chartData.length ? (
                     <div className="mb-2 text-xs text-amber-700">
                       Mode logarithmique impossible : aucune valeur strictement positive.
                     </div>
@@ -404,7 +411,7 @@ export function BathymetryRecap() {
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart
                         data={profileChartTransformed.data}
-                        margin={{ top: 10, right: 16, bottom: 12, left: 0 }}
+                        margin={RECHARTS_MARGIN_X_LABEL_LEGEND}
                       >
                         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                         <XAxis
@@ -419,7 +426,8 @@ export function BathymetryRecap() {
                           }
                           stroke="#64748b"
                           tick={{ fontSize: 12 }}
-                          label={{ value: profileChartTransformed.xLabel, position: "insideBottom", offset: -10 }}
+                          {...RECHARTS_X_AXIS_BOTTOM}
+                          label={rechartsXAxisBottomLabel(profileChartTransformed.xLabel)}
                         />
                         {hasVolume ? (
                           <YAxis
@@ -427,7 +435,7 @@ export function BathymetryRecap() {
                             tickFormatter={(value) => formatNumber(value, 0)}
                             stroke="#0f766e"
                             tick={{ fontSize: 12 }}
-                            scale={profileDisplayMode === "logarithmic" ? "log" : "auto"}
+                            scale={usesLogarithmicYAxis(profileDisplayMode) ? "log" : "auto"}
                             domain={["auto", "auto"]}
                           />
                         ) : null}
@@ -438,7 +446,7 @@ export function BathymetryRecap() {
                             tickFormatter={(value) => formatNumber(value, 1)}
                             stroke="#0369a1"
                             tick={{ fontSize: 12 }}
-                            scale={profileDisplayMode === "logarithmic" ? "log" : "auto"}
+                            scale={usesLogarithmicYAxis(profileDisplayMode) ? "log" : "auto"}
                             domain={["auto", "auto"]}
                           />
                         ) : null}
@@ -453,7 +461,7 @@ export function BathymetryRecap() {
                             String(name),
                           ]}
                         />
-                        <Legend />
+                        <Legend {...RECHARTS_LEGEND_BOTTOM} />
                         {hasVolume ? (
                           <Line
                             yAxisId="volume"
@@ -585,12 +593,12 @@ export function BathymetryRecap() {
                     </div>
 
                     <div className="h-[280px]">
-                      {annualDisplayMode === "logarithmic" && annualChartTransformed.excludedForLog > 0 ? (
+                      {usesLogarithmicYAxis(annualDisplayMode) && annualChartTransformed.excludedForLog > 0 ? (
                         <div className="mb-2 text-xs text-muted-foreground">
                           Les valeurs inferieures ou egales a 0 sont exclues en mode logarithmique.
                         </div>
                       ) : null}
-                      {annualDisplayMode === "logarithmic" && !annualHasLoggableValues && annualEvolution.rows.length ? (
+                      {usesLogarithmicYAxis(annualDisplayMode) && !annualHasLoggableValues && annualEvolution.rows.length ? (
                         <div className="mb-2 text-xs text-amber-700">
                           Mode logarithmique impossible : aucune valeur strictement positive.
                         </div>
@@ -598,7 +606,7 @@ export function BathymetryRecap() {
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart
                           data={annualChartTransformed.data}
-                          margin={{ top: 10, right: 16, bottom: 12, left: 0 }}
+                          margin={RECHARTS_MARGIN_X_LABEL_LEGEND}
                         >
                           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                           <XAxis
@@ -607,19 +615,20 @@ export function BathymetryRecap() {
                             domain={annualChartTransformed.xKey === "probability" ? [0, 100] : ["dataMin", "dataMax"]}
                             stroke="#64748b"
                             tick={{ fontSize: 12 }}
+                            {...RECHARTS_X_AXIS_BOTTOM}
                             tickFormatter={(value) =>
                               annualChartTransformed.xKey === "probability"
                                 ? `${Number(value).toFixed(0)}%`
                                 : String(value)
                             }
-                            label={{ value: annualChartTransformed.xLabel, position: "insideBottom", offset: -10 }}
+                            label={rechartsXAxisBottomLabel(annualChartTransformed.xLabel)}
                           />
                           <YAxis
                             yAxisId="volume"
                             tickFormatter={(value) => formatNumber(value, 0)}
                             stroke="#0f766e"
                             tick={{ fontSize: 12 }}
-                            scale={annualDisplayMode === "logarithmic" ? "log" : "auto"}
+                            scale={usesLogarithmicYAxis(annualDisplayMode) ? "log" : "auto"}
                             domain={["auto", "auto"]}
                           />
                           <YAxis
@@ -628,7 +637,7 @@ export function BathymetryRecap() {
                             tickFormatter={(value) => formatNumber(value, 0)}
                             stroke="#b45309"
                             tick={{ fontSize: 12 }}
-                            scale={annualDisplayMode === "logarithmic" ? "log" : "auto"}
+                            scale={usesLogarithmicYAxis(annualDisplayMode) ? "log" : "auto"}
                             domain={["auto", "auto"]}
                           />
                           <Tooltip
@@ -644,7 +653,7 @@ export function BathymetryRecap() {
                               String(name),
                             ]}
                           />
-                          <Legend />
+                          <Legend {...RECHARTS_LEGEND_BOTTOM} />
                           <Line
                             yAxisId="volume"
                             type="monotone"

@@ -28,8 +28,12 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { timeseriesApi } from "@/api/timeseries";
 import { isModulePropertyVisibleForModule } from "@/constants/moduleVariables";
+import { resolveSwatScenarioLabel } from "@/constants/swatScenarios";
+import { resolveSyldtHaDisplayLabel, SYLDT_HA_DISPLAY_LABEL } from "@/constants/syldtHa";
+import { resolveSedimentDisplayLabel, SEDIMENT_DISPLAY_LABEL } from "@/constants/sediment";
 import { deduplicateSelectOptions } from "@/lib/selectOptions";
 import { formatStationDisplayName } from "@/lib/stationLabels";
+import { isHassanAddakhilStationId } from "@/constants/projectStations";
 import { cn } from "@/lib/utils";
 import { buildChartImageFileName, downloadChartAsImage } from "@/lib/chartExport";
 import { downsampleSeriesPoints } from "@/lib/downsampleSeries";
@@ -308,7 +312,11 @@ export function ReportsModule() {
       if (!map.has(id)) {
         map.set(id, {
           run_id: id,
-          scenario_name: String(r.scenario_name ?? `Run ${id}`),
+          scenario_name: resolveSwatScenarioLabel(
+            String(r.scenario_code ?? ""),
+            String(r.scenario_name ?? `Run ${id}`),
+            id
+          ),
           scenario_code: String(r.scenario_code ?? ""),
           is_observed: Boolean(r.is_observed),
         });
@@ -368,7 +376,8 @@ export function ReportsModule() {
     for (const r of rows as Array<{ run_id?: number; station_id?: number }>) {
       if (runIdNum && Number(r.run_id) !== runIdNum) continue;
       const stationId = Number(r.station_id);
-      if (Number.isFinite(stationId)) availableIds.add(stationId);
+      if (!Number.isFinite(stationId) || !isHassanAddakhilStationId(stationId)) continue;
+      availableIds.add(stationId);
     }
 
     return deduplicateSelectOptions(
@@ -566,9 +575,20 @@ export function ReportsModule() {
     }
 
     const prop = properties.find((p) => p.property_id === propertyIdNum);
-    const propLabel = prop
-      ? `${prop.name}${prop.unit ? ` (${prop.unit})` : ""}`
+    const resolvedName = prop
+      ? resolveSedimentDisplayLabel(
+          resolveSyldtHaDisplayLabel(prop.name, prop.standard_name, prop.standard_name),
+          prop.standard_name,
+          prop.standard_name
+        )
       : `property_${propertyIdNum}`;
+    const includeUnit =
+      Boolean(prop?.unit) &&
+      resolvedName !== SYLDT_HA_DISPLAY_LABEL &&
+      resolvedName !== SEDIMENT_DISPLAY_LABEL;
+    const propLabel = prop
+      ? `${resolvedName}${includeUnit ? ` (${prop.unit})` : ""}`
+      : resolvedName;
     const unit = prop?.unit || "-";
     const fileBase =
       `export_${moduleCode}_run${runIdNum}_station${stationIdNum}_${propLabel}_${startDate}_${endDate}`.replace(

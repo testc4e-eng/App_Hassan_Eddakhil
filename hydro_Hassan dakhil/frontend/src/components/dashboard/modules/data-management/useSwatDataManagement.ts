@@ -11,9 +11,9 @@ import type {
 export type DataTypeFilter = "" | "observed" | "simulated";
 
 export const VARIABLE_OPTIONS: Array<{ value: SwatVariableCode; label: string }> = [
-  { value: "flow_m3s", label: "Debit simule (FLOW_OUT)" },
-  { value: "sed_tons", label: "Sediment simule (SED_OUT)" },
-  { value: "syldt_ha", label: "Apport solide simule (SYLDT_HA)" },
+  { value: "flow_m3s", label: "Débits m³/s" },
+  { value: "sed_tons", label: "Sediment (t)" },
+  { value: "syldt_ha", label: "Dégradation spécifique (t/ha)" },
 ];
 
 export function makeAvailabilityRowSignature(row: SwatAvailability): string {

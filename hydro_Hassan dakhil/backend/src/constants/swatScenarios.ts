@@ -17,10 +17,10 @@ export const NORMALIZED_SWAT_SCENARIOS = [
   { run_id: 102, scenario_code: "ssp126", scenario_name: "Scénario changement climatique SSP126" },
   { run_id: 103, scenario_code: "ssp245", scenario_name: "Scénario changement climatique SSP245" },
   { run_id: 104, scenario_code: "ssp585", scenario_name: "Scénario changement climatique SSP585" },
-  { run_id: 105, scenario_code: "scenario_1", scenario_name: "Scénario changement spatial 1" },
-  { run_id: 106, scenario_code: "scenario_2", scenario_name: "Scénario changement spatial 2" },
-  { run_id: 107, scenario_code: "scenario_3", scenario_name: "Scénario changement spatial 3" },
-  { run_id: 108, scenario_code: "scenario_4", scenario_name: "Scénario changement spatial 4" },
+  { run_id: 105, scenario_code: "scenario_1", scenario_name: "Scénario reboisement pente 9%" },
+  { run_id: 106, scenario_code: "scenario_2", scenario_name: "Scénario reboisement pente 15%" },
+  { run_id: 107, scenario_code: "scenario_3", scenario_name: "Scénario reboisement pente 25%" },
+  { run_id: 108, scenario_code: "scenario_4", scenario_name: "Scénario reboisement Buffer zone" },
 ] as const;
 
 export type NormalizedSwatScenario =

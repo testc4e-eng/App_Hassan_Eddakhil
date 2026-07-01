@@ -1,6 +1,7 @@
 import PDFDocument from "pdfkit";
 import xlsx from "xlsx";
 import {
+  BATHY_HAD_NORMAL_LEVEL_M,
   BATHY_PERIOD_DEFINITIONS,
   buildPeriodVolumesFromBathymetryCampaigns,
 } from "../constants/bathymetryCampaigns";
@@ -19,6 +20,7 @@ import { DatabaseService } from "./database.service";
 type ReservoirBathymetryPoint = {
   level_m: number;
   volume_hm3: number | null;
+  area_km2?: number | null;
 };
 
 export class SiltationService {
@@ -48,7 +50,7 @@ export class SiltationService {
         metadata
       FROM hydro.bathymetry_campaigns
       WHERE dam_code = $1
-      ORDER BY campaign_year
+      ORDER BY measurement_year
       `,
       [damCode]
     );
@@ -59,7 +61,10 @@ export class SiltationService {
     if (!campaigns.length) return null;
 
     const periods = buildPeriodVolumesFromBathymetryCampaigns(campaigns);
-    const campaignYears = campaigns.map((row) => Number(row.campaign_year));
+    const campaignYears = campaigns
+      .map((row) => Number(row.measurement_year))
+      .filter((year) => Number.isFinite(year))
+      .sort((a, b) => a - b);
     const first = campaigns[0];
 
     return {
@@ -76,13 +81,38 @@ export class SiltationService {
   private async fetchReservoirBathymetryRows(): Promise<ReservoirBathymetryPoint[]> {
     return this.db.query<ReservoirBathymetryPoint>(
       `
-      SELECT b.level_m::double precision AS level_m, b.volume_hm3::double precision AS volume_hm3
+      SELECT b.level_m::double precision AS level_m,
+             b.volume_hm3::double precision AS volume_hm3,
+             b.area_km2::double precision AS area_km2
       FROM core.reservoir_bathymetry b
       JOIN core.reservoirs r ON r.reservoir_id = b.reservoir_id
       WHERE UPPER(r.name) LIKE '%HASSAN ADDAKHIL%'
       ORDER BY b.level_m
       `
     );
+  }
+
+  private interpolateVolumeAtLevel(
+    rows: Array<{ level: number; volume: number }>,
+    targetLevel: number
+  ): number | null {
+    if (!rows.length) return null;
+
+    const sorted = [...rows].sort((a, b) => a.level - b.level);
+    if (targetLevel <= sorted[0].level) return sorted[0].volume;
+    if (targetLevel >= sorted[sorted.length - 1].level) {
+      return sorted[sorted.length - 1].volume;
+    }
+
+    for (let index = 0; index < sorted.length - 1; index += 1) {
+      const start = sorted[index];
+      const end = sorted[index + 1];
+      if (targetLevel < start.level || targetLevel > end.level) continue;
+      const ratio = (targetLevel - start.level) / (end.level - start.level);
+      return start.volume + ratio * (end.volume - start.volume);
+    }
+
+    return null;
   }
 
   private buildHsvRowsFromBathyCampaigns(
@@ -93,30 +123,34 @@ export class SiltationService {
       .map((row) => ({
         level: this.toFinite(row.level_m),
         volume: this.toFinite(row.volume_hm3),
+        surface: this.toFinite(row.area_km2),
       }))
-      .filter((row): row is { level: number; volume: number } => row.level !== null && row.volume !== null);
+      .filter((row): row is { level: number; volume: number; surface: number | null } => {
+        return row.level !== null && row.volume !== null;
+      });
 
     if (!baseRows.length) return [];
 
-    const maxBaseVolume = Math.max(...baseRows.map((row) => row.volume));
-    const baseline = campaigns.find((row) => row.campaign_year === OFFICIAL_CAMPAIGN_YEARS[0]);
-    const baselineVolume = this.toFinite(baseline?.volume_mhm3) ?? maxBaseVolume;
+    const normalLevel =
+      this.toFinite(campaigns[0]?.normal_level_m) ?? BATHY_HAD_NORMAL_LEVEL_M;
+    const baseVolumeAtNormal = this.interpolateVolumeAtLevel(baseRows, normalLevel);
+    if (baseVolumeAtNormal === null) return [];
 
     return campaigns.flatMap((campaign) => {
-      const campaignVolume = this.toFinite(campaign.volume_mhm3) ?? baselineVolume;
-      const volumeDelta = Math.max(baselineVolume - campaignVolume, 0);
+      const campaignVolumeAtNormal = this.toFinite(campaign.volume_mhm3);
+      const displayYear = Number(campaign.measurement_year);
+      if (!Number.isFinite(displayYear) || campaignVolumeAtNormal === null) return [];
+
+      const volumeShift = campaignVolumeAtNormal - baseVolumeAtNormal;
 
       return baseRows.map((row) => ({
         hsv_id: 0,
         dam_code: campaign.dam_code,
         dam_name: campaign.dam_name,
-        campaign_year: campaign.campaign_year,
+        campaign_year: displayYear,
         level_m: row.level,
-        surface_km2: null,
-        volume_mhm3:
-          row.volume +
-          volumeDelta *
-            Math.pow(maxBaseVolume > 0 ? row.volume / maxBaseVolume : 0, 0.65),
+        surface_km2: row.surface,
+        volume_mhm3: row.volume + volumeShift,
         source_sheet: `bathy_had:${campaign.source_sheet}`,
       }));
     });
@@ -128,11 +162,13 @@ export class SiltationService {
   ): SiltationIndicatorRow | null {
     if (!campaigns.length) return null;
 
-    const ordered = [...campaigns].sort((a, b) => a.campaign_year - b.campaign_year);
+    const ordered = [...campaigns].sort(
+      (a, b) => Number(a.measurement_year) - Number(b.measurement_year)
+    );
     const first = ordered[0];
     const last = ordered[ordered.length - 1];
-    const baselineYear = first.campaign_year;
-    const currentYear = last.campaign_year;
+    const baselineYear = Number(first.measurement_year);
+    const currentYear = Number(last.measurement_year);
     const volumeInitial = this.toFinite(first.volume_mhm3);
     const volumeCurrent = this.toFinite(last.volume_mhm3);
     const volumeSilted =
@@ -175,7 +211,10 @@ export class SiltationService {
 
   private getOfficialCampaignYears(campaigns?: BathymetryCampaignRow[]): number[] {
     if (campaigns?.length) {
-      return campaigns.map((row) => Number(row.campaign_year)).sort((a, b) => a - b);
+      return campaigns
+        .map((row) => Number(row.measurement_year))
+        .filter((year) => Number.isFinite(year))
+        .sort((a, b) => a - b);
     }
     return [...OFFICIAL_CAMPAIGN_YEARS];
   }

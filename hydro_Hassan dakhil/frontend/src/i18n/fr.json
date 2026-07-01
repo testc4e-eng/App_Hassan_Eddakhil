@@ -208,7 +208,7 @@
   "erosion": {
     "tabs": {
       "sediments": "Sédiments",
-      "solidYield": "Apport solide"
+      "solidYield": "Dégradation spécifique (t/ha)"
     }
   },
   "spatial": {

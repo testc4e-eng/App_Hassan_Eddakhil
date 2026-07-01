@@ -23,21 +23,21 @@ type PropertyMeta = {
 const SWAT_PROPERTIES: PropertyMeta[] = [
   {
     code: "flow_m3s",
-    name: "SWAT Flow Out",
+    name: "SWAT Débits m³/s",
     unit: "m3/s",
     standardName: "SWAT_FLOW_M3S",
-    description: "SWAT simulated flow out at reach outlet (FLOW_OUT).",
+    description: "SWAT simulated Débits m³/s at reach outlet (FLOW_OUT).",
   },
   {
     code: "sed_tons",
-    name: "SWAT Sediment Out",
+    name: "SWAT Sediment (t)",
     unit: "tons",
     standardName: "SWAT_SED_TONS",
     description: "SWAT simulated sediment out at reach outlet (SED_OUT).",
   },
   {
     code: "syldt_ha",
-    name: "SWAT Sediment Yield",
+    name: "SWAT Dégradation spécifique (t/ha)",
     unit: "t/ha",
     standardName: "SWAT_SYLDT_HA",
     description: "SWAT simulated sediment yield by subbasin (SYLDt/ha).",

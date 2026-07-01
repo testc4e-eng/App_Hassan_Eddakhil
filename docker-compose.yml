@@ -5,15 +5,11 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-hydro_hd_1714}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
     ports:
       - "${DB_EXPOSE_PORT:-5435}:5432"
     volumes:
       - hydro_hd_pgdata_dev1606:/var/lib/postgresql/data
-      - type: bind
-        source: "${HYDRO_HD_DUMP_PATH:-C:/dev/Barrage-Hassan Dakhil/hydro_hd.sql}"
-        target: /backup/hydro_hd.dump
-        read_only: true
       - ./docker/db/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test:
@@ -35,7 +31,7 @@ services:
       DB_PORT: 5432
       DB_NAME: ${POSTGRES_DB:-hydro_hd_1714}
       DB_USER: ${POSTGRES_USER:-postgres}
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
       DB_SSL: "false"
       JWT_SECRET: ${JWT_SECRET:-change_me_strong_secret}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
@@ -50,7 +46,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "node -e \"fetch('http://127.0.0.1:5000/api/v1/catalog/runs').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\"",
+          "node -e \"fetch('http://127.0.0.1:5000/api/v1/hydro/test/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\"",
         ]
       interval: 20s
       timeout: 5s

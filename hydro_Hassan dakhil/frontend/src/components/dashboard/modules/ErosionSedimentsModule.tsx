@@ -18,7 +18,7 @@ export function ErosionSedimentsModule() {
         >
           <TabsList className="grid w-full max-w-2xl grid-cols-2 gap-2 bg-transparent p-0">
             <TabsTrigger value="sediments">Érosion / Sédiments</TabsTrigger>
-            <TabsTrigger value="solidYield">Apport solide</TabsTrigger>
+            <TabsTrigger value="solidYield">Dégradation spécifique</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>

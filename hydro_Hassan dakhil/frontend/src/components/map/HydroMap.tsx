@@ -268,7 +268,7 @@ function reachPopupHtml(feature: any) {
       </div>
       <div style="font-size:12px;color:#334155;line-height:1.55;">
         <div><b>Subbasin :</b> ${formatAny(subbasinId)}</div>
-        <div><b>Debit simule :</b> ${
+        <div><b>Débits m³/s :</b> ${
           typeof flowOut === "number"
             ? `${flowOut.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} m3/s`
             : "-"
@@ -521,6 +521,7 @@ function AutoMapView({
   const dataSignature = [
     layers?.basins?.features?.length ?? 0,
     layers?.subBasins?.features?.length ?? 0,
+    layers?.hruSummary?.features?.length ?? 0,
     layers?.reach?.features?.length ?? 0,
     layers?.stations?.features?.length ?? 0,
     barrages?.features?.length ?? 0,
@@ -530,6 +531,7 @@ function AutoMapView({
     const hasData =
       (layers?.basins?.features?.length ?? 0) +
         (layers?.subBasins?.features?.length ?? 0) +
+        (layers?.hruSummary?.features?.length ?? 0) +
         (layers?.reach?.features?.length ?? 0) +
         (layers?.stations?.features?.length ?? 0) +
         (barrages?.features?.length ?? 0) >
@@ -544,6 +546,7 @@ function AutoMapView({
     const bounds = collectionBounds([
       layers?.basins,
       layers?.subBasins,
+      layers?.hruSummary,
       layers?.reach,
       layers?.stations,
       barrages,
@@ -576,10 +579,9 @@ function AutoMapView({
     ]);
     const reach = findFeatureById(layers?.reach, selectedReachId, ["id", "reach_id"]);
     const barrage = findFeatureById(barrages, selectedBarrageId, ["id", "barrage_id"]);
-    const subBasin = findFeatureById(layers?.subBasins, selectedSubBasinId, [
-      "id",
-      "subbasin_id",
-    ]);
+    const subBasin =
+      findFeatureById(layers?.subBasins, selectedSubBasinId, ["id", "subbasin_id"]) ??
+      findFeatureById(layers?.hruSummary, selectedSubBasinId, ["id", "subbasin_id", "Subbasin"]);
     const basin = findFeatureById(layers?.basins, selectedBasinId, [
       "id",
       "catchment_id",
@@ -988,27 +990,32 @@ export function HydroMap({
       const isSelected =
         Number.isFinite(id) && selectedReachId != null && id === selectedReachId;
       return {
-        color: isSelected ? "#F59E0B" : "#3B82F6",
-        weight: isSelected ? 4.5 : 3,
-        opacity: isSelected ? 1 : 0.9,
+        color: isSelected ? "#F59E0B" : isProjectMode ? "#2563EB" : "#3B82F6",
+        weight: isSelected ? 5 : isProjectMode ? 4 : 3,
+        opacity: isSelected ? 1 : 0.95,
       };
     },
-    [selectedReachId]
+    [isProjectMode, selectedReachId]
   );
 
   const hruSummaryStyle = useMemo(
     () => (feature: any) => {
+      const id = Number(feature?.properties?.id ?? feature?.properties?.Subbasin ?? feature?.properties?.subbasin_id);
+      const isSelected =
+        Number.isFinite(id) && selectedSubBasinId != null && id === selectedSubBasinId;
       const className = String(feature?.properties?.DOM_LANDUSE ?? "UNKNOWN");
       const idx = hashToIndex(className, SUBBASIN_PALETTE.length);
       return {
-        color: "#7C3AED",
-        weight: 1.8,
+        color: isSelected ? "#F59E0B" : "#7C3AED",
+        weight: isSelected ? 3.2 : 2,
         opacity: 0.95,
-        fillColor: SUBBASIN_PALETTE[idx] ?? "#A78BFA",
-        fillOpacity: Math.max(0.2, Math.min(0.34, o * 0.3)),
+        fillColor: isSelected ? "#FBBF24" : SUBBASIN_PALETTE[idx] ?? "#A78BFA",
+        fillOpacity: isSelected
+          ? Math.max(0.34, Math.min(0.48, o * 0.45))
+          : Math.max(0.24, Math.min(0.38, o * 0.34)),
       };
     },
-    [o]
+    [o, selectedSubBasinId]
   );
 
   const onEachBasin = useMemo(
@@ -1147,6 +1154,7 @@ export function HydroMap({
   const onEachHruSummary = useMemo(
     () => (feature: any, layer: Layer) => {
       const p: any = feature?.properties || {};
+      const subbasinId = Number(p.id ?? p.Subbasin ?? p.subbasin_id ?? NaN);
       const title = p.name ?? `Subbasin ${p.Subbasin ?? p.id ?? "-"}`;
       const landuse = p.DOM_LANDUSE ?? "-";
       const soil = p.DOM_SOIL ?? "-";
@@ -1178,17 +1186,29 @@ export function HydroMap({
       layer.on({
         mouseover: () => {
           (layer as any).setStyle({
-            weight: 2.6,
-            fillOpacity: Math.min(0.48, Math.max(0.26, o * 0.4)),
+            weight: 3.2,
+            fillOpacity: Math.min(0.52, Math.max(0.3, o * 0.45)),
           });
           (layer as any).bringToFront?.();
         },
         mouseout: () => {
           (layer as any).setStyle((hruSummaryStyle as any)(feature));
         },
+        click: () => {
+          if (!Number.isFinite(subbasinId)) return;
+          onSubBasinSelect?.({
+            subbasinId,
+            name: String(title),
+            catchmentId: Number.isFinite(Number(p.catchment_id))
+              ? Number(p.catchment_id)
+              : null,
+            properties: p,
+          });
+          (layer as any).openPopup?.();
+        },
       });
     },
-    [o, hruSummaryStyle]
+    [o, hruSummaryStyle, onSubBasinSelect]
   );
 
   return (

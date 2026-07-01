@@ -14,19 +14,20 @@ import type { FilterState } from "@/types/hydro";
 import { useHydroData } from "@/contexts/HydroDataContext";
 import { hydroApi, type StationSimulationResponse } from "@/api/hydro";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { NORMALIZED_SWAT_SCENARIOS } from "@/constants/swatScenarios";
+import { resolveSwatScenarioLabel } from "@/constants/swatScenarios";
 import { formatDateByAggregation } from "@/lib/seriesGranularity";
+import { RECHARTS_LEGEND_BOTTOM, RECHARTS_MARGIN_STANDARD } from "@/lib/chartLayout";
 
 function resolveScenarioLabels(
   scenarioCode?: string | null,
-  scenarioName?: string | null
+  scenarioName?: string | null,
+  runId?: number | null
 ) {
-  const normalizedCode = String(scenarioCode || "").trim().toLowerCase();
-  const catalog = NORMALIZED_SWAT_SCENARIOS.find((item) => item.code === normalizedCode);
-  const titleLabel = scenarioName || catalog?.label || scenarioCode || "Simulation SWAT";
+  const titleLabel = resolveSwatScenarioLabel(scenarioCode, scenarioName, runId) || "Simulation SWAT";
   const legendSuffix =
     titleLabel.match(/SSP\d+/i)?.[0]?.toUpperCase() ||
-    titleLabel.match(/Scénario\s+\d+/i)?.[0] ||
+    titleLabel.match(/pente\s+\d+%/i)?.[0] ||
+    titleLabel.match(/Buffer zone/i)?.[0] ||
     String(scenarioCode || "Simulation").toUpperCase();
   return { titleLabel, legendSuffix };
 }
@@ -174,9 +175,10 @@ export function StationSimulationComparison({
     () =>
       resolveScenarioLabels(
         simulationRun?.scenario_code || data?.scenario.scenarioCode,
-        simulationRun?.scenario_name || data?.scenario.scenarioName
+        simulationRun?.scenario_name || data?.scenario.scenarioName,
+        simulationRunId
       ),
-    [simulationRun, data?.scenario]
+    [simulationRun, data?.scenario, simulationRunId]
   );
 
   const hasSimulatedValues = useMemo(
@@ -279,7 +281,7 @@ export function StationSimulationComparison({
             {hasSimulatedValues || chartRows.some((row) => Number.isFinite(row.observed ?? NaN)) ? (
               <div className="h-[320px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartRows} margin={{ top: 8, right: 16, left: 4, bottom: 8 }}>
+                  <LineChart data={chartRows} margin={RECHARTS_MARGIN_STANDARD}>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.35} />
                     <XAxis
                       dataKey="date"
@@ -291,7 +293,7 @@ export function StationSimulationComparison({
                     <Tooltip
                       labelFormatter={(label) => formatDateByAggregation(String(label), aggregation)}
                     />
-                    <Legend />
+                    <Legend {...RECHARTS_LEGEND_BOTTOM} />
                     <Line
                       type="monotone"
                       dataKey="observed"

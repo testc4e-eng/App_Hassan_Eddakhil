@@ -27,7 +27,7 @@ export function ErosionSedimentsModuleV2() {
               value="solidYield"
               className="h-12 rounded-xl border border-orange-300 bg-orange-50 text-base font-semibold text-orange-900 transition-all data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:shadow-md"
             >
-              Apport solide
+              Dégradation spécifique
             </TabsTrigger>
           </TabsList>
         </Tabs>

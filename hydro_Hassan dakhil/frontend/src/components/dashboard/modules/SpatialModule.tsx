@@ -47,6 +47,9 @@ import {
   fetchBarrages,
   fetchProjectHassanAddakhil,
   fetchSubBasins,
+  fetchSubbasinHruSummary,
+  fetchNvStreamNetwork,
+  normalizeNvStreamReachCollection,
   fetchReaches,
   fetchStations,
   type FeatureCollection,
@@ -282,6 +285,8 @@ export function OperationalSpatialModule() {
   const [reachesFC, setReachesFC] = useState<FeatureCollection | null>(null);
   const [stationsFC, setStationsFC] = useState<FeatureCollection | null>(null);
   const [projectData, setProjectData] = useState<ProjectSpatialData | null>(null);
+  const [hruSummaryFC, setHruSummaryFC] = useState<FeatureCollection | null>(null);
+  const [nvStreamFC, setNvStreamFC] = useState<FeatureCollection | null>(null);
 
   // options + filtres
   const [basinOptions, setBasinOptions] = useState<BasinOption[]>([]);
@@ -391,8 +396,15 @@ export function OperationalSpatialModule() {
     setSelectedBasinId("");
     setSelectedBarrageId("");
     setSelectedSubBasinId(nextValue);
-    setSelectedReachId("");
     setSelectedStationId("");
+    if (nextValue) {
+      const subId = Number(nextValue);
+      const linkedReach = availableReaches.find((reach) => reach.subbasinId === subId);
+      setSelectedReachId(linkedReach ? String(linkedReach.id) : "");
+      setLeftSidebarLayers((prev) => (prev.reach ? prev : { ...prev, reach: true }));
+    } else {
+      setSelectedReachId("");
+    }
     setInspectorSelection(nextValue ? buildSubBasinSelection(Number(nextValue)) : null);
   };
 
@@ -496,29 +508,6 @@ export function OperationalSpatialModule() {
     }
     return stationOptions;
   }, [isProjectMode, projectData, stationOptions]);
-
-  const availableReaches = useMemo(() => {
-    if (isProjectMode) {
-      const features = projectData?.reaches?.features ?? [];
-      const list = features
-        .map((f) => {
-          const p = f?.properties ?? {};
-          const id = Number(p.id ?? p.reach_id);
-          const code = p.reach_code ? String(p.reach_code) : undefined;
-          return {
-            id,
-            name: code ? `Troncon ${code}` : `Troncon ${id}`,
-            code,
-            subbasinId: Number(p.subbasin_id ?? NaN),
-            catchmentId: Number(p.catchment_id ?? NaN),
-          };
-        })
-        .filter((x) => Number.isFinite(x.id))
-        .sort((a, b) => a.name.localeCompare(b.name));
-      return list.length ? list : reachOptions;
-    }
-    return reachOptions;
-  }, [isProjectMode, projectData, reachOptions]);
 
   // ===== 1) Load raw layers when the raw mode is active =====
   useEffect(() => {
@@ -776,9 +765,15 @@ export function OperationalSpatialModule() {
 
     (async () => {
       try {
-        const data = await fetchProjectHassanAddakhil();
+        const [data, hruSummary, nvStream] = await Promise.all([
+          fetchProjectHassanAddakhil(),
+          fetchSubbasinHruSummary(),
+          fetchNvStreamNetwork(),
+        ]);
         if (!cancelled) {
           setProjectData(data);
+          setHruSummaryFC(hruSummary);
+          setNvStreamFC(nvStream);
         }
       } catch (e) {
         console.error("fetchProjectHassanAddakhil failed", e);
@@ -787,14 +782,54 @@ export function OperationalSpatialModule() {
 
     return () => {
       cancelled = true;
+      setHruSummaryFC(null);
+      setNvStreamFC(null);
     };
   }, [isProjectMode]);
 
+  const projectReachMapFC = useMemo(() => {
+    if (!isProjectMode || !nvStreamFC) return null;
+    return normalizeNvStreamReachCollection(nvStreamFC, projectData?.reaches ?? null);
+  }, [isProjectMode, nvStreamFC, projectData?.reaches]);
+
   const visibleBasinsFC = isProjectMode ? projectData?.basins ?? null : basinsFC;
   const visibleSubBasinsFC = isProjectMode ? projectData?.subbasins ?? null : subBasinsFC;
-  const visibleReachesFC = isProjectMode ? projectData?.reaches ?? reachesFC : reachesFC;
+  const visibleSubBasinMapFC = isProjectMode
+    ? hruSummaryFC ?? visibleSubBasinsFC
+    : visibleSubBasinsFC;
+  const visibleReachesFC = isProjectMode
+    ? projectReachMapFC ?? projectData?.reaches ?? null
+    : reachesFC;
   const visibleStationsFC = isProjectMode ? projectData?.stations ?? null : stationsFC;
   const visibleBarragesFC = isProjectMode ? projectData?.barrages ?? null : barragesFC;
+
+  const availableReaches = useMemo(() => {
+    const features = visibleReachesFC?.features ?? [];
+    const list = features
+      .map((f) => {
+        const p = f?.properties ?? {};
+        const id = Number(p.id ?? p.reach_id);
+        const code = p.reach_code ? String(p.reach_code) : undefined;
+        return {
+          id,
+          name: code ? `Troncon ${code}` : `Troncon ${id}`,
+          code,
+          subbasinId: Number(p.subbasin_id ?? p.Subbasin ?? NaN),
+          catchmentId: Number(p.catchment_id ?? NaN),
+        };
+      })
+      .filter((x) => Number.isFinite(x.id))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    return list.length ? list : reachOptions;
+  }, [visibleReachesFC, reachOptions]);
+
+  const reachesForSelection = useMemo(() => {
+    if (!selectedSubBasinId) return availableReaches;
+    const subId = Number(selectedSubBasinId);
+    if (!Number.isFinite(subId)) return availableReaches;
+    const filtered = availableReaches.filter((reach) => reach.subbasinId === subId);
+    return filtered.length ? filtered : availableReaches;
+  }, [availableReaches, selectedSubBasinId]);
 
   const activeBasinId = selectedBasinId ? Number(selectedBasinId) : null;
   const activeBarrageId = selectedBarrageId ? Number(selectedBarrageId) : null;
@@ -842,7 +877,9 @@ export function OperationalSpatialModule() {
   };
 
   const buildSubBasinSelection = (subbasinId: number): SpatialInspectorSelection | null => {
-    const feature = findFeatureById(visibleSubBasinsFC, subbasinId, ["id", "subbasin_id"]);
+    const feature =
+      findFeatureById(visibleSubBasinsFC, subbasinId, ["id", "subbasin_id"]) ??
+      findFeatureById(visibleSubBasinMapFC, subbasinId, ["id", "subbasin_id", "Subbasin"]);
     if (!feature) return null;
     const properties = (feature.properties ?? {}) as Record<string, unknown>;
     const catchmentId = Number(properties.catchment_id ?? NaN);
@@ -914,12 +951,15 @@ export function OperationalSpatialModule() {
 
   const toReachEntityOptions = useMemo<EntityControlOption[]>(
     () =>
-      availableReaches.map((reach) => ({
+      reachesForSelection.map((reach) => ({
         id: reach.id,
         label: reach.name,
-        meta: reach.code,
+        meta:
+          reach.subbasinId && Number.isFinite(reach.subbasinId)
+            ? `SB ${reach.subbasinId}${reach.code ? ` • ${reach.code}` : ""}`
+            : reach.code,
       })),
-    [availableReaches]
+    [reachesForSelection]
   );
 
   const toBarrageEntityOptions = useMemo<EntityControlOption[]>(
@@ -974,16 +1014,20 @@ export function OperationalSpatialModule() {
   };
 
   const mapLayers = useMemo(() => {
+    const showSubBasins = leftSidebarLayers.subBasins;
     return {
       basins: leftSidebarLayers.basins ? visibleBasinsFC : null,
-      subBasins: leftSidebarLayers.subBasins ? visibleSubBasinsFC : null,
+      subBasins: showSubBasins && !isProjectMode ? visibleSubBasinsFC : null,
+      hruSummary: showSubBasins && isProjectMode ? visibleSubBasinMapFC : null,
       reach: leftSidebarLayers.reach ? visibleReachesFC : null,
       stations: leftSidebarLayers.stations ? visibleStationsFC : null,
     };
   }, [
+    isProjectMode,
     leftSidebarLayers,
     visibleBasinsFC,
     visibleSubBasinsFC,
+    visibleSubBasinMapFC,
     visibleReachesFC,
     visibleStationsFC,
   ]);
@@ -1022,6 +1066,11 @@ export function OperationalSpatialModule() {
         <label className="mt-3 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2 text-sm text-slate-700">
           <span>Contour du bassin</span>
           <Checkbox checked={leftSidebarLayers.basins} onCheckedChange={() => toggleLayer("basins")} />
+        </label>
+
+        <label className="mt-2 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2 text-sm text-slate-700">
+          <span>Troncons (reaches)</span>
+          <Checkbox checked={leftSidebarLayers.reach} onCheckedChange={() => toggleLayer("reach")} />
         </label>
 
         <div className="mt-3 flex flex-wrap gap-2">
@@ -1079,6 +1128,21 @@ export function OperationalSpatialModule() {
           onSelect={(value) => selectAndZoomToEntity("subBasins", value, focusSubBasin)}
           onEmphasize={() => emphasizeSelection("subBasins", selectedSubBasinId, focusSubBasin)}
           onZoom={() => zoomToSelection("subBasins", selectedSubBasinId, focusSubBasin)}
+        />
+
+        <EntityControlCard
+          title="Troncons"
+          helper="Reseau hydro lineaire rattache a chaque sous-bassin."
+          icon={<Waves className="h-4 w-4" />}
+          visible={leftSidebarLayers.reach}
+          count={stats.reaches}
+          selectedValue={selectedReachId}
+          options={toReachEntityOptions}
+          placeholder={selectedSubBasinId ? "Troncon du sous-bassin" : "Tous les troncons"}
+          onToggleVisibility={() => toggleLayer("reach")}
+          onSelect={(value) => selectAndZoomToEntity("reach", value, focusReach)}
+          onEmphasize={() => emphasizeSelection("reach", selectedReachId, focusReach)}
+          onZoom={() => zoomToSelection("reach", selectedReachId, focusReach)}
         />
       </div>
     </div>
@@ -1374,9 +1438,13 @@ export function OperationalSpatialModule() {
         }}
         onSubBasinSelect={(payload) => {
           setSelectedBarrageId("");
-          setSelectedReachId("");
           setSelectedSubBasinId(String(payload.subbasinId));
           setSelectedStationId("");
+          const linkedReach = availableReaches.find(
+            (reach) => reach.subbasinId === payload.subbasinId
+          );
+          setSelectedReachId(linkedReach ? String(linkedReach.id) : "");
+          setLeftSidebarLayers((prev) => (prev.reach ? prev : { ...prev, reach: true }));
           setInspectorSelection({
             kind: "subbasin",
             subbasinId: payload.subbasinId,
