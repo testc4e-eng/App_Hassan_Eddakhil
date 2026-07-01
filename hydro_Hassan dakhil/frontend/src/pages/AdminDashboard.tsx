@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Shield, Users, UserCheck, UserX, ArrowRight } from "lucide-react";
+import { Shield, Users, UserCheck, UserX, ArrowRight, Database } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { fetchAdminUsersApi } from "@/api/auth";
@@ -104,6 +104,11 @@ export default function AdminDashboard() {
             <Button asChild className="justify-between">
               <Link to="/admin/users">
                 Gestion des utilisateurs <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="justify-between">
+              <Link to="/admin/database">
+                Configuration base de données <Database className="h-4 w-4" />
               </Link>
             </Button>
             <Button asChild variant="outline" className="justify-between">

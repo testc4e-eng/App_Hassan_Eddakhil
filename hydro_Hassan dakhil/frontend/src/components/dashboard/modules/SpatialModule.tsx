@@ -41,6 +41,10 @@ import { BASEMAPS, DEFAULT_BASEMAP, type BasemapId } from "@/config/basemaps";
 import { formatStationDisplayName, formatSubbasinDisplayName } from "@/lib/stationLabels";
 import type { SpatialDisplayMode } from "@/types/spatial";
 import { HASSAN_ADDAKHIL_STATION_IDS } from "@/constants/projectStations";
+import { ThematicSubbasinPanel } from "./ThematicSubbasinPanel";
+import { ThematicReachPanel } from "./ThematicReachPanel";
+import { ThematicLegend } from "@/components/map/ThematicLegend";
+import type { ThematicLayerConfig } from "@/types/thematic";
 
 import {
   fetchBasins,
@@ -270,6 +274,10 @@ export function OperationalSpatialModule() {
   const opacity = opacityPct[0] / 100;
 
   const [activeTool, setActiveTool] = useState<"distance" | "area" | null>(null);
+
+  // cartes thématiques
+  const [thematicLayers, setThematicLayers] = useState<ThematicLayerConfig[]>([]);
+  const [activeThematicTab, setActiveThematicTab] = useState<"none" | "subbasin" | "reach">("none");
 
   // tick zoom bassin
   const [zoomTick, setZoomTick] = useState(0);
@@ -1084,6 +1092,70 @@ export function OperationalSpatialModule() {
         </div>
       </div>
 
+      <div className="rounded-2xl border border-white/70 bg-white/80 p-3 shadow-sm">
+        <div className="mb-3">
+          <div className="text-sm font-semibold text-slate-900">Carte thématique</div>
+          <div className="text-[11px] text-slate-500">
+            Visualiser les indicateurs de vulnérabilité et de sédiments.
+          </div>
+        </div>
+
+        <div className="mb-3 flex gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant={activeThematicTab === "subbasin" ? "default" : "outline"}
+            className="flex-1"
+            onClick={() => setActiveThematicTab(activeThematicTab === "subbasin" ? "none" : "subbasin")}
+          >
+            Vulnérabilité sous-bassins
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={activeThematicTab === "reach" ? "default" : "outline"}
+            className="flex-1"
+            onClick={() => setActiveThematicTab(activeThematicTab === "reach" ? "none" : "reach")}
+          >
+            Sédiments reaches
+          </Button>
+        </div>
+
+        {activeThematicTab === "subbasin" && (
+          <ThematicSubbasinPanel
+            onChange={(config) => {
+              setThematicLayers((prev) => {
+                const others = prev.filter((l) => l.entityType !== "subbasin");
+                return config ? [...others, config] : others;
+              });
+            }}
+          />
+        )}
+
+        {activeThematicTab === "reach" && (
+          <ThematicReachPanel
+            onChange={(config) => {
+              setThematicLayers((prev) => {
+                const others = prev.filter((l) => l.entityType !== "reach");
+                return config ? [...others, config] : others;
+              });
+            }}
+          />
+        )}
+
+        {thematicLayers.map((layer) => (
+          <div key={`${layer.entityType}-${layer.label}`} className="mt-3">
+            <ThematicLegend
+              title={layer.label}
+              colors={layer.colors}
+              min={layer.min}
+              max={layer.max}
+              unit={layer.unit}
+            />
+          </div>
+        ))}
+      </div>
+
       <div className="space-y-3">
         <EntityControlCard
           title="Barrages"
@@ -1410,6 +1482,7 @@ export function OperationalSpatialModule() {
         basemap={basemap}
         displayMode={displayMode}
         layers={mapLayers}
+        thematicLayers={thematicLayers}
         barrages={leftSidebarLayers.barrages ? visibleBarragesFC : null}
         selectionZoomRequest={{ tick: zoomTick }}
         activeTool={activeTool}

@@ -14,6 +14,7 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsers from "./pages/AdminUsers";
+import DatabaseConfigPage from "./pages/admin/DatabaseConfigPage";
 import ChangePassword from "./pages/ChangePassword";
 
 const queryClient = new QueryClient();
@@ -85,6 +86,7 @@ const App = () => (
               />
               <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
               <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+              <Route path="/admin/database" element={<AdminRoute><DatabaseConfigPage /></AdminRoute>} />
               <Route path="/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>

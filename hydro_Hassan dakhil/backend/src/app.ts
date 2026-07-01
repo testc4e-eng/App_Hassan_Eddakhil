@@ -14,11 +14,14 @@ import accessRoutes from "./routes/access";
 import { errorHandler } from "./middleware/errorHandler";
 import spatialRoutes from "./routes/spatialRoutes";
 import mapsRoutes from "./routes/maps.routes";
+import thematicSubbasinRoutes from "./routes/thematicSubbasin.routes";
+import thematicReachRoutes from "./routes/thematicReach.routes";
 import swatRoutes from "./routes/swatRoutes";
 import dataScanRoutes from "./routes/dataScan.routes";
 import solidYieldRoutes from "./routes/solidYieldRoutes";
 import authRoutes from "./routes/authRoutes";
 import adminRoutes from "./routes/adminRoutes";
+import adminDbConfigRoutes from "./routes/adminDbConfig.routes";
 import stationSimulationRoutes from "./routes/stationSimulationRoutes";
 import siltationRoutes from "./routes/siltationRoutes";
 dotenv.config();
@@ -95,6 +98,8 @@ app.use("/api/v1/timeseries", timeseriesRoutes);
 app.use("/api/v1/catalog", catalogRoutes);
 app.use("/api/v1/spatial", spatialRoutes);
 app.use("/api/v1/maps", mapsRoutes);
+app.use("/api/v1/maps/thematic/subbasins", thematicSubbasinRoutes);
+app.use("/api/v1/maps/thematic/reaches", thematicReachRoutes);
 app.use("/api/v1/access", accessRoutes);
 app.use("/api/v1/hydro/swat", swatRoutes);
 app.use("/api/v1", stationSimulationRoutes);
@@ -106,6 +111,7 @@ app.use("/api/v1", catalogAvailabilityRouter);
 app.use("/api/v1/siltation", siltationRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/admin", adminDbConfigRoutes);
 
 app.get("/", (req: Request, res: Response) => {
   res.json({

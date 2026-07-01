@@ -8,6 +8,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import { BASEMAPS, type BasemapId } from "@/config/basemaps";
 import { formatStationDisplayName, formatSubbasinDisplayName } from "@/lib/stationLabels";
+import { ThematicSubbasinLayer } from "./ThematicSubbasinLayer";
+import { ThematicReachLayer } from "./ThematicReachLayer";
 
 const AnyTileLayer = TileLayer as any;
 
@@ -29,6 +31,16 @@ type ThematicConfig = {
   label: string;
 };
 
+type ThematicLayerConfig = {
+  entityType: "subbasin" | "reach";
+  data: FeatureCollection;
+  colors: string[];
+  min: number;
+  max: number;
+  unit: string;
+  label: string;
+};
+
 type Props = {
   className?: string;
   opacity?: number; // 0..1
@@ -43,6 +55,7 @@ type Props = {
   };
   barrages?: FeatureCollection | null;
   thematic?: ThematicConfig;
+  thematicLayers?: ThematicLayerConfig[];
 
   zoomToBasinRequest?: ZoomToBasinRequest;
   resetViewRequest?: ResetViewRequest;
@@ -908,6 +921,7 @@ export function HydroMap({
   layers,
   barrages,
   thematic,
+  thematicLayers,
   zoomToBasinRequest,
   resetViewRequest,
   selectionZoomRequest,
@@ -1416,6 +1430,27 @@ export function HydroMap({
               pane: "reachPane",
             } as any)}
           />
+        )}
+
+        {/* THEMATIC LAYERS */}
+        {thematicLayers?.map((layer) =>
+          layer.entityType === "subbasin" ? (
+            <ThematicSubbasinLayer
+              key={`subbasin-thematic-${layer.label}`}
+              data={layer.data}
+              colors={layer.colors}
+              min={layer.min}
+              max={layer.max}
+            />
+          ) : (
+            <ThematicReachLayer
+              key={`reach-thematic-${layer.label}`}
+              data={layer.data}
+              colors={layer.colors}
+              min={layer.min}
+              max={layer.max}
+            />
+          )
         )}
 
         {/* STATIONS */}
