@@ -37,7 +37,7 @@ export function ClimateModule() {
 
   return (
     <div className="w-full max-w-[1600px] mx-auto space-y-3 px-4 lg:px-5">
-      <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-4 items-stretch">
+      <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-4 items-start">
         <div>
           <AnalyticsChartCard
             title={chartTitle}
@@ -50,12 +50,17 @@ export function ClimateModule() {
               </div>
             }
           >
-            <TimeSeriesChart
-              moduleCode="climat"
-              filters={filters}
-              displayMode={chartDisplayMode}
-              onDisplayModeChange={setChartDisplayMode}
-            />
+            <div className="flex h-full min-h-0 flex-col">
+              <AnalyticsStatsRow moduleCode="climat" filters={filters} embedded />
+              <div className="min-h-0 flex-1">
+                <TimeSeriesChart
+                  moduleCode="climat"
+                  filters={filters}
+                  displayMode={chartDisplayMode}
+                  onDisplayModeChange={setChartDisplayMode}
+                />
+              </div>
+            </div>
           </AnalyticsChartCard>
         </div>
 
@@ -73,7 +78,6 @@ export function ClimateModule() {
       </div>
 
         <div className="space-y-3">
-        <AnalyticsStatsRow moduleCode="climat" filters={filters} />
         <AnalyticsDataTable
           moduleCode="climat"
           filters={filters}

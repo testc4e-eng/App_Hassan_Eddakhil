@@ -39,7 +39,7 @@ export function HydraulicModule() {
 
   return (
     <div className="w-full max-w-[1600px] mx-auto space-y-3 px-4 lg:px-5">
-      <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-4 items-stretch">
+      <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-4 items-start">
         <div>
           <AnalyticsChartCard
             title={chartTitle}
@@ -52,21 +52,26 @@ export function HydraulicModule() {
               </div>
             }
           >
-            {isScenarioComparisonActive ? (
-              <ScenarioComparisonChart
-                moduleCode="hydro"
-                filters={filters}
-                displayMode={chartDisplayMode}
-                onDisplayModeChange={setChartDisplayMode}
-              />
-            ) : (
-              <TimeSeriesChart
-                moduleCode="hydro"
-                filters={filters}
-                displayMode={chartDisplayMode}
-                onDisplayModeChange={setChartDisplayMode}
-              />
-            )}
+            <div className="flex h-full min-h-0 flex-col">
+              <AnalyticsStatsRow moduleCode="hydro" filters={filters} embedded />
+              <div className="min-h-0 flex-1">
+                {isScenarioComparisonActive ? (
+                  <ScenarioComparisonChart
+                    moduleCode="hydro"
+                    filters={filters}
+                    displayMode={chartDisplayMode}
+                    onDisplayModeChange={setChartDisplayMode}
+                  />
+                ) : (
+                  <TimeSeriesChart
+                    moduleCode="hydro"
+                    filters={filters}
+                    displayMode={chartDisplayMode}
+                    onDisplayModeChange={setChartDisplayMode}
+                  />
+                )}
+              </div>
+            </div>
           </AnalyticsChartCard>
         </div>
 
@@ -84,7 +89,6 @@ export function HydraulicModule() {
       </div>
 
       <div className="space-y-3">
-        <AnalyticsStatsRow moduleCode="hydro" filters={filters} />
         <StationSimulationComparison filters={filters} />
         <AnalyticsDataTable
           moduleCode="hydro"

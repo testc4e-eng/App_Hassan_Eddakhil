@@ -3,6 +3,7 @@ import type { FilterState } from "@/types/hydro";
 import { Card } from "@/components/ui/card";
 import { timeseriesApi } from "@/api/timeseries";
 import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type ModuleCode = "climat" | "hydro" | "erosion";
 
@@ -69,9 +70,11 @@ function fmt(v: number | null) {
 export function AnalyticsStatsRow({
   moduleCode,
   filters,
+  embedded = false,
 }: {
   moduleCode: ModuleCode;
   filters: FilterState;
+  embedded?: boolean;
 }) {
   const [stats, setStats] = useState<Stats>(EMPTY_STATS);
   const [loading, setLoading] = useState(false);
@@ -168,28 +171,51 @@ export function AnalyticsStatsRow({
     { label: "Max", value: fmt(stats.max) },
     { label: "Moyenne", value: fmt(stats.mean) },
     { label: "Somme", value: fmt(stats.sum) },
-    { label: "Manquantes", value: String(stats.missing) },
   ];
 
   return (
-    <div className="space-y-2.5">
-      <h3 className="text-xs font-semibold text-foreground">
-        Statistiques sur la période sélectionnée
-      </h3>
+    <div className={embedded ? "mb-4" : "space-y-2.5"}>
+      {!embedded ? (
+        <h3 className="text-xs font-semibold text-foreground">
+          Statistiques sur la période sélectionnée
+        </h3>
+      ) : null}
       {loading && (
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div
+          className={cn(
+            "flex items-center gap-2 text-xs text-muted-foreground",
+            embedded ? "mb-2" : undefined
+          )}
+        >
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
           Chargement des statistiques...
         </div>
       )}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
         {items.map((item) => (
           <Card
             key={item.label}
-            className="h-[72px] rounded-xl border-border/70 bg-card/80 px-3 py-2 shadow-sm"
+            className={cn(
+              "rounded-xl border-border/70 bg-card/80 shadow-sm",
+              embedded ? "min-h-[84px] px-4 py-3" : "h-[72px] px-3 py-2"
+            )}
           >
-            <div className="text-[10px] text-muted-foreground">{item.label}</div>
-            <div className="text-base font-semibold text-foreground">{item.value}</div>
+            <div
+              className={cn(
+                "text-muted-foreground",
+                embedded ? "text-xs font-medium" : "text-[10px]"
+              )}
+            >
+              {item.label}
+            </div>
+            <div
+              className={cn(
+                "font-semibold text-foreground",
+                embedded ? "text-lg leading-snug" : "text-base"
+              )}
+            >
+              {item.value}
+            </div>
           </Card>
         ))}
       </div>

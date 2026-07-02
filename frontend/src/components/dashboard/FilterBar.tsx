@@ -1201,7 +1201,7 @@ export function FilterBar({
                   </span>
                 </div>
 
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {comparisonRunOptions.map((run) => {
                     const checked = compareRunIds.includes(run.run_id);
                     const isPrimary = run.run_id === selectedRunId;
@@ -1308,7 +1308,7 @@ export function FilterBar({
                       </span>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                       {variableOptions.map((variable) => {
                         const checked = selectedVariableIds.includes(
                           variable.property_id

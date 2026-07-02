@@ -45,7 +45,7 @@ import {
   extractSelectNumericPart,
 } from "@/lib/selectOptions";
 import { useHydroData } from "@/contexts/HydroDataContext";
-import { Calendar, Download, Maximize2, RefreshCw } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Download, Maximize2, RefreshCw } from "lucide-react";
 import { ChartExportMenu } from "@/components/charts/ChartExportMenu";
 import { ExpandableDialog } from "@/components/dashboard/analytics/ExpandableDialog";
 import { buildChartImageFileName, downloadChartAsImage } from "@/lib/chartExport";
@@ -62,8 +62,16 @@ import {
   RECHARTS_X_AXIS_BOTTOM,
   rechartsXAxisBottomLabel,
 } from "@/lib/chartLayout";
+import { SpecificDegradationThematicMapsSection } from "@/components/dashboard/modules/sediments/SpecificDegradationThematicMapsSection";
+import {
+  CompareScenariosMultiSelect,
+  FilterField,
+} from "@/components/dashboard/modules/sediments/SolidYieldLayoutSections";
+import { getScenarioChartColor } from "@/constants/scenarioColors";
+import { cn } from "@/lib/utils";
 
 const EMPTY_DATE = "";
+const TABLE_PAGE_SIZE = 10;
 const MULTI_COLORS = ["#f97316", "#06b6d4", "#8b5cf6", "#22c55e", "#ef4444", "#eab308"];
 
 type Mode = "simple" | "multi";
@@ -76,6 +84,7 @@ type MultiSeries = {
 
 type ScenarioSeries = {
   runId: number;
+  scenarioCode: string;
   label: string;
   points: SolidYieldPoint[];
 };
@@ -255,13 +264,13 @@ function SolidYieldChartPanel({
                 }
               />
               <Legend {...RECHARTS_LEGEND_BOTTOM} />
-              {scenarioSeries.map((item, idx) => (
+              {scenarioSeries.map((item) => (
                 <Line
                   key={item.runId}
                   type="monotone"
                   dataKey={`run_${item.runId}`}
                   name={item.label}
-                  stroke={MULTI_COLORS[idx % MULTI_COLORS.length]}
+                  stroke={getScenarioChartColor(item.scenarioCode, item.runId)}
                   strokeWidth={2}
                   dot={false}
                   connectNulls={false}
@@ -348,6 +357,7 @@ export function SolidYieldModuleV2() {
   const [endDate, setEndDate] = useState(EMPTY_DATE);
   const [compareSubbasins, setCompareSubbasins] = useState<number[]>([]);
   const [compareRunIds, setCompareRunIds] = useState<number[]>([]);
+  const [tablePage, setTablePage] = useState(1);
   const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -538,6 +548,7 @@ export function SolidYieldModuleV2() {
 
   const selectedSubbasinValue = selectedSubbasinOption?.value ?? "";
   const selectedRunValue = selectedRunOption?.value ?? "";
+  const selectedSubbasinNumericId = selectedSubbasinOption?.subbasin_id ?? null;
 
   const activeAvailability = useMemo(() => {
     if (!subbasinStationId || !runId) return null;
@@ -807,6 +818,7 @@ export function SolidYieldModuleV2() {
             });
             return {
               runId: id,
+              scenarioCode: run?.scenario_code ?? "",
               label: run?.scenario_name ?? `Run ${id}`,
               points,
             } satisfies ScenarioSeries;
@@ -1019,7 +1031,45 @@ export function SolidYieldModuleV2() {
     setInterval("day");
     setStartDate(toDateOnly(source.min_date) || EMPTY_DATE);
     setEndDate(toDateOnly(source.max_date) || EMPTY_DATE);
+    setTablePage(1);
   };
+
+  const applyFilters = () => {
+    setTablePage(1);
+  };
+
+  const totalTableRows = mode === "multi" ? multiTable.length : series.length;
+  const totalTablePages = Math.max(1, Math.ceil(totalTableRows / TABLE_PAGE_SIZE));
+
+  const paginatedSeries = useMemo(() => {
+    const start = (tablePage - 1) * TABLE_PAGE_SIZE;
+    return series.slice(start, start + TABLE_PAGE_SIZE);
+  }, [series, tablePage]);
+
+  const paginatedMultiTable = useMemo(() => {
+    const start = (tablePage - 1) * TABLE_PAGE_SIZE;
+    return multiTable.slice(start, start + TABLE_PAGE_SIZE);
+  }, [multiTable, tablePage]);
+
+  const tablePageNumbers = useMemo(() => {
+    if (totalTablePages <= 7) {
+      return Array.from({ length: totalTablePages }, (_, index) => index + 1);
+    }
+    const pages = new Set<number>([1, totalTablePages, tablePage, tablePage - 1, tablePage + 1]);
+    return Array.from(pages)
+      .filter((page) => page >= 1 && page <= totalTablePages)
+      .sort((a, b) => a - b);
+  }, [tablePage, totalTablePages]);
+
+  useEffect(() => {
+    setTablePage(1);
+  }, [subbasinStationId, runId, interval, startDate, endDate, mode]);
+
+  useEffect(() => {
+    if (tablePage > totalTablePages) {
+      setTablePage(totalTablePages);
+    }
+  }, [tablePage, totalTablePages]);
 
   if (loading) {
     return (
@@ -1037,305 +1087,189 @@ export function SolidYieldModuleV2() {
         </div>
       )}
 
-      <div className="w-full px-4 lg:px-6">
-        <Tabs value={mode} onValueChange={(v) => setMode(v as Mode)} className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="simple">Mode simple</TabsTrigger>
-            <TabsTrigger value="multi">Mode multicouche</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
+      <Card className="rounded-xl border bg-card p-4 shadow-sm">
+        <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
+          <FilterField label="Mode">
+            <Tabs value={mode} onValueChange={(v) => setMode(v as Mode)}>
+              <TabsList className="grid h-9 grid-cols-2">
+                <TabsTrigger value="simple" className="text-xs px-3">
+                  Mode simple
+                </TabsTrigger>
+                <TabsTrigger value="multi" className="text-xs px-3">
+                  Mode multicouche
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </FilterField>
 
-      <div
-        className={
-          mode === "simple"
-            ? "grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch"
-            : "grid grid-cols-1 gap-4"
-        }
-      >
-        <Card className="w-full">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Filtres</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="space-y-1">
-              <div className="text-xs font-semibold">Sous-bassin</div>
-              <Select
-                value={selectedSubbasinValue}
-                onValueChange={(v) => {
-                  const next = extractSelectNumericPart(v, 1);
-                  setSubbasinStationId(next);
-
-                  if (next) setCompareSubbasins([next]);
-                }}
-              >
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Choisir un sous-bassin" />
-                </SelectTrigger>
-                <SelectContent>
-                  {subbasinSelectOptions.map((s) => (
-                    <SelectItem key={s.key} value={s.value}>
-                      {`Subbasin ${s.subbasin_id} - ${s.subbasin_name}`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1">
-              <div className="text-xs font-semibold">Scénario / Run</div>
-              <Select
-                value={selectedRunValue}
-                onValueChange={(v) => {
-                  const next = extractSelectNumericPart(v, 2);
-                  setRunId(next);
-                  if (next) {
-                    setCompareRunIds((prev) => (prev.includes(next) ? prev : [...prev, next]));
-                  }
-                }}
-
-              >
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Choisir un scénario" />
-                </SelectTrigger>
-                <SelectContent>
-                  {runSelectOptions.map((r) => {
-                    const disabled =
-                      availability.length > 0 && !hasAvailabilityData(availabilityByRunId.get(r.run_id));
-                    return (
-                      <SelectItem key={r.key} value={r.value} disabled={disabled}>
-                        {disabled ? `${r.scenario_name} - indisponible` : r.scenario_name}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {mode === "simple" && (
-              <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="text-xs font-semibold">Scénarios à comparer</div>
-                  <div className="text-xs text-muted-foreground">
-                    Sélectionnés: {compareRunIds.length}
-                  </div>
-                </div>
-                <div className="grid gap-2">
-                  {runOptions.map((run) => {
-                    const active = compareRunIds.includes(run.run_id);
-                    const disabled =
-                      availability.length > 0 && !hasAvailabilityData(availabilityByRunId.get(run.run_id));
-                    return (
-                      <label
-                        key={`compare-run-${run.run_id}`}
-                        className={`flex items-center gap-2 text-sm ${
-                          disabled ? "cursor-not-allowed text-muted-foreground" : "cursor-pointer"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          className="h-4 w-4 accent-cyan-600"
-                          checked={active}
-                          disabled={disabled}
-                          onChange={() => toggleCompareRun(run.run_id)}
-                        />
-                        <span>{disabled ? `${run.scenario_name} - indisponible` : run.scenario_name}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {mode === "multi" && (
-              <div className="space-y-1">
-                <div className="text-xs font-semibold">Sous-bassins à comparer</div>
-                <div className="flex flex-wrap gap-2">
-                  {availableSubbasins.map((s) => {
-                    const id = s.subbasin_station_id;
-                    const active = compareSubbasins.includes(id);
-                    return (
-                      <Button
-                        key={`subbasin-${id}-${s.station_code}`}
-                        type="button"
-                        size="sm"
-                        variant={active ? "default" : "outline"}
-                        onClick={() => toggleCompareSubbasin(id)}
-                      >
-                        {`SB ${s.subbasin_id}`}
-                      </Button>
-                    );
-                  })}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Sélectionnés: {compareSubbasins.length}
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-1">
-              <div className="text-xs font-semibold">Variable</div>
-              <div className="h-9 rounded-md border border-input bg-muted/40 px-3 flex items-center text-sm">
-                {SYLDT_HA_DISPLAY_LABEL}
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <div className="text-xs font-semibold flex items-center gap-2">
-                <Calendar className="w-4 h-4" /> Période
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="date"
-                  className="h-9 rounded-md border border-input bg-background px-2"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
-                <input
-                  type="date"
-                  className="h-9 rounded-md border border-input bg-background px-2"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <div className="text-xs font-semibold">Agrégation</div>
-              <div className="flex gap-2">
-                {(["day", "month", "year"] as const).map((a) => (
-                  <Button
-                    key={a}
-                    size="sm"
-                    variant={interval === a ? "default" : "outline"}
-                    disabled={!isAggregationSelectable(a, intervalAvailability)}
-                    onClick={() => setInterval(a)}
-                  >
-                    {a === "day" ? "Jour" : a === "month" ? "Mois" : "Année"}
-                  </Button>
+          <FilterField label="Sous-bassin" className="min-w-[180px]">
+            <Select
+              value={selectedSubbasinValue}
+              onValueChange={(v) => {
+                const next = extractSelectNumericPart(v, 1);
+                setSubbasinStationId(next);
+                if (next) setCompareSubbasins([next]);
+              }}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Choisir un sous-bassin" />
+              </SelectTrigger>
+              <SelectContent>
+                {subbasinSelectOptions.map((s) => (
+                  <SelectItem key={s.key} value={s.value}>
+                    {`Subbasin ${s.subbasin_id} - ${s.subbasin_name}`}
+                  </SelectItem>
                 ))}
-                <div className="flex-1" />
-                <Button size="sm" variant="outline" onClick={reset}>
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Reset
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              </SelectContent>
+            </Select>
+          </FilterField>
 
-        {mode === "simple" && (
-          <Card className="w-full">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Statistiques</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-3">
-              <StatCard label="Min" value={fmtNum(stats?.min_value)} />
-              <StatCard label="Max" value={fmtNum(stats?.max_value)} />
-              <StatCard label="Moyenne" value={fmtNum(stats?.avg_value)} />
-              <StatCard label="Somme" value={fmtNum(stats?.sum_value)} />
-              <StatCard label="Points" value={String(stats?.n_points ?? 0)} />
-              <StatCard
-                label="Période"
-                value={
-                  stats?.min_date && stats?.max_date
-                    ? `${toDateOnly(stats.min_date)} → ${toDateOnly(stats.max_date)}`
-                    : "—"
+          <FilterField label="Scénario / Run" className="min-w-[200px]">
+            <Select
+              value={selectedRunValue}
+              onValueChange={(v) => {
+                const next = extractSelectNumericPart(v, 2);
+                setRunId(next);
+                if (next) {
+                  setCompareRunIds((prev) => (prev.includes(next) ? prev : [...prev, next]));
                 }
+              }}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Choisir un scénario" />
+              </SelectTrigger>
+              <SelectContent>
+                {runSelectOptions.map((r) => {
+                  const disabled =
+                    availability.length > 0 && !hasAvailabilityData(availabilityByRunId.get(r.run_id));
+                  return (
+                    <SelectItem key={r.key} value={r.value} disabled={disabled}>
+                      {disabled ? `${r.scenario_name} - indisponible` : r.scenario_name}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </FilterField>
+
+          <FilterField label="Variable" className="min-w-[200px]">
+            <div className="flex h-9 items-center rounded-md border border-input bg-muted/40 px-3 text-sm">
+              {SYLDT_HA_DISPLAY_LABEL}
+            </div>
+          </FilterField>
+
+          <FilterField label="Période" className="min-w-[280px]">
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
               />
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">
-                {mode === "multi" ? "Tableau (multicouche)" : "Tableau"}
-              </CardTitle>
-              <Button size="sm" variant="outline" onClick={exportCsv}>
-                <Download className="w-4 h-4 mr-2" />
-                Export CSV
-              </Button>
+              <span className="text-xs text-muted-foreground">→</span>
+              <input
+                type="date"
+                className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="max-h-[420px] overflow-auto rounded-md border">
-              {mode === "multi" ? (
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/60 sticky top-0">
-                    <tr>
-                      <th className="px-3 py-2 text-left">Date</th>
-                      {multiSeries.map((item) => (
-                        <th key={item.subbasinStationId} className="px-3 py-2 text-left">
-                          {item.label}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {multiTable.map((row, i) => (
-                      <tr key={`${row.period}-${i}`} className="border-t">
-                        <td className="px-3 py-2">{String(row.period)}</td>
-                        {multiSeries.map((item) => (
-                          <td key={item.subbasinStationId} className="px-3 py-2 font-mono">
-                            {fmtNum(Number(row[`sb_${item.subbasinStationId}`]))}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                    {!multiTable.length && (
-                      <tr>
-                        <td
-                          colSpan={Math.max(2, multiSeries.length + 1)}
-                          className="px-3 py-4 text-muted-foreground"
-                        >
-                          Aucune donnée multicouche pour cette sélection.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              ) : (
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/60 sticky top-0">
-                    <tr>
-                      <th className="px-3 py-2 text-left">Date</th>
-                      <th className="px-3 py-2 text-left">{SYLDT_HA_DISPLAY_LABEL}</th>
-                      <th className="px-3 py-2 text-left">n</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {series.map((p, i) => (
-                      <tr key={`${p.period}-${i}`} className="border-t">
-                        <td className="px-3 py-2">{p.period}</td>
-                        <td className="px-3 py-2 font-mono">{fmtNum(p.value)}</td>
-                        <td className="px-3 py-2">{p.n}</td>
-                      </tr>
-                    ))}
-                    {!series.length && (
-                      <tr>
-                        <td colSpan={3} className="px-3 py-4 text-muted-foreground">
-                          Aucune donnée pour cette sélection.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+          </FilterField>
 
-        <Card>
-          <CardHeader className="pb-2">
+          <FilterField label="Agrégation">
+            <div className="flex h-9 items-center gap-1">
+              {(["day", "month", "year"] as const).map((a) => (
+                <Button
+                  key={a}
+                  size="sm"
+                  className="h-9"
+                  variant={interval === a ? "default" : "outline"}
+                  disabled={!isAggregationSelectable(a, intervalAvailability)}
+                  onClick={() => setInterval(a)}
+                >
+                  {a === "day" ? "Jour" : a === "month" ? "Mois" : "Année"}
+                </Button>
+              ))}
+            </div>
+          </FilterField>
+
+          <Button size="sm" variant="outline" className="h-9" onClick={reset}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Reset
+          </Button>
+          <Button size="sm" className="h-9" onClick={applyFilters}>
+            Appliquer
+          </Button>
+
+          {mode === "simple" ? (
+            <FilterField label="Scénarios à comparer" className="min-w-[220px]">
+              <CompareScenariosMultiSelect
+                options={runOptions.map((run) => ({
+                  run_id: run.run_id,
+                  scenario_name: run.scenario_name,
+                  disabled:
+                    availability.length > 0 &&
+                    !hasAvailabilityData(availabilityByRunId.get(run.run_id)),
+                }))}
+                selectedIds={compareRunIds}
+                onToggle={toggleCompareRun}
+              />
+            </FilterField>
+          ) : null}
+        </div>
+
+        {mode === "multi" ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border/70 pt-3">
+            <div className="text-xs font-semibold text-muted-foreground">Sous-bassins à comparer</div>
+            {availableSubbasins.map((s) => {
+              const id = s.subbasin_station_id;
+              const active = compareSubbasins.includes(id);
+              return (
+                <Button
+                  key={`subbasin-${id}-${s.station_code}`}
+                  type="button"
+                  size="sm"
+                  variant={active ? "default" : "outline"}
+                  onClick={() => toggleCompareSubbasin(id)}
+                >
+                  {`SB ${s.subbasin_id}`}
+                </Button>
+              );
+            })}
+          </div>
+        ) : null}
+      </Card>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch">
+        <Card className="flex min-h-[520px] flex-col">
+          {mode === "simple" ? (
+            <CardHeader className="space-y-3 pb-2 pt-4">
+              <CardTitle className="text-base">Statistiques</CardTitle>
+              <div className="flex flex-wrap items-stretch gap-2">
+                <StatCard compact micro label="Min" value={fmtNum(stats?.min_value)} />
+                <StatCard compact micro label="Max" value={fmtNum(stats?.max_value)} />
+                <StatCard compact micro label="Moyenne" value={fmtNum(stats?.avg_value)} />
+                <StatCard compact micro label="Somme" value={fmtNum(stats?.sum_value)} />
+                <StatCard compact micro label="Points" value={String(stats?.n_points ?? 0)} />
+                <StatCard
+                  compact
+                  wide
+                  label="Période"
+                  value={
+                    stats?.min_date && stats?.max_date
+                      ? `${toDateOnly(stats.min_date)} → ${toDateOnly(stats.max_date)}`
+                      : "—"
+                  }
+                />
+              </div>
+            </CardHeader>
+          ) : null}
+          <CardHeader className={cn("pb-2", mode === "simple" ? "pt-0" : "pt-4")}>
             <CardTitle className="text-base">
               {mode === "multi" ? "Graphique (multicouche)" : "Graphique"}
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex min-h-0 flex-1 flex-col pb-4">
             <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
               <ChartModeSelect value={chartDisplayMode} onValueChange={setChartDisplayMode} />
               <ChartExportMenu
@@ -1367,65 +1301,230 @@ export function SolidYieldModuleV2() {
                 Agrandir
               </Button>
             </div>
-            <SolidYieldChartPanel
-              chartRef={chartRef}
-              heightClassName="h-[420px]"
-              gradientId="syldtGradient-main"
-              mode={mode}
-              chartDisplayMode={chartDisplayMode}
-              activeChartState={activeChartState}
-              activeChartHasLoggableValues={activeChartHasLoggableValues}
-              multiChartData={multiChartData}
-              multiChartTransformed={multiChartTransformed}
-              multiSeries={multiSeries}
-              compareRunIds={compareRunIds}
-              scenarioCompareData={scenarioCompareData}
-              scenarioChartTransformed={scenarioChartTransformed}
-              scenarioSeries={scenarioSeries}
-              series={series}
-              singleChartTransformed={singleChartTransformed}
-            />
+            <div className="min-h-0 flex-1">
+              <SolidYieldChartPanel
+                chartRef={chartRef}
+                heightClassName="h-full min-h-[280px]"
+                gradientId="syldtGradient-main"
+                mode={mode}
+                chartDisplayMode={chartDisplayMode}
+                activeChartState={activeChartState}
+                activeChartHasLoggableValues={activeChartHasLoggableValues}
+                multiChartData={multiChartData}
+                multiChartTransformed={multiChartTransformed}
+                multiSeries={multiSeries}
+                compareRunIds={compareRunIds}
+                scenarioCompareData={scenarioCompareData}
+                scenarioChartTransformed={scenarioChartTransformed}
+                scenarioSeries={scenarioSeries}
+                series={series}
+                singleChartTransformed={singleChartTransformed}
+              />
+            </div>
           </CardContent>
         </Card>
 
-        <ExpandableDialog
-          open={chartOpen}
-          onOpenChange={setChartOpen}
-          title={`${SYLDT_HA_DISPLAY_LABEL} - Vue agrandie`}
-        >
-          <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
-            <ChartModeSelect value={chartDisplayMode} onValueChange={setChartDisplayMode} />
-          </div>
-          <div className="h-[72vh] min-h-[520px] w-full">
-            <SolidYieldChartPanel
-              heightClassName="h-full"
-              gradientId="syldtGradient-expanded"
-              mode={mode}
-              chartDisplayMode={chartDisplayMode}
-              activeChartState={activeChartState}
-              activeChartHasLoggableValues={activeChartHasLoggableValues}
-              multiChartData={multiChartData}
-              multiChartTransformed={multiChartTransformed}
-              multiSeries={multiSeries}
-              compareRunIds={compareRunIds}
-              scenarioCompareData={scenarioCompareData}
-              scenarioChartTransformed={scenarioChartTransformed}
-              scenarioSeries={scenarioSeries}
-              series={series}
-              singleChartTransformed={singleChartTransformed}
-            />
-          </div>
-        </ExpandableDialog>
+        <Card className="flex min-h-[520px] flex-col">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">
+                {mode === "multi" ? "Tableau (multicouche)" : "Tableau"}
+              </CardTitle>
+              <Button size="sm" variant="outline" onClick={exportCsv}>
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="flex min-h-0 flex-1 flex-col">
+            <div className="overflow-hidden rounded-md border">
+              {mode === "multi" ? (
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/60">
+                    <tr>
+                      <th className="px-3 py-2 text-left">Date</th>
+                      {multiSeries.map((item) => (
+                        <th key={item.subbasinStationId} className="px-3 py-2 text-left">
+                          {item.label}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedMultiTable.map((row, i) => (
+                      <tr key={`${row.period}-${i}`} className="border-t">
+                        <td className="px-3 py-2">{String(row.period)}</td>
+                        {multiSeries.map((item) => (
+                          <td key={item.subbasinStationId} className="px-3 py-2 font-mono">
+                            {fmtNum(Number(row[`sb_${item.subbasinStationId}`]))}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                    {!multiTable.length && (
+                      <tr>
+                        <td
+                          colSpan={Math.max(2, multiSeries.length + 1)}
+                          className="px-3 py-8 text-center text-muted-foreground"
+                        >
+                          Aucune donnée multicouche pour cette sélection.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/60">
+                    <tr>
+                      <th className="px-3 py-2 text-left">Date</th>
+                      <th className="px-3 py-2 text-left">{SYLDT_HA_DISPLAY_LABEL}</th>
+                      <th className="px-3 py-2 text-left">n</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedSeries.map((p, i) => (
+                      <tr key={`${p.period}-${i}`} className="border-t">
+                        <td className="px-3 py-2">{p.period}</td>
+                        <td className="px-3 py-2 font-mono">{fmtNum(p.value)}</td>
+                        <td className="px-3 py-2">{p.n}</td>
+                      </tr>
+                    ))}
+                    {!series.length && (
+                      <tr>
+                        <td colSpan={3} className="px-3 py-8 text-center text-muted-foreground">
+                          Aucune donnée pour cette sélection.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            <div className="mt-auto flex flex-col gap-2 border-t border-border pt-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-xs text-muted-foreground">
+                Affichage {(tablePage - 1) * TABLE_PAGE_SIZE + 1} à{" "}
+                {Math.min(tablePage * TABLE_PAGE_SIZE, totalTableRows)} sur {totalTableRows} résultats
+              </div>
+              <div className="flex flex-wrap items-center gap-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={tablePage <= 1}
+                  onClick={() => setTablePage((page) => Math.max(1, page - 1))}
+                >
+                  <ChevronLeft className="mr-1 h-4 w-4" />
+                  Précédent
+                </Button>
+                {tablePageNumbers.map((page) => (
+                  <Button
+                    key={`table-page-${page}`}
+                    type="button"
+                    size="sm"
+                    variant={page === tablePage ? "default" : "outline"}
+                    className="min-w-9"
+                    onClick={() => setTablePage(page)}
+                  >
+                    {page}
+                  </Button>
+                ))}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={tablePage >= totalTablePages}
+                  onClick={() => setTablePage((page) => Math.min(totalTablePages, page + 1))}
+                >
+                  Suivant
+                  <ChevronRight className="ml-1 h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      <SpecificDegradationThematicMapsSection
+        mode={mode}
+        subbasinId={selectedSubbasinNumericId}
+        runId={runId}
+        compareRunIds={compareRunIds}
+        startDate={startDate}
+        endDate={endDate}
+        runOptions={runOptions}
+      />
+
+      <ExpandableDialog
+        open={chartOpen}
+        onOpenChange={setChartOpen}
+        title={`${SYLDT_HA_DISPLAY_LABEL} - Vue agrandie`}
+      >
+        <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
+          <ChartModeSelect value={chartDisplayMode} onValueChange={setChartDisplayMode} />
+        </div>
+        <div className="h-[72vh] min-h-[520px] w-full">
+          <SolidYieldChartPanel
+            heightClassName="h-full"
+            gradientId="syldtGradient-expanded"
+            mode={mode}
+            chartDisplayMode={chartDisplayMode}
+            activeChartState={activeChartState}
+            activeChartHasLoggableValues={activeChartHasLoggableValues}
+            multiChartData={multiChartData}
+            multiChartTransformed={multiChartTransformed}
+            multiSeries={multiSeries}
+            compareRunIds={compareRunIds}
+            scenarioCompareData={scenarioCompareData}
+            scenarioChartTransformed={scenarioChartTransformed}
+            scenarioSeries={scenarioSeries}
+            series={series}
+            singleChartTransformed={singleChartTransformed}
+          />
+        </div>
+      </ExpandableDialog>
     </div>
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
+function StatCard({
+  label,
+  value,
+  compact = false,
+  micro = false,
+  wide = false,
+}: {
+  label: string;
+  value: string;
+  compact?: boolean;
+  micro?: boolean;
+  wide?: boolean;
+}) {
   return (
-    <div className="rounded-lg border border-border bg-muted/30 px-3 py-3">
-      <div className="text-[11px] text-muted-foreground">{label}</div>
-      <div className="text-lg font-semibold">{value}</div>
+    <div
+      className={cn(
+        "rounded-lg border border-border bg-muted/30",
+        micro ? "min-w-[72px] px-2 py-1.5" : compact ? "px-2 py-2" : "px-3 py-3",
+        wide && "min-w-[180px] flex-[1.4]"
+      )}
+    >
+      <div
+        className={cn(
+          "text-muted-foreground",
+          micro ? "text-[9px] uppercase tracking-wide" : compact ? "text-[10px]" : "text-[11px]"
+        )}
+      >
+        {label}
+      </div>
+      <div
+        className={cn(
+          "font-semibold break-words",
+          micro ? "text-xs leading-tight" : compact ? "text-sm leading-tight" : "text-lg"
+        )}
+      >
+        {value}
+      </div>
     </div>
   );
 }
