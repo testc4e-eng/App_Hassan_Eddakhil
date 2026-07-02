@@ -1,0 +1,7 @@
+{
+  "scenarioCode": "etat_actuel",
+  "runCode": "etat_actuel",
+  "runName": "Scenario etat actuel",
+  "importMode": "skipAccess",
+  "dryRun": false
+}

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Validation sélecteurs Analyse Spatiale</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: #f1f5f9;
+      color: #0f172a;
+      margin: 0;
+      padding: 24px;
+    }
+    h1 { font-size: 20px; margin: 0 0 8px; }
+    p { color: #475569; margin: 0 0 24px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 960px; }
+    .card {
+      background: rgba(255,255,255,.9);
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 10px 30px rgba(15,23,42,.08);
+    }
+    .label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #64748b; }
+    .title { font-size: 16px; font-weight: 600; margin: 4px 0 12px; }
+    .menu {
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .menu-item {
+      padding: 10px 12px;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 14px;
+    }
+    .menu-item:last-child { border-bottom: none; }
+    .menu-item.disabled {
+      color: #94a3b8;
+      background: #f8fafc;
+    }
+    .menu-item.active {
+      background: #0f172a;
+      color: #fff;
+      font-weight: 600;
+    }
+    .meta { margin-top: 12px; font-size: 12px; color: #64748b; }
+    .ok { color: #15803d; font-weight: 600; }
+    .err { color: #b91c1c; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <h1>Validation — listes métier fixes (Analyse Spatiale)</h1>
+  <p>Les menus ci-dessous sont construits depuis les listes fixes du frontend, jamais filtrés par l'API.</p>
+  <div class="grid">
+    <div class="card" id="station-card">
+      <div class="label">Station</div>
+      <div class="title" id="station-title">Chargement…</div>
+      <div class="menu" id="station-menu"></div>
+      <div class="meta" id="station-meta"></div>
+    </div>
+    <div class="card" id="reach-card">
+      <div class="label">Reach / tronçon</div>
+      <div class="title" id="reach-title">Chargement…</div>
+      <div class="menu" id="reach-menu"></div>
+      <div class="meta" id="reach-meta"></div>
+    </div>
+  </div>
+  <script>
+    const STATION_DEFS = [
+      { code: "debit_observed", label: "Débit observé", source: "hydro", scenario: "OBSERVED" },
+      { code: "debit_simulated", label: "Débit simulé", source: "hydro", scenario: "etat_actuel" },
+      { code: "precipitation", label: "Précipitation", source: "climate", scenario: "OBSERVED" },
+    ];
+    const REACH_DEFS = [
+      { code: "SED_OUT", label: "Sediment (t)" },
+      { code: "FLOW_OUT", label: "Débits m³/s" },
+    ];
+
+    function hasAvailability(data) {
+      if (!data) return false;
+      return (
+        (data.data && data.data.length > 0) ||
+        data.availability?.daily ||
+        data.availability?.monthly ||
+        data.availability?.annual
+      );
+    }
+
+    async function probeStation(stationId) {
+      const availability = {};
+      for (const def of STATION_DEFS) {
+        const url =
+          def.source === "hydro"
+            ? `/api/v1/spatial/stations/${stationId}/timeseries?variable=${def.code}&scenario=${def.scenario}&aggregation=year`
+            : `/api/v1/spatial/stations/${stationId}/climate?variable=${def.code}&scenario=${def.scenario}&aggregation=year`;
+        try {
+          const res = await fetch(url);
+          const json = await res.json();
+          availability[def.code] = hasAvailability(json.data);
+        } catch {
+          availability[def.code] = false;
+        }
+      }
+      return availability;
+    }
+
+    async function probeReach(reachId) {
+      const availability = {};
+      for (const def of REACH_DEFS) {
+        try {
+          const res = await fetch(
+            `/api/v1/spatial/reaches/${reachId}/scenarios-availability?variable=${def.code}`
+          );
+          const json = await res.json();
+          availability[def.code] = (json.data?.availableScenarios || []).length > 0;
+        } catch {
+          availability[def.code] = false;
+        }
+      }
+      return availability;
+    }
+
+    function renderMenu(container, defs, availability, activeCode) {
+      container.innerHTML = "";
+      for (const def of defs) {
+        const item = document.createElement("div");
+        const available = availability[def.code];
+        item.className = "menu-item" + (available ? "" : " disabled") + (def.code === activeCode ? " active" : "");
+        item.textContent = available ? def.label : `${def.label} — indisponible`;
+        container.appendChild(item);
+      }
+    }
+
+    async function main() {
+      const stationId = 3;
+      const reachId = 11;
+      document.getElementById("station-title").textContent = "Zaouiet Sidi Hamza (31/38)";
+      document.getElementById("reach-title").textContent = "Reach 200011 (id 11)";
+
+      const [stationAvailability, reachAvailability] = await Promise.all([
+        probeStation(stationId),
+        probeReach(reachId),
+      ]);
+
+      renderMenu(
+        document.getElementById("station-menu"),
+        STATION_DEFS,
+        stationAvailability,
+        "debit_observed"
+      );
+      renderMenu(
+        document.getElementById("reach-menu"),
+        REACH_DEFS,
+        reachAvailability,
+        "SED_OUT"
+      );
+
+      const stationCount = STATION_DEFS.length;
+      const reachCount = REACH_DEFS.length;
+      document.getElementById("station-meta").innerHTML =
+        `<span class="ok">${stationCount} variables métier affichées</span> — disponibilité API utilisée uniquement pour griser`;
+      document.getElementById("reach-meta").innerHTML =
+        `<span class="ok">${reachCount} variables métier affichées</span> — disponibilité API utilisée uniquement pour griser`;
+
+      document.body.dataset.ready = "true";
+    }
+
+    main();
+  </script>
+</body>
+</html>
