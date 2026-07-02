@@ -38,7 +38,16 @@ export class AdminDbConfigController {
         });
       }
 
-      const result = await adminDbConfigService.testConnection(req.body);
+      const envPassword = process.env.DB_PASSWORD || "";
+      const password =
+        !req.body.password || req.body.password.includes("*")
+          ? envPassword
+          : req.body.password;
+
+      const result = await adminDbConfigService.testConnection({
+        ...req.body,
+        password,
+      });
       return res.status(result.success ? 200 : 400).json({
         success: result.success,
         message: result.message,

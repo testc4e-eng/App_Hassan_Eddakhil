@@ -18,3 +18,9 @@ pg_restore \
   --username "$POSTGRES_USER" \
   --dbname "$POSTGRES_DB" \
   "$DUMP_PATH"
+
+# Refresh materialized views that may be unpopulated after a binary restore.
+# Catalog views are required by the backend health-check and catalog APIs.
+echo "Refreshing materialized views..."
+psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "REFRESH MATERIALIZED VIEW api.mv_scenario_catalog;"
+psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "REFRESH MATERIALIZED VIEW CONCURRENTLY api.mv_scenario_catalog;" || true

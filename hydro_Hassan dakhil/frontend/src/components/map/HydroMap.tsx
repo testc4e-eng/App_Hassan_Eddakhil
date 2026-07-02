@@ -377,6 +377,8 @@ function CreatePanes() {
     ensure("hruPane", 402);
     ensure("reachPane", 403);
     ensure("barragesPane", 404);
+    ensure("thematicSubbasinPane", 410);
+    ensure("thematicReachPane", 411);
     ensure("labelsPane", 9980);
     ensure("stationsPane", 9999);
   }, [map]);

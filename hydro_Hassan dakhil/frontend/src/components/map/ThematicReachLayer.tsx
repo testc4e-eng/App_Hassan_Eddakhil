@@ -10,9 +10,10 @@ type Props = {
   min: number;
   max: number;
   visible?: boolean;
+  pane?: string;
 };
 
-export function ThematicReachLayer({ data, colors, min, max, visible = true }: Props) {
+export function ThematicReachLayer({ data, colors, min, max, visible = true, pane = "thematicReachPane" }: Props) {
   if (!visible) return null;
 
   return (
@@ -42,7 +43,7 @@ export function ThematicReachLayer({ data, colors, min, max, visible = true }: P
           });
         },
         interactive: false,
-        pane: "reachPane",
+        pane,
       } as any)}
     />
   );

@@ -10,9 +10,10 @@ type Props = {
   min: number;
   max: number;
   visible?: boolean;
+  pane?: string;
 };
 
-export function ThematicSubbasinLayer({ data, colors, min, max, visible = true }: Props) {
+export function ThematicSubbasinLayer({ data, colors, min, max, visible = true, pane = "thematicSubbasinPane" }: Props) {
   if (!visible) return null;
 
   return (
@@ -43,7 +44,7 @@ export function ThematicSubbasinLayer({ data, colors, min, max, visible = true }
           });
         },
         interactive: false,
-        pane: "subBasinsPane",
+        pane,
       } as any)}
     />
   );

@@ -111,7 +111,7 @@ app.use("/api/v1", catalogAvailabilityRouter);
 app.use("/api/v1/siltation", siltationRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api/admin", adminDbConfigRoutes);
+app.use("/api/v1/admin", adminDbConfigRoutes);
 
 app.get("/", (req: Request, res: Response) => {
   res.json({
