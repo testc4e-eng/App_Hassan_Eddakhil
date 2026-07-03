@@ -9,62 +9,109 @@
   "home": {
     "hero": {
       "title": "Barrage Hassan Addakhil",
-      "location": "Commune LKHENG - Province Errachidia, Maroc",
-      "description": "Ouvrage hydraulique majeur du sud-est marocain, jouant un role crucial dans la regulation des eaux, l'irrigation agricole et la protection contre les crues.",
+      "subtitle": "Plateforme intelligente de suivi hydrologique, climatique et sedimentaire du Haut bassin du Ziz.",
+      "location": "Lkheng – Province d'Errachidia, Maroc",
+      "intro": "Cette plateforme permet de centraliser, analyser et visualiser les donnees hydrologiques, climatiques, spatiales et sedimentaires afin d'aider a la gestion durable du barrage Hassan Addakhil et de son bassin versant.",
       "imageAlt": "Barrage Hassan Addakhil - Vue aerienne",
-      "capacityLabel": "Capacite",
-      "watershedLabel": "Bassin versant",
-      "inflowLabel": "Apports moyens",
-      "heightLabel": "Hauteur",
-      "temperature": "20.6°C Temperature moyenne",
-      "precipitation": "2.17 mm Precipitations",
-      "etp": "4 mm ETP"
+      "highlights": {
+        "location": "Localisation",
+        "watershed": "Bassin",
+        "type": "Type",
+        "commissioning": "Mise en service"
+      }
     },
     "missions": {
-      "title": "Missions du Barrage",
-      "subtitle": "Le barrage Hassan Addakhil remplit plusieurs fonctions essentielles pour le developpement regional et la securite des populations.",
+      "title": "Mission principale du barrage",
+      "subtitle": "Le barrage Hassan Addakhil remplit plusieurs fonctions essentielles pour le developpement regional et la gestion durable de l'eau.",
       "items": {
-        "irrigation": {
-          "title": "Irrigation",
-          "description": "Irrigation des terres agricoles de la vallee de Ziz et Tafilalet"
-        },
-        "protection": {
-          "title": "Protection",
-          "description": "Protection contre les inondations a Errachidia et Tafilalet"
-        },
         "waterSupply": {
-          "title": "Alimentation en Eau",
-          "description": "Approvisionnement en eau potable pour les populations locales"
+          "title": "Approvisionnement en eau",
+          "description": "Assure l'alimentation en eau de la region d'Errachidia."
         },
-        "energy": {
-          "title": "Energie",
-          "description": "Production hydroelectrique pour la region"
+        "irrigation": {
+          "title": "Irrigation agricole",
+          "description": "Soutient les perimetres agricoles de la vallee du Ziz."
+        },
+        "flowRegulation": {
+          "title": "Regulation des debits",
+          "description": "Regule les ecoulements du Ziz et limite les effets des crues."
+        },
+        "resourceProtection": {
+          "title": "Protection des ressources hydriques",
+          "description": "Contribue a la gestion durable de l'eau."
         }
       }
     },
     "technical": {
-      "title": "Caracteristiques Techniques",
-      "subtitle": "Donnees hydrologiques et techniques du barrage Hassan Addakhil",
+      "title": "Caracteristiques du barrage et du perimetre de suivi",
+      "subtitle": "Indicateurs de reference issus de l'analyse documentaire du projet",
+      "footnote": "Capacite de reference : campagne bathymetrique 2008. Volume estime 2022 : derniere campagne documentee en base.",
       "items": {
-        "storageVolume": { "label": "Volume retenue" },
+        "location": { "label": "Localisation" },
         "watershed": { "label": "Bassin versant" },
-        "avgInflow": { "label": "Apports moyens" },
-        "damHeight": { "label": "Hauteur barrage" },
+        "type": { "label": "Type" },
         "commissioning": { "label": "Mise en service" },
-        "type": { "label": "Type", "value": "Terre" }
+        "referenceCapacity": { "label": "Capacite de reference" },
+        "estimatedVolume": { "label": "Volume actuel estime (2022)" },
+        "monitoringStations": { "label": "Stations de suivi" },
+        "subbasins": { "label": "Sous-bassins" },
+        "reaches": { "label": "Reaches" }
+      }
+    },
+    "whyMonitor": {
+      "title": "Pourquoi surveiller ce barrage ?",
+      "subtitle": "",
+      "items": {
+        "siltation": "Envasement progressif de la retenue",
+        "capacity": "Reduction de la capacite de stockage utile",
+        "sediment": "Transport solide important",
+        "erosion": "Forte erosion hydrique du bassin versant",
+        "waterProtection": "Besoin de proteger durablement les ressources en eau"
+      }
+    },
+    "erosionFactors": {
+      "title": "Principaux facteurs d'erosion",
+      "subtitle": "",
+      "items": {
+        "relief": "Relief montagneux",
+        "slopes": "Fortes pentes",
+        "precipitation": "Precipitations irregulieres",
+        "soils": "Sols fragiles",
+        "deforestation": "Deboisement",
+        "overgrazing": "Surpaturage",
+        "urbanization": "Urbanisation non maitrisee"
+      }
+    },
+    "platformCapabilities": {
+      "title": "Ce que permet la plateforme",
+      "subtitle": "",
+      "items": {
+        "spatial": "Visualiser les donnees spatiales",
+        "flows": "Suivre les debits",
+        "precipitation": "Analyser les precipitations",
+        "erosion": "Evaluer l'erosion",
+        "siltation": "Suivre l'envasement",
+        "scenarios": "Comparer les scenarios climatiques et les scenarios de reboisement"
+      }
+    },
+    "studyAxes": {
+      "title": "Axes de l'etude",
+      "subtitle": "",
+      "items": {
+        "benchmark": "Benchmark international et etudes anterieures",
+        "hydrology": "Etude hydrologique",
+        "siltationEval": "Evaluation de l'envasement",
+        "gis": "Mise en place d'un systeme d'information geographique SIG"
       }
     },
     "cta": {
-      "title": "Explorez les Donnees Hydrologiques",
-      "description": "Accedez au dashboard pour visualiser les donnees en temps reel, les modelisations SWAT et les analyses detaillees du bassin versant.",
-      "button": "Acceder au Dashboard",
-      "kpi1": "Surveillance continue",
-      "kpi2": "Taux de disponibilite",
-      "kpi3": "Capteurs actifs"
+      "title": "Explorez les donnees du projet",
+      "description": "Accedez au dashboard pour visualiser les donnees centralisees, les modelisations SWAT et les analyses detaillees du bassin versant.",
+      "button": "Acceder au Dashboard"
     },
     "footer": {
       "line1": "© 2026 Barrage Hassan Addakhil - Systeme de Monitoring Hydrologique",
-      "line2": "Donnees mises a jour en temps reel - Ministere de l'Equipement et de l'Eau"
+      "line2": "Donnees centralisees du projet - Agence du Bassin Hydraulique Guir-Ziz-Rheris"
     }
   },
   "contact": {
@@ -118,7 +165,7 @@
     "spatial": "Analyse Spatiale",
     "simulatedData": "Gestion de donnée",
     "scan": "Scan de donnees",
-    "reports": "Rapport & Export",
+    "reports": "Rapport & Carte",
     "footerTitle": "Dashboard Hydrologique",
     "footerSubtitle": "Barrage Hassan Addakhil"
   },
@@ -130,7 +177,7 @@
     "maps": "Cartes Thématiques",
     "simulatedData": "Data : Donnees simulees",
     "scan": "Scan de donnees",
-    "reports": "Rapport & Export",
+    "reports": "Rapport & Carte",
     "projectName": "Barrage Hassan Addakhil",
     "projectLocation": "Bassin versant Guir-Ziz-Rheris",
     "loadingCatalog": "Chargement du catalog (runs/modules)…",

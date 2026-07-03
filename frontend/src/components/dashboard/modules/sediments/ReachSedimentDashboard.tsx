@@ -10,7 +10,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Download, FileSpreadsheet, MapPinned, Maximize2, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import { Download, FileSpreadsheet, ImageIcon, MapPinned, Maximize2, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { MapContainer, Polyline, TileLayer } from "react-leaflet";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,6 +46,7 @@ import {
 import { NORMALIZED_SWAT_SCENARIOS } from "@/constants/swatScenarios";
 import { getScenarioChartColor } from "@/constants/scenarioColors";
 import { SEDIMENT_DISPLAY_LABEL } from "@/constants/sediment";
+import { ReachStaticMapDialog } from "@/components/dashboard/modules/sediments/ReachStaticMapDialog";
 import {
   AGGREGATION_PRIORITY,
   isAggregationSelectable,
@@ -401,6 +402,7 @@ export function ReachSedimentDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [displayMode, setDisplayMode] = useState<ChartDisplayMode>("normal");
   const [chartOpen, setChartOpen] = useState(false);
+  const [staticMapOpen, setStaticMapOpen] = useState(false);
   const [tablePage, setTablePage] = useState(1);
   const periodSyncKeyRef = useRef("");
 
@@ -918,10 +920,21 @@ export function ReachSedimentDashboard() {
 
         <Card className="flex min-h-[520px] flex-col">
           <CardHeader className="pb-2 pt-4">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <MapPinned className="h-4 w-4" />
-              Carte des 19 reaches
-            </CardTitle>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <MapPinned className="h-4 w-4" />
+                Carte des 19 reaches
+              </CardTitle>
+              <Button
+                type="button"
+                size="sm"
+                className="gap-1.5 rounded-md bg-orange-500 text-white hover:bg-orange-600"
+                onClick={() => setStaticMapOpen(true)}
+              >
+                <ImageIcon className="h-4 w-4" />
+                Carte statique
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="min-h-0 flex-1 pb-4">
             <div className="h-full min-h-[420px] overflow-hidden rounded-md border">
@@ -1068,6 +1081,10 @@ export function ReachSedimentDashboard() {
           />
         </div>
       </ExpandableDialog>
+
+      {staticMapOpen ? (
+        <ReachStaticMapDialog open={staticMapOpen} onOpenChange={setStaticMapOpen} />
+      ) : null}
     </div>
   );
 }

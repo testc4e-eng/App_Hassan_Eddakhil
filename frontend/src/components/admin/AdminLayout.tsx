@@ -22,18 +22,16 @@ export function AdminLayout({ title, description, children, actions }: Props) {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
       <Navbar />
-      <div className="flex flex-1">
-        <aside className="sticky top-0">
-          <DashboardSidebarV2
-            activeSection={activeSection}
-            onSectionChange={handleSectionChange}
-          />
-        </aside>
-        <main className="flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-[1600px]">
-            <header className="sticky top-0 z-40 border-b border-border bg-background/95 px-4 py-2.5 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:px-5">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <DashboardSidebarV2
+          activeSection={activeSection}
+          onSectionChange={handleSectionChange}
+        />
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="mx-auto flex h-full w-full max-w-[1600px] flex-col overflow-hidden">
+            <header className="z-20 shrink-0 border-b border-border bg-background px-4 py-2.5 lg:px-5">
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h1 className="text-lg font-bold text-foreground lg:text-[1.15rem]">{title}</h1>
@@ -42,7 +40,7 @@ export function AdminLayout({ title, description, children, actions }: Props) {
                 {actions ? <div className="mt-1 sm:mt-0">{actions}</div> : null}
               </div>
             </header>
-            <section className="p-3 lg:p-4">{children}</section>
+            <section className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-3 lg:p-4">{children}</section>
           </div>
         </main>
       </div>

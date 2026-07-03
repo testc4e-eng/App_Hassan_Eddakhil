@@ -9,62 +9,109 @@
   "home": {
     "hero": {
       "title": "Hassan Addakhil Dam",
-      "location": "LKHENG Commune - Errachidia Province, Morocco",
-      "description": "Major hydraulic infrastructure in south-east Morocco, playing a key role in water regulation, agricultural irrigation and flood protection.",
+      "subtitle": "Intelligent platform for hydrological, climate and sediment monitoring of the Upper Ziz basin.",
+      "location": "Lkheng – Errachidia Province, Morocco",
+      "intro": "This platform centralizes, analyzes and visualizes hydrological, climate, spatial and sediment data to support sustainable management of Hassan Addakhil dam and its watershed.",
       "imageAlt": "Hassan Addakhil Dam - Aerial view",
-      "capacityLabel": "Capacity",
-      "watershedLabel": "Watershed",
-      "inflowLabel": "Average inflow",
-      "heightLabel": "Height",
-      "temperature": "20.6°C Average temperature",
-      "precipitation": "2.17 mm Precipitation",
-      "etp": "4 mm PET"
+      "highlights": {
+        "location": "Location",
+        "watershed": "Watershed",
+        "type": "Type",
+        "commissioning": "Commissioning"
+      }
     },
     "missions": {
-      "title": "Dam Missions",
-      "subtitle": "Hassan Addakhil dam fulfills several essential functions for regional development and population safety.",
+      "title": "Main dam mission",
+      "subtitle": "Hassan Addakhil dam fulfills several essential functions for regional development and sustainable water management.",
       "items": {
-        "irrigation": {
-          "title": "Irrigation",
-          "description": "Irrigation of agricultural lands in the Ziz and Tafilalet valley"
-        },
-        "protection": {
-          "title": "Protection",
-          "description": "Flood protection for Errachidia and Tafilalet"
-        },
         "waterSupply": {
-          "title": "Water Supply",
-          "description": "Drinking water supply for local populations"
+          "title": "Water supply",
+          "description": "Ensures water supply for the Errachidia region."
         },
-        "energy": {
-          "title": "Energy",
-          "description": "Hydroelectric power generation for the region"
+        "irrigation": {
+          "title": "Agricultural irrigation",
+          "description": "Supports agricultural areas in the Ziz valley."
+        },
+        "flowRegulation": {
+          "title": "Flow regulation",
+          "description": "Regulates Ziz flows and limits flood impacts."
+        },
+        "resourceProtection": {
+          "title": "Water resource protection",
+          "description": "Contributes to sustainable water management."
         }
       }
     },
     "technical": {
-      "title": "Technical Characteristics",
-      "subtitle": "Hydrological and technical data for Hassan Addakhil dam",
+      "title": "Dam and monitoring area characteristics",
+      "subtitle": "Reference indicators from the project documentary analysis",
+      "footnote": "Reference capacity: 2008 bathymetry campaign. Estimated 2022 volume: latest documented campaign in the database.",
       "items": {
-        "storageVolume": { "label": "Storage volume" },
+        "location": { "label": "Location" },
         "watershed": { "label": "Watershed" },
-        "avgInflow": { "label": "Average inflow" },
-        "damHeight": { "label": "Dam height" },
+        "type": { "label": "Type" },
         "commissioning": { "label": "Commissioning" },
-        "type": { "label": "Type", "value": "Earthfill" }
+        "referenceCapacity": { "label": "Reference capacity" },
+        "estimatedVolume": { "label": "Estimated current volume (2022)" },
+        "monitoringStations": { "label": "Monitoring stations" },
+        "subbasins": { "label": "Sub-basins" },
+        "reaches": { "label": "Reaches" }
+      }
+    },
+    "whyMonitor": {
+      "title": "Why monitor this dam?",
+      "subtitle": "",
+      "items": {
+        "siltation": "Progressive siltation of the reservoir",
+        "capacity": "Reduction of useful storage capacity",
+        "sediment": "Significant solid transport",
+        "erosion": "Strong hydraulic erosion in the watershed",
+        "waterProtection": "Need to sustainably protect water resources"
+      }
+    },
+    "erosionFactors": {
+      "title": "Main erosion factors",
+      "subtitle": "",
+      "items": {
+        "relief": "Mountainous relief",
+        "slopes": "Steep slopes",
+        "precipitation": "Irregular precipitation",
+        "soils": "Fragile soils",
+        "deforestation": "Deforestation",
+        "overgrazing": "Overgrazing",
+        "urbanization": "Uncontrolled urbanization"
+      }
+    },
+    "platformCapabilities": {
+      "title": "What the platform enables",
+      "subtitle": "",
+      "items": {
+        "spatial": "Visualize spatial data",
+        "flows": "Monitor flows",
+        "precipitation": "Analyze precipitation",
+        "erosion": "Assess erosion",
+        "siltation": "Track siltation",
+        "scenarios": "Compare climate scenarios and reforestation scenarios"
+      }
+    },
+    "studyAxes": {
+      "title": "Study focus areas",
+      "subtitle": "",
+      "items": {
+        "benchmark": "International benchmark and prior studies",
+        "hydrology": "Hydrological study",
+        "siltationEval": "Siltation assessment",
+        "gis": "Geographic information system (GIS) implementation"
       }
     },
     "cta": {
-      "title": "Explore Hydrological Data",
-      "description": "Access the dashboard to visualize real-time data, SWAT simulations and detailed watershed analyses.",
-      "button": "Go to Dashboard",
-      "kpi1": "Continuous monitoring",
-      "kpi2": "Availability rate",
-      "kpi3": "Active sensors"
+      "title": "Explore project data",
+      "description": "Access the dashboard to view centralized project data, SWAT simulations and detailed watershed analyses.",
+      "button": "Go to Dashboard"
     },
     "footer": {
       "line1": "© 2026 Hassan Addakhil Dam - Hydrological Monitoring System",
-      "line2": "Real-time updated data - Ministry of Equipment and Water"
+      "line2": "Centralized project data - Guir-Ziz-Rheris Hydraulic Basin Agency"
     }
   },
   "contact": {
@@ -118,7 +165,7 @@
     "spatial": "Spatial Analysis",
     "simulatedData": "Data Management",
     "scan": "Data Scan",
-    "reports": "Reports & Export",
+    "reports": "Reports & Maps",
     "footerTitle": "Hydrological Dashboard",
     "footerSubtitle": "Hassan Addakhil Dam"
   },
@@ -130,7 +177,7 @@
     "maps": "Thematic Maps",
     "simulatedData": "Data: Simulated Data",
     "scan": "Data Scan",
-    "reports": "Reports & Export",
+    "reports": "Reports & Maps",
     "projectName": "Hassan Addakhil Dam",
     "projectLocation": "Guir-Ziz-Rheris Watershed",
     "loadingCatalog": "Loading catalog (runs/modules)…",

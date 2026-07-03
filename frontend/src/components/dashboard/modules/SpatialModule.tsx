@@ -1401,7 +1401,7 @@ export function OperationalSpatialModule() {
       className={`${
         mapOnlyMode
           ? "fixed inset-0 z-[100] bg-slate-950"
-          : "relative h-[calc(100vh-8rem)] overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 shadow-xl"
+          : "relative h-full min-h-[420px] max-h-[calc(100dvh-9.5rem)] overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 shadow-xl"
       }`}
     >
       <HydroMap

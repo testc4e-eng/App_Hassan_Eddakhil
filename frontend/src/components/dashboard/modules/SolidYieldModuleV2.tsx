@@ -1446,15 +1446,7 @@ export function SolidYieldModuleV2() {
         </Card>
       </div>
 
-      <SpecificDegradationThematicMapsSection
-        mode={mode}
-        subbasinId={selectedSubbasinNumericId}
-        runId={runId}
-        compareRunIds={compareRunIds}
-        startDate={startDate}
-        endDate={endDate}
-        runOptions={runOptions}
-      />
+      <SpecificDegradationThematicMapsSection />
 
       <ExpandableDialog
         open={chartOpen}

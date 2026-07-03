@@ -95,9 +95,9 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="flex h-screen flex-col overflow-hidden bg-background">
         <Navbar />
-        <div className="flex-1 flex items-center justify-center">
+        <div className="flex flex-1 items-center justify-center overflow-hidden">
           <div className="text-center">
             <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary mb-4" />
             <p className="text-muted-foreground">{t("dashboard.loadingCatalog")}</p>
@@ -109,9 +109,9 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="flex h-screen flex-col overflow-hidden bg-background">
         <Navbar />
-        <div className="flex-1 flex items-center justify-center">
+        <div className="flex flex-1 items-center justify-center overflow-hidden">
           <div className="text-center max-w-md">
             <div className="text-destructive mb-4">{t("dashboard.loadError")}</div>
             <p className="text-muted-foreground mb-4">{String(error)}</p>
@@ -128,20 +128,18 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
       <Navbar />
 
-      <div className="flex flex-1">
-        <aside className="sticky top-0 h-screen">
-          <DashboardSidebarV2
-            activeSection={activeSection}
-            onSectionChange={handleSectionChange}
-          />
-        </aside>
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <DashboardSidebarV2
+          activeSection={activeSection}
+          onSectionChange={handleSectionChange}
+        />
 
-        <main className="flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-[1600px]">
-          <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border px-4 lg:px-5 py-2.5">
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="mx-auto flex h-full w-full max-w-[1600px] flex-col overflow-hidden">
+          <header className="z-20 shrink-0 border-b border-border bg-background px-4 py-2.5 lg:px-5">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
               <div>
                 <h1 className="text-lg lg:text-[1.15rem] font-bold text-foreground">
@@ -162,7 +160,7 @@ export default function Dashboard() {
             </div>
           </header>
 
-          <section className="p-3 lg:p-4 animate-fade-up">
+          <section className="dashboard-main-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-3 lg:p-4">
             <ActiveModule />
           </section>
           </div>
