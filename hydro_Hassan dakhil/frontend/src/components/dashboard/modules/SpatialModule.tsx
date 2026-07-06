@@ -89,6 +89,7 @@ function EntityControlCard({
   title,
   helper,
   icon,
+  iconColorClass = "text-slate-700",
   visible,
   count,
   selectedValue,
@@ -96,12 +97,11 @@ function EntityControlCard({
   placeholder,
   onToggleVisibility,
   onSelect,
-  onEmphasize,
-  onZoom,
 }: {
   title: string;
   helper: string;
   icon: ReactNode;
+  iconColorClass?: string;
   visible: boolean;
   count: number;
   selectedValue: string;
@@ -109,57 +109,37 @@ function EntityControlCard({
   placeholder: string;
   onToggleVisibility: () => void;
   onSelect: (value: string) => void;
-  onEmphasize: () => void;
-  onZoom: () => void;
 }) {
-  const hasSelection = selectedValue !== "";
-
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-3 shadow-sm">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <div className="rounded-xl bg-slate-100 p-2 text-slate-700">{icon}</div>
-            <div className="min-w-0">
-              <div className="text-sm font-semibold text-slate-900">{title}</div>
-              <div className="text-[11px] text-slate-500">{helper}</div>
-            </div>
+    <div className="rounded-xl border border-slate-200/80 bg-white/80 p-3 shadow-sm">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className={`shrink-0 ${iconColorClass}`}>{icon}</div>
+          <div className="min-w-0">
+            <div className="text-xs font-semibold text-slate-900 truncate">{title}</div>
+            <div className="text-[10px] text-slate-500 truncate">{helper}</div>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <Badge variant="outline" className="rounded-full text-[10px]">
-            {count}
-          </Badge>
-          <label className="flex items-center gap-2 text-[11px] text-slate-500">
-            <Checkbox checked={visible} onCheckedChange={onToggleVisibility} />
-            Visible
-          </label>
+          <span className="text-xs font-semibold text-slate-700">{count}</span>
+          <Checkbox checked={visible} onCheckedChange={onToggleVisibility} className="h-4 w-4" />
         </div>
       </div>
 
       <Select value={selectedValue === "" ? ALL : selectedValue} onValueChange={onSelect} disabled={!options.length}>
-        <SelectTrigger className="h-10 w-full bg-white">
+        <SelectTrigger className="relative h-9 w-full bg-white pl-8 text-xs">
+          <Search className="absolute left-2.5 h-3.5 w-3.5 text-slate-400" />
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value={ALL}>{placeholder}</SelectItem>
           {options.map((option) => (
-            <SelectItem key={option.id} value={String(option.id)}>
+            <SelectItem key={option.id} value={String(option.id)} className="text-xs">
               {option.meta ? `${option.label} (${option.meta})` : option.label}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
-
-      <div className="mt-3 flex items-center gap-2">
-        <Button type="button" size="sm" variant="secondary" className="flex-1" onClick={onEmphasize} disabled={!hasSelection}>
-          Mettre en evidence
-        </Button>
-        <Button type="button" size="sm" variant="outline" className="flex-1" onClick={onZoom} disabled={!hasSelection}>
-          <Search className="mr-2 h-3.5 w-3.5" />
-          Zoom
-        </Button>
-      </div>
     </div>
   );
 }
@@ -943,7 +923,7 @@ export function OperationalSpatialModule() {
       availableStations.map((station) => ({
         id: station.id,
         label: station.name,
-        meta: station.code,
+        meta: station.code && !station.name.toLowerCase().includes(station.code.toLowerCase()) ? station.code : undefined,
       })),
     [availableStations]
   );
@@ -1052,18 +1032,43 @@ export function OperationalSpatialModule() {
   );
 
   const analysisPanel = (
-    <div className="space-y-4">
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge className="rounded-md bg-teal-600 px-2 py-1 text-[11px] font-medium text-white hover:bg-teal-700">
+          Hassan Addakhil
+        </Badge>
+        <div className="flex items-center gap-1 text-[11px] text-slate-600">
+          <Landmark className="h-3.5 w-3.5 text-cyan-600" />
+          <span className="font-semibold">{stats.barrages}</span>
+          <span>Barrage</span>
+        </div>
+        <div className="flex items-center gap-1 text-[11px] text-slate-600">
+          <MapPin className="h-3.5 w-3.5 text-orange-500" />
+          <span className="font-semibold">{stats.stations}</span>
+          <span>Stations</span>
+        </div>
+        <div className="flex items-center gap-1 text-[11px] text-slate-600">
+          <Grid3X3 className="h-3.5 w-3.5 text-green-600" />
+          <span className="font-semibold">{stats.subbasins}</span>
+          <span>Sous-bassins</span>
+        </div>
+        <div className="flex items-center gap-1 text-[11px] text-slate-600">
+          <Waves className="h-3.5 w-3.5 text-blue-500" />
+          <span className="font-semibold">{stats.reaches}</span>
+          <span>Tronçons</span>
+        </div>
+      </div>
+
       <div className="rounded-2xl border border-white/70 bg-white/80 p-3 shadow-sm">
         <div className="mb-3">
-          <div className="text-sm font-semibold text-slate-900">Zone d'interet</div>
-          <div className="text-[11px] text-slate-500">
-            Choisir l'emprise cartographique principale du module Analyse Spatiale.
-          </div>
+          <div className="text-sm font-semibold text-slate-900">Zone d'intérêt</div>
+          <div className="text-[11px] text-slate-500">Choisir l'emprise cartographique principale.</div>
         </div>
 
         <Select value={displayMode} onValueChange={(value) => changeDisplayMode(value as SpatialDisplayMode)}>
-          <SelectTrigger className="h-10 w-full bg-white">
-            <SelectValue placeholder="Choisir une zone d'interet" />
+          <SelectTrigger className="relative h-10 w-full bg-white pl-9 text-xs">
+            <MapPin className="absolute left-2.5 h-4 w-4 text-slate-400" />
+            <SelectValue placeholder="Choisir une zone d'intérêt" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="project_hassan_addakhil">Bassin Hassan Dakhil</SelectItem>
@@ -1077,19 +1082,9 @@ export function OperationalSpatialModule() {
         </label>
 
         <label className="mt-2 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2 text-sm text-slate-700">
-          <span>Troncons (reaches)</span>
+          <span>Tronçons (reaches)</span>
           <Checkbox checked={leftSidebarLayers.reach} onCheckedChange={() => toggleLayer("reach")} />
         </label>
-
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Badge variant="secondary" className="rounded-full">
-            {isProjectMode ? "Hassan Addakhil" : "ABH"}
-          </Badge>
-          <Badge variant="outline" className="rounded-full">{stats.barrages} barrage(x)</Badge>
-          <Badge variant="outline" className="rounded-full">{stats.stations} station(s)</Badge>
-          <Badge variant="outline" className="rounded-full">{stats.subbasins} sous-bassin(s)</Badge>
-          <Badge variant="outline" className="rounded-full">{stats.reaches} troncon(s)</Badge>
-        </div>
       </div>
 
       <div className="rounded-2xl border border-white/70 bg-white/80 p-3 shadow-sm">
@@ -1100,24 +1095,34 @@ export function OperationalSpatialModule() {
           </div>
         </div>
 
-        <div className="mb-3 flex gap-2">
+        <div className="mb-3 grid grid-cols-2 gap-2">
           <Button
             type="button"
             size="sm"
             variant={activeThematicTab === "subbasin" ? "default" : "outline"}
-            className="flex-1"
+            className="h-auto flex-col items-start gap-1 px-3 py-2.5 text-left"
             onClick={() => setActiveThematicTab(activeThematicTab === "subbasin" ? "none" : "subbasin")}
           >
-            Vulnérabilité sous-bassins
+            <Layers className="h-4 w-4 text-cyan-600" />
+            <span className="text-xs leading-tight">
+              Vulnérabilité
+              <br />
+              sous-bassins
+            </span>
           </Button>
           <Button
             type="button"
             size="sm"
             variant={activeThematicTab === "reach" ? "default" : "outline"}
-            className="flex-1"
+            className="h-auto flex-col items-start gap-1 px-3 py-2.5 text-left"
             onClick={() => setActiveThematicTab(activeThematicTab === "reach" ? "none" : "reach")}
           >
-            Sédiments reaches
+            <Waves className="h-4 w-4 text-cyan-600" />
+            <span className="text-xs leading-tight">
+              Sédiments
+              <br />
+              reaches
+            </span>
           </Button>
         </div>
 
@@ -1159,8 +1164,9 @@ export function OperationalSpatialModule() {
       <div className="space-y-3">
         <EntityControlCard
           title="Barrages"
-          helper="Selection du barrage principal ou des barrages du bassin actif."
-          icon={<Landmark className="h-4 w-4" />}
+          helper="Sélection du barrage principal."
+          icon={<Landmark className="h-5 w-5" />}
+          iconColorClass="text-cyan-600"
           visible={leftSidebarLayers.barrages}
           count={stats.barrages}
           selectedValue={selectedBarrageId}
@@ -1168,14 +1174,13 @@ export function OperationalSpatialModule() {
           placeholder="Tous les barrages"
           onToggleVisibility={() => toggleLayer("barrages")}
           onSelect={(value) => selectAndZoomToEntity("barrages", value, focusBarrage)}
-          onEmphasize={() => emphasizeSelection("barrages", selectedBarrageId, focusBarrage)}
-          onZoom={() => zoomToSelection("barrages", selectedBarrageId, focusBarrage)}
         />
 
         <EntityControlCard
           title="Stations"
-          helper="Priorite de clic la plus haute sur la carte."
-          icon={<MapPin className="h-4 w-4" />}
+          helper="Priorité de clic la plus haute."
+          icon={<MapPin className="h-5 w-5" />}
+          iconColorClass="text-orange-500"
           visible={leftSidebarLayers.stations}
           count={stats.stations}
           selectedValue={selectedStationId}
@@ -1183,14 +1188,13 @@ export function OperationalSpatialModule() {
           placeholder="Toutes les stations"
           onToggleVisibility={() => toggleLayer("stations")}
           onSelect={(value) => selectAndZoomToEntity("stations", value, focusStation)}
-          onEmphasize={() => emphasizeSelection("stations", selectedStationId, focusStation)}
-          onZoom={() => zoomToSelection("stations", selectedStationId, focusStation)}
         />
 
         <EntityControlCard
           title="Sous-bassins"
-          helper="Polygones de reference du bassin selectionne."
-          icon={<Grid3X3 className="h-4 w-4" />}
+          helper="Polygones de référence."
+          icon={<Grid3X3 className="h-5 w-5" />}
+          iconColorClass="text-green-600"
           visible={leftSidebarLayers.subBasins}
           count={stats.subbasins}
           selectedValue={selectedSubBasinId}
@@ -1198,23 +1202,20 @@ export function OperationalSpatialModule() {
           placeholder="Tous les sous-bassins"
           onToggleVisibility={() => toggleLayer("subBasins")}
           onSelect={(value) => selectAndZoomToEntity("subBasins", value, focusSubBasin)}
-          onEmphasize={() => emphasizeSelection("subBasins", selectedSubBasinId, focusSubBasin)}
-          onZoom={() => zoomToSelection("subBasins", selectedSubBasinId, focusSubBasin)}
         />
 
         <EntityControlCard
-          title="Troncons"
-          helper="Reseau hydro lineaire rattache a chaque sous-bassin."
-          icon={<Waves className="h-4 w-4" />}
+          title="Tronçons (reaches)"
+          helper="Réseau hydro linéaire."
+          icon={<Waves className="h-5 w-5" />}
+          iconColorClass="text-blue-500"
           visible={leftSidebarLayers.reach}
           count={stats.reaches}
           selectedValue={selectedReachId}
           options={toReachEntityOptions}
-          placeholder={selectedSubBasinId ? "Troncon du sous-bassin" : "Tous les troncons"}
+          placeholder={selectedSubBasinId ? "Tronçon du sous-bassin" : "Tous les tronçons"}
           onToggleVisibility={() => toggleLayer("reach")}
           onSelect={(value) => selectAndZoomToEntity("reach", value, focusReach)}
-          onEmphasize={() => emphasizeSelection("reach", selectedReachId, focusReach)}
-          onZoom={() => zoomToSelection("reach", selectedReachId, focusReach)}
         />
       </div>
     </div>
@@ -1366,6 +1367,61 @@ export function OperationalSpatialModule() {
       <div className="flex items-center gap-2">
         <span className="inline-flex h-1 w-5 rounded bg-[#3B82F6]" />
         <span>{t("spatial.legend.reach")}</span>
+      </div>
+    </div>
+  );
+
+  const entityBadgeBar = (
+    <div className="pointer-events-none absolute inset-x-0 top-14 z-[530] flex justify-center sm:top-16">
+      <div className="pointer-events-auto flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-white/60 bg-white/70 px-2 py-1 shadow-lg shadow-slate-950/15 backdrop-blur-xl">
+        <Button
+          size="sm"
+          variant={leftSidebarLayers.barrages ? "secondary" : "ghost"}
+          className="h-7 gap-1 rounded-full px-2.5 text-xs"
+          onClick={() => toggleLayer("barrages")}
+        >
+          <Landmark className="h-3.5 w-3.5 text-cyan-600" />
+          <span className="hidden sm:inline">Barrages</span>
+          <Badge variant="outline" className="ml-0.5 rounded-full px-1.5 py-0 text-[10px]">
+            {stats.barrages}
+          </Badge>
+        </Button>
+        <Button
+          size="sm"
+          variant={leftSidebarLayers.stations ? "secondary" : "ghost"}
+          className="h-7 gap-1 rounded-full px-2.5 text-xs"
+          onClick={() => toggleLayer("stations")}
+        >
+          <MapPin className="h-3.5 w-3.5 text-orange-500" />
+          <span className="hidden sm:inline">Stations</span>
+          <Badge variant="outline" className="ml-0.5 rounded-full px-1.5 py-0 text-[10px]">
+            {stats.stations}
+          </Badge>
+        </Button>
+        <Button
+          size="sm"
+          variant={leftSidebarLayers.subBasins ? "secondary" : "ghost"}
+          className="h-7 gap-1 rounded-full px-2.5 text-xs"
+          onClick={() => toggleLayer("subBasins")}
+        >
+          <Grid3X3 className="h-3.5 w-3.5 text-green-600" />
+          <span className="hidden sm:inline">Sous-bassins</span>
+          <Badge variant="outline" className="ml-0.5 rounded-full px-1.5 py-0 text-[10px]">
+            {stats.subbasins}
+          </Badge>
+        </Button>
+        <Button
+          size="sm"
+          variant={leftSidebarLayers.reach ? "secondary" : "ghost"}
+          className="h-7 gap-1 rounded-full px-2.5 text-xs"
+          onClick={() => toggleLayer("reach")}
+        >
+          <Waves className="h-3.5 w-3.5 text-blue-500" />
+          <span className="hidden sm:inline">Tronçons</span>
+          <Badge variant="outline" className="ml-0.5 rounded-full px-1.5 py-0 text-[10px]">
+            {stats.reaches}
+          </Badge>
+        </Button>
       </div>
     </div>
   );
@@ -1566,6 +1622,8 @@ export function OperationalSpatialModule() {
 
       {mapTopToolbar}
 
+      {false && entityBadgeBar}
+
       {showAnalysisPanel && (
         <FloatingPanel
           title={t("spatial.title")}
@@ -1586,10 +1644,10 @@ export function OperationalSpatialModule() {
           onClick={(event) => event.stopPropagation()}
           onWheel={(event) => event.stopPropagation()}
           style={{
-            width: `${Math.round(380 * inspectorPopupScale)}px`,
-            height: `${Math.round(540 * inspectorPopupScale)}px`,
-            minWidth: "320px",
-            minHeight: "360px",
+            width: `${Math.round(340 * inspectorPopupScale)}px`,
+            height: `${Math.round(480 * inspectorPopupScale)}px`,
+            minWidth: "300px",
+            minHeight: "320px",
             maxWidth: "calc(100vw - 2rem)",
             maxHeight: "calc(100vh - 8rem)",
             willChange: "transform",

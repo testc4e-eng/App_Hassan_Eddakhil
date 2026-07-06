@@ -616,7 +616,7 @@ function SpatialInspectorPanelComponent({ selection, onClear, className }: Props
       onClick={(event) => event.stopPropagation()}
       onWheel={(event) => event.stopPropagation()}
     >
-      <CardContent className="space-y-3 p-3">
+      <CardContent className="space-y-2.5 p-2.5">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="text-[11px] uppercase tracking-wide text-slate-500">
@@ -633,10 +633,10 @@ function SpatialInspectorPanelComponent({ selection, onClear, className }: Props
         <div className="grid grid-cols-2 gap-2 text-xs">
           {Object.entries(featureProps)
             .filter(([key]) => !["id", "station_id", "subbasin_id", "catchment_id", "catchmentId"].includes(key))
-            .slice(0, 6)
+            .slice(0, 4)
             .map(([key, value]) => (
-              <div key={key} className="rounded-xl border border-white/70 bg-white/70 p-2">
-                <div className="text-[10px] uppercase tracking-wide text-slate-500">
+              <div key={key} className="rounded-lg border border-white/70 bg-white/70 p-1.5">
+                <div className="text-[10px] uppercase tracking-wide text-slate-500 truncate">
                   {key.replace(/_/g, " ")}
                 </div>
                 <div className="font-medium text-slate-900">{displayValue(value)}</div>
