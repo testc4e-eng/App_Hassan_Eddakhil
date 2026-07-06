@@ -16,7 +16,12 @@ hydro_hd.sql
 Données_Bge_Hassan_Addakhil/
 /package-lock.json
 scripts/swat-import/work/
+scripts/swat-import/work_*/
 scripts/swat-import/logs/*.log
+# Temporary screenshots from validation
+dashboard_page.png
+home_page.png
+hydraulic_page.png
 *.log
 hydro_Hassan dakhil/hassan dakhil/
 hydro_Hassan dakhil/archive/deprecated/06_1_Database synthese/backup/
