@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Droplets, Home, LayoutDashboard, Mail, Menu, X } from 'lucide-react';
+import { Home, LayoutDashboard, Mail, Menu, X } from 'lucide-react';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
@@ -24,9 +25,7 @@ export function Navbar() {
         <div className="flex h-14 items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg gradient-hydro flex items-center justify-center">
-              <Droplets className="w-4 h-4 text-white" />
-            </div>
+            <BrandLogo variant="primary" size="sm" className="rounded-lg" />
             <div className="hidden sm:block">
               <h1 className="text-sm font-semibold text-foreground leading-tight">
                 Hydro-Data Intelligence
@@ -37,43 +36,48 @@ export function Navbar() {
             </div>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-2">
-            <LanguageSwitcher />
-            {isAuthenticated ? (
-              <nav className="flex items-center gap-1">
-                {navLinks.map((link) => {
-                  const Icon = link.icon;
-                  const isActive = location.pathname === link.href;
+          {/* Desktop Navigation + secondary logo */}
+          <div className="flex items-center gap-2">
+            <div className="hidden md:flex items-center gap-2">
+              <LanguageSwitcher />
+              {isAuthenticated ? (
+                <nav className="flex items-center gap-1">
+                  {navLinks.map((link) => {
+                    const Icon = link.icon;
+                    const isActive = location.pathname === link.href;
 
-                  return (
-                    <Link
-                      key={link.href}
-                      to={link.href}
-                      className={cn(
-                        'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                        isActive 
-                          ? 'bg-primary text-primary-foreground' 
-                          : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                      )}
-                    >
-                      <Icon className="w-4 h-4" />
-                      {link.label}
-                    </Link>
-                  );
-                })}
-              </nav>
-            ) : null}
-            <UserMenu />
+                    return (
+                      <Link
+                        key={link.href}
+                        to={link.href}
+                        className={cn(
+                          'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                          isActive
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                        )}
+                      >
+                        <Icon className="w-4 h-4" />
+                        {link.label}
+                      </Link>
+                    );
+                  })}
+                </nav>
+              ) : null}
+              <UserMenu />
+            </div>
+            <BrandLogo
+              variant="secondary"
+              size="sm"
+              className="h-10 w-auto max-w-[2.75rem] sm:max-w-[3rem]"
+            />
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-lg hover:bg-muted transition-colors"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-muted transition-colors"
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
         </div>
 
         {/* Mobile Navigation */}

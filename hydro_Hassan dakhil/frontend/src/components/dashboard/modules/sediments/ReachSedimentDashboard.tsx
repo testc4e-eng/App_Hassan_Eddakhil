@@ -1,4 +1,4 @@
-import { type ComponentType, useCallback, useEffect, useMemo, useState } from "react";
+import { type ComponentType, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import {
   CartesianGrid,
@@ -10,12 +10,16 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Download, FileSpreadsheet, MapPinned, Maximize2 } from "lucide-react";
+import { Download, FileSpreadsheet, ImageIcon, MapPinned, Maximize2, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { MapContainer, Polyline, TileLayer } from "react-leaflet";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartModeSelect } from "@/components/charts/ChartModeSelect";
 import { ExpandableDialog } from "@/components/dashboard/analytics/ExpandableDialog";
+import {
+  CompareScenariosCodeMultiSelect,
+  FilterField,
+} from "@/components/dashboard/modules/sediments/SolidYieldLayoutSections";
 import {
   Select,
   SelectContent,
@@ -23,6 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 import type { ChartDisplayMode } from "@/types/chart";
 import {
   hasStrictlyPositiveValues,
@@ -30,9 +36,17 @@ import {
   usesLogarithmicYAxis,
   type DisplayModeTransformResult,
 } from "@/lib/chartDisplayMode";
-import { fetchReachTimeseries, fetchReaches, type Feature, type FeatureCollection } from "@/api/spatial";
+import {
+  fetchReachTimeseries,
+  fetchReaches,
+  type Feature,
+  type FeatureCollection,
+  type ReachTimeseriesResponse,
+} from "@/api/spatial";
 import { NORMALIZED_SWAT_SCENARIOS } from "@/constants/swatScenarios";
+import { getScenarioChartColor } from "@/constants/scenarioColors";
 import { SEDIMENT_DISPLAY_LABEL } from "@/constants/sediment";
+import { ReachStaticMapDialog } from "@/components/dashboard/modules/sediments/ReachStaticMapDialog";
 import {
   AGGREGATION_PRIORITY,
   isAggregationSelectable,
@@ -47,6 +61,10 @@ import {
 } from "@/lib/chartLayout";
 
 type Interval = "day" | "month" | "year";
+type Mode = "simple" | "multi";
+
+const TABLE_PAGE_SIZE = 10;
+const EMPTY_DATE = "";
 
 type ReachProps = {
   id: number;
@@ -79,7 +97,6 @@ type ComparisonRow = Record<string, string | number | null> & { period: string }
 const MapContainerUnsafe = MapContainer as unknown as ComponentType<any>;
 const TileLayerUnsafe = TileLayer as unknown as ComponentType<any>;
 const PolylineUnsafe = Polyline as unknown as ComponentType<any>;
-const COLORS = ["#f97316", "#06b6d4", "#8b5cf6", "#22c55e", "#ef4444", "#eab308"];
 
 const SCENARIOS = [
   { code: "etat_actuel", label: "Scénario état actuel" },
@@ -88,6 +105,55 @@ const SCENARIOS = [
     label: s.label,
   })),
 ];
+
+function toDateOnly(value?: string | number | null) {
+  if (value === null || value === undefined) return EMPTY_DATE;
+  const isoMatch = String(value).match(/^(\d{4}-\d{2}-\d{2})/);
+  if (isoMatch) return isoMatch[1];
+  const yearMatch = String(value).match(/^(\d{4})$/);
+  return yearMatch ? `${yearMatch[1]}-01-01` : EMPTY_DATE;
+}
+
+type ReachPeriodBounds = {
+  minDate: string;
+  maxDate: string;
+};
+
+function addDaysToIsoDate(isoDate: string, days: number): string {
+  const date = new Date(`${isoDate}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return isoDate;
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function deriveReachPeriodBounds(
+  response: ReachTimeseriesResponse
+): ReachPeriodBounds | null {
+  const series = response.series.filter((row) => Number.isFinite(Number(row.sed_out_tons)));
+  if (!series.length) {
+    if (response.periodStart != null && response.periodEnd != null) {
+      return {
+        minDate: `${response.periodStart}-01-01`,
+        maxDate: `${response.periodEnd}-12-31`,
+      };
+    }
+    return null;
+  }
+
+  const first = series[0];
+  const last = series[series.length - 1];
+  const minDate = toDateOnly(first.period) || toDateOnly(first.year);
+  let maxDate = toDateOnly(last.period) || toDateOnly(last.year);
+
+  if (maxDate && last.n && last.n > 0 && last.n < 366) {
+    maxDate = addDaysToIsoDate(maxDate, last.n - 1);
+  } else if (response.periodEnd != null) {
+    maxDate = `${response.periodEnd}-12-31`;
+  }
+
+  if (!minDate || !maxDate) return null;
+  return { minDate, maxDate };
+}
 
 function fmt(value: number | null | undefined, digits = 2) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return "-";
@@ -258,14 +324,16 @@ function ReachTimeSeriesChart({
               {...RECHARTS_LEGEND_BOTTOM}
               content={() => (
                 <div className={RECHARTS_LEGEND_CUSTOM_WRAPPER_CLASS}>
-                  {scenarioSeries.map((item, idx) => {
+                  {scenarioSeries.map((item) => {
                     const hasData = hasReachSeriesData(item);
                     return (
                       <div key={item.scenarioCode} className="flex items-center gap-2">
                         <span
                           className="inline-block h-0.5 w-4"
                           style={{
-                            backgroundColor: hasData ? COLORS[idx % COLORS.length] : "#cbd5e1",
+                            backgroundColor: hasData
+                              ? getScenarioChartColor(item.scenarioCode)
+                              : "#cbd5e1",
                             opacity: hasData ? 1 : 0.65,
                           }}
                         />
@@ -283,21 +351,18 @@ function ReachTimeSeriesChart({
             <Legend {...RECHARTS_LEGEND_BOTTOM} />
           )}
           {isComparisonMode ? (
-            plottedSeries.map((item) => {
-              const idx = scenarioSeries.findIndex((series) => series.scenarioCode === item.scenarioCode);
-              return (
+            plottedSeries.map((item) => (
                 <Line
                   key={item.scenarioCode}
                   type="monotone"
                   dataKey={item.scenarioCode}
                   name={item.label}
-                  stroke={COLORS[idx % COLORS.length]}
+                  stroke={getScenarioChartColor(item.scenarioCode)}
                   strokeWidth={2}
                   dot={false}
                   connectNulls
                 />
-              );
-            })
+              ))
           ) : (
             <Line
               type="monotone"
@@ -315,20 +380,31 @@ function ReachTimeSeriesChart({
   );
 }
 
+type ScenarioSeriesLoadResult = {
+  rows: ScenarioSeries[];
+  periodBounds: ReachPeriodBounds | null;
+};
+
 export function ReachSedimentDashboard() {
   const [reaches, setReaches] = useState<ReachFeature[]>([]);
   const [reachId, setReachId] = useState<number | undefined>();
   const [scenarioCode, setScenarioCode] = useState("etat_actuel");
   const [compareScenarios, setCompareScenarios] = useState<string[]>(["etat_actuel"]);
+  const [mode, setMode] = useState<Mode>("simple");
   const [interval, setInterval] = useState<Interval>("year");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(EMPTY_DATE);
+  const [endDate, setEndDate] = useState(EMPTY_DATE);
+  const [periodAvailability, setPeriodAvailability] = useState<ReachPeriodBounds | null>(null);
+  const [seriesFetchAttempted, setSeriesFetchAttempted] = useState(false);
   const [scenarioSeries, setScenarioSeries] = useState<ScenarioSeries[]>([]);
   const [comparisonLoading, setComparisonLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [displayMode, setDisplayMode] = useState<ChartDisplayMode>("normal");
   const [chartOpen, setChartOpen] = useState(false);
+  const [staticMapOpen, setStaticMapOpen] = useState(false);
+  const [tablePage, setTablePage] = useState(1);
+  const periodSyncKeyRef = useRef("");
 
   const activeScenarioCodes = useMemo(() => {
     if (compareScenarios.length >= 2) return compareScenarios;
@@ -339,8 +415,10 @@ export function ReachSedimentDashboard() {
   const isComparisonMode = activeScenarioCodes.length >= 2;
 
   const hasReachData = useMemo(
-    () => scenarioSeries.some((series) => series.points.length > 0),
-    [scenarioSeries]
+    () =>
+      scenarioSeries.some((series) => hasReachSeriesData(series)) ||
+      Boolean(periodAvailability?.minDate && periodAvailability?.maxDate),
+    [periodAvailability, scenarioSeries]
   );
 
   const intervalAvailability = useMemo(
@@ -387,9 +465,23 @@ export function ReachSedimentDashboard() {
     ? `Reach ${selectedReach.properties.id} / Subbasin ${selectedReach.properties.subbasin_id ?? "-"}`
     : "Reach";
 
+  const periodSyncKey = `${reachId ?? ""}|${scenarioCode}|${interval}`;
+
+  useEffect(() => {
+    periodSyncKeyRef.current = "";
+    setStartDate(EMPTY_DATE);
+    setEndDate(EMPTY_DATE);
+    setPeriodAvailability(null);
+    setSeriesFetchAttempted(false);
+  }, [reachId, scenarioCode, interval]);
+
   const loadScenarioSeries = useCallback(
-  async (codes: string[]) => {
-    if (!reachId || !codes.length) return [] as ScenarioSeries[];
+  async (codes: string[], periodSourceCode: string): Promise<ScenarioSeriesLoadResult> => {
+    if (!reachId || !codes.length) {
+      return { rows: [], periodBounds: null };
+    }
+
+    let periodBounds: ReachPeriodBounds | null = null;
 
     const rows = await Promise.all(
       codes.map(async (code) => {
@@ -397,9 +489,12 @@ export function ReachSedimentDashboard() {
         const res = await fetchReachTimeseries(reachId, {
           scenarioCode: code,
           interval,
-          startDate,
-          endDate,
+          startDate: startDate || undefined,
+          endDate: endDate || undefined,
         });
+        if (code === periodSourceCode) {
+          periodBounds = deriveReachPeriodBounds(res);
+        }
         return {
           scenarioCode: code,
           label,
@@ -415,7 +510,7 @@ export function ReachSedimentDashboard() {
       })
     );
 
-    return rows;
+    return { rows, periodBounds };
   },
   [endDate, interval, reachId, selectedReachLabel, startDate]
 );
@@ -427,22 +522,52 @@ export function ReachSedimentDashboard() {
       return;
     }
 
-    setComparisonLoading(true);
-    const codes = activeScenarioCodes;
+    const shouldSyncPeriod =
+      !startDate || !endDate || periodSyncKeyRef.current !== periodSyncKey;
 
-    loadScenarioSeries(codes)
-      .then((rows) => {
-        if (alive) setScenarioSeries(rows);
+    setComparisonLoading(true);
+
+    loadScenarioSeries(activeScenarioCodes, scenarioCode)
+      .then(({ rows, periodBounds }) => {
+        if (!alive) return;
+
+        if (shouldSyncPeriod) {
+          periodSyncKeyRef.current = periodSyncKey;
+          setPeriodAvailability(periodBounds);
+          if (periodBounds) {
+            setStartDate(periodBounds.minDate);
+            setEndDate(periodBounds.maxDate);
+          } else {
+            setStartDate(EMPTY_DATE);
+            setEndDate(EMPTY_DATE);
+          }
+        }
+
+        setScenarioSeries(rows);
       })
       .catch((e) => setError(String(e?.message || e)))
       .finally(() => {
-        if (alive) setComparisonLoading(false);
+        if (alive) {
+          setComparisonLoading(false);
+          setSeriesFetchAttempted(true);
+        }
       });
 
     return () => {
       alive = false;
     };
-  }, [activeScenarioCodes, compareScenarios, isComparisonMode, loadScenarioSeries, reachId, scenarioCode]);
+  }, [
+    activeScenarioCodes,
+    compareScenarios,
+    endDate,
+    interval,
+    isComparisonMode,
+    loadScenarioSeries,
+    periodSyncKey,
+    reachId,
+    scenarioCode,
+    startDate,
+  ]);
 
   const activeSeries = useMemo(() => {
     if (isComparisonMode) {
@@ -521,12 +646,55 @@ export function ReachSedimentDashboard() {
     return hasStrictlyPositiveValues(rows, valueKeys);
   }, [activeSeries, comparisonData, isComparisonMode, plottedSeries]);
 
-  const toggleScenario = (code: string) => {
+  const toggleCompareScenario = (code: string) => {
     setCompareScenarios((prev) => {
       const next = prev.includes(code) ? prev.filter((item) => item !== code) : [...prev, code];
       return next.length ? next : [scenarioCode];
     });
   };
+
+  const resetFilters = () => {
+    setReachId(reaches[0]?.properties?.id);
+    setScenarioCode("etat_actuel");
+    setCompareScenarios(["etat_actuel"]);
+    setMode("simple");
+    setInterval("year");
+    setStartDate(EMPTY_DATE);
+    setEndDate(EMPTY_DATE);
+    setTablePage(1);
+  };
+
+  const applyFilters = () => {
+    setTablePage(1);
+  };
+
+  const totalTableRows = exportablePoints.length;
+  const totalTablePages = Math.max(1, Math.ceil(totalTableRows / TABLE_PAGE_SIZE));
+
+  const paginatedTableRows = useMemo(() => {
+    const start = (tablePage - 1) * TABLE_PAGE_SIZE;
+    return exportablePoints.slice(start, start + TABLE_PAGE_SIZE);
+  }, [exportablePoints, tablePage]);
+
+  const tablePageNumbers = useMemo(() => {
+    if (totalTablePages <= 7) {
+      return Array.from({ length: totalTablePages }, (_, index) => index + 1);
+    }
+    const pages = new Set<number>([1, totalTablePages, tablePage, tablePage - 1, tablePage + 1]);
+    return Array.from(pages)
+      .filter((page) => page >= 1 && page <= totalTablePages)
+      .sort((a, b) => a - b);
+  }, [tablePage, totalTablePages]);
+
+  useEffect(() => {
+    setTablePage(1);
+  }, [reachId, scenarioCode, compareScenarios, interval, startDate, endDate, mode]);
+
+  useEffect(() => {
+    if (tablePage > totalTablePages) {
+      setTablePage(totalTablePages);
+    }
+  }, [tablePage, totalTablePages]);
 
   const exportCsv = () => {
     if (!exportablePoints.length) return;
@@ -554,180 +722,334 @@ export function ReachSedimentDashboard() {
     );
   };
 
-  if (loading) return <div className="text-sm text-muted-foreground">Chargement des reaches...</div>;
+  if (loading) {
+    return <div className="text-sm text-muted-foreground">Chargement des reaches...</div>;
+  }
 
   return (
-    <div className="space-y-4">
+    <div className="w-full space-y-4">
       {error ? (
-        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+        <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Filtres Reach</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              <div className="space-y-1">
-                <div className="text-xs font-semibold">Reach</div>
-                <Select value={reachId ? String(reachId) : ""} onValueChange={(v) => setReachId(Number(v))}>
-                  <SelectTrigger><SelectValue placeholder="Choisir un reach" /></SelectTrigger>
-                  <SelectContent>
-                    {reaches.map((reach) => (
-                      <SelectItem key={reach.properties.id} value={String(reach.properties.id)}>
-                        Reach {reach.properties.id} - Subbasin {reach.properties.subbasin_id}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <div className="text-xs font-semibold">Scénario</div>
-                <Select
-                  value={scenarioCode}
-                  onValueChange={(v) => {
-                    setScenarioCode(v);
-                    setCompareScenarios((prev) => (prev.includes(v) ? prev : [...prev, v]));
-                  }}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {SCENARIOS.map((scenario) => (
-                      <SelectItem key={scenario.code} value={scenario.code}>{scenario.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <div className="text-xs font-semibold">Variable</div>
-                <div className="flex h-10 items-center rounded-md border bg-muted/30 px-3 text-sm">{SEDIMENT_DISPLAY_LABEL}</div>
-              </div>
-            </div>
+      <Card className="rounded-xl border bg-card p-4 shadow-sm">
+        <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
+          <FilterField label="Mode">
+            <Tabs value={mode} onValueChange={(v) => setMode(v as Mode)}>
+              <TabsList className="grid h-9 grid-cols-2">
+                <TabsTrigger value="simple" className="px-3 text-xs">
+                  Mode simple
+                </TabsTrigger>
+                <TabsTrigger value="multi" className="px-3 text-xs">
+                  Mode multicouche
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </FilterField>
 
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_auto]">
-              <input type="date" className="h-10 rounded-md border px-3" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-              <input type="date" className="h-10 rounded-md border px-3" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-              <div className="flex gap-2">
-                {(["day", "month", "year"] as const).map((item) => (
-                  <Button
-                    key={item}
-                    variant={interval === item ? "default" : "outline"}
-                    disabled={!isAggregationSelectable(item, intervalAvailability)}
-                    onClick={() => setInterval(item)}
-                  >
-                    {item === "day" ? "Jour" : item === "month" ? "Mois" : "Année"}
-                  </Button>
+          <FilterField label="Reach" className="min-w-[180px]">
+            <Select value={reachId ? String(reachId) : ""} onValueChange={(v) => setReachId(Number(v))}>
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Choisir un reach" />
+              </SelectTrigger>
+              <SelectContent>
+                {reaches.map((reach) => (
+                  <SelectItem key={reach.properties.id} value={String(reach.properties.id)}>
+                    {`Reach ${reach.properties.id} - Subbasin ${reach.properties.subbasin_id}`}
+                  </SelectItem>
                 ))}
-              </div>
-            </div>
+              </SelectContent>
+            </Select>
+          </FilterField>
 
-            <div className="rounded-lg border bg-muted/20 p-3">
-              <div className="mb-2 text-xs font-semibold">Comparaison multi-scénarios</div>
-              <div className="grid gap-2 md:grid-cols-2">
+          <FilterField label="Scénario / Run" className="min-w-[200px]">
+            <Select
+              value={scenarioCode}
+              onValueChange={(v) => {
+                setScenarioCode(v);
+                setCompareScenarios((prev) => (prev.includes(v) ? prev : [...prev, v]));
+              }}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Choisir un scénario" />
+              </SelectTrigger>
+              <SelectContent>
                 {SCENARIOS.map((scenario) => (
-                  <label key={scenario.code} className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 accent-cyan-600"
-                      checked={compareScenarios.includes(scenario.code)}
-                      onChange={() => toggleScenario(scenario.code)}
-                    />
+                  <SelectItem key={scenario.code} value={scenario.code}>
                     {scenario.label}
-                  </label>
+                  </SelectItem>
                 ))}
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                Les séries Reach du scénario état actuel sont lues depuis le code `etat_actuel`. Les autres scénarios restent visibles mais peuvent retourner un état vide si leurs imports ne sont pas présents.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+              </SelectContent>
+            </Select>
+          </FilterField>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <MapPinned className="h-4 w-4" />
-              Carte des 19 reaches
+          <FilterField label="Variable" className="min-w-[200px]">
+            <div className="flex h-9 items-center rounded-md border border-input bg-muted/40 px-3 text-sm">
+              {SEDIMENT_DISPLAY_LABEL}
+            </div>
+          </FilterField>
+
+          <FilterField label="Période" className="min-w-[280px]">
+            {seriesFetchAttempted && !comparisonLoading && !periodAvailability ? (
+              <div className="flex h-9 items-center text-sm text-muted-foreground">
+                Aucune donnée disponible
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                  value={startDate}
+                  disabled={comparisonLoading || !periodAvailability}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+                <span className="text-xs text-muted-foreground">→</span>
+                <input
+                  type="date"
+                  className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                  value={endDate}
+                  disabled={comparisonLoading || !periodAvailability}
+                  onChange={(e) => setEndDate(e.target.value)}
+                />
+              </div>
+            )}
+          </FilterField>
+
+          <FilterField label="Agrégation">
+            <div className="flex h-9 items-center gap-1">
+              {(["day", "month", "year"] as const).map((item) => (
+                <Button
+                  key={item}
+                  size="sm"
+                  className="h-9"
+                  variant={interval === item ? "default" : "outline"}
+                  disabled={!isAggregationSelectable(item, intervalAvailability)}
+                  onClick={() => setInterval(item)}
+                >
+                  {item === "day" ? "Jour" : item === "month" ? "Mois" : "Année"}
+                </Button>
+              ))}
+            </div>
+          </FilterField>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-end gap-x-4 gap-y-3 border-t border-border/70 pt-3">
+          <Button size="sm" variant="outline" className="h-9" onClick={resetFilters}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Reset
+          </Button>
+          <Button size="sm" className="h-9" onClick={applyFilters}>
+            Appliquer
+          </Button>
+
+          {mode === "simple" ? (
+            <FilterField label="Scénarios à comparer" className="min-w-[220px]">
+              <CompareScenariosCodeMultiSelect
+                options={SCENARIOS.map((scenario) => ({
+                  code: scenario.code,
+                  label: scenario.label,
+                }))}
+                selectedCodes={compareScenarios}
+                onToggle={toggleCompareScenario}
+              />
+            </FilterField>
+          ) : null}
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch">
+        <Card className="flex min-h-[520px] flex-col">
+          <CardHeader className="space-y-3 pb-2 pt-4">
+            <CardTitle className="text-base">Statistiques</CardTitle>
+            <div className="flex flex-wrap items-stretch gap-2">
+              <StatCard compact micro label="Min" value={fmt(stats.min)} />
+              <StatCard compact micro label="Max" value={fmt(stats.max)} />
+              <StatCard compact micro label="Moyenne" value={fmt(stats.avg)} />
+              <StatCard compact micro label="Somme" value={fmt(stats.sum)} />
+              <StatCard compact micro label="Points" value={String(stats.count)} />
+              <StatCard compact wide label="Période" value={stats.period.replace(" -> ", " → ")} />
+            </div>
+          </CardHeader>
+          <CardHeader className="pb-2 pt-0">
+            <CardTitle className="text-base">
+              Graphique temporel {SEDIMENT_DISPLAY_LABEL}
+              {isComparisonMode ? " (comparaison)" : ""}
             </CardTitle>
           </CardHeader>
-          <CardContent className="h-[360px]">
-            <MapContainerUnsafe center={[32.25, -4.8]} zoom={8} style={{ width: "100%", height: "100%" }}>
-              <TileLayerUnsafe
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          <CardContent className="flex min-h-0 flex-1 flex-col pb-4">
+            <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
+              <ChartModeSelect value={displayMode} onValueChange={setDisplayMode} />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setChartOpen(true)}
+                disabled={
+                  isComparisonMode
+                    ? comparisonData.length === 0
+                    : (plottedSeries[0]?.points.length ?? 0) === 0
+                }
+              >
+                <Maximize2 className="mr-2 h-4 w-4" />
+                Agrandir
+              </Button>
+            </div>
+            {comparisonLoading ? (
+              <div className="mb-2 text-xs text-muted-foreground">Chargement des séries scénarios...</div>
+            ) : null}
+            {emptyScenarioAlerts.map((message) => (
+              <div
+                key={message}
+                className="mb-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800"
+              >
+                {message}
+              </div>
+            ))}
+            <div className="min-h-0 flex-1">
+              <ReachTimeSeriesChart
+                chartData={chartData}
+                displayMode={displayMode}
+                isComparisonMode={isComparisonMode}
+                scenarioSeries={activeSeries}
+                hasLoggableValues={hasLoggableValues}
+                rowCount={isComparisonMode ? comparisonData.length : plottedSeries[0]?.points.length ?? 0}
+                heightClassName="h-full min-h-[280px]"
               />
-              {reaches.map((reach) =>
-                toLinePositions(reach.geometry).map((line, idx) => (
-                  <PolylineUnsafe
-                    key={`${reach.properties.id}-${idx}`}
-                    positions={line}
-                    pathOptions={{
-                      color: Number(reach.properties.id) === Number(reachId) ? "#f97316" : "#2563eb",
-                      weight: Number(reach.properties.id) === Number(reachId) ? 5 : 2,
-                      opacity: Number(reach.properties.id) === Number(reachId) ? 1 : 0.65,
-                    }}
-                    eventHandlers={{ click: () => setReachId(Number(reach.properties.id)) }}
-                  />
-                ))
-              )}
-            </MapContainerUnsafe>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="flex min-h-[520px] flex-col">
+          <CardHeader className="pb-2 pt-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <MapPinned className="h-4 w-4" />
+                Carte des 19 reaches
+              </CardTitle>
+              <Button
+                type="button"
+                size="sm"
+                className="gap-1.5 rounded-md bg-orange-500 text-white hover:bg-orange-600"
+                onClick={() => setStaticMapOpen(true)}
+              >
+                <ImageIcon className="h-4 w-4" />
+                Carte statique
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="min-h-0 flex-1 pb-4">
+            <div className="h-full min-h-[420px] overflow-hidden rounded-md border">
+              <MapContainerUnsafe center={[32.25, -4.8]} zoom={8} style={{ width: "100%", height: "100%" }}>
+                <TileLayerUnsafe
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                {reaches.map((reach) =>
+                  toLinePositions(reach.geometry).map((line, idx) => (
+                    <PolylineUnsafe
+                      key={`${reach.properties.id}-${idx}`}
+                      positions={line}
+                      pathOptions={{
+                        color: Number(reach.properties.id) === Number(reachId) ? "#f97316" : "#2563eb",
+                        weight: Number(reach.properties.id) === Number(reachId) ? 5 : 2,
+                        opacity: Number(reach.properties.id) === Number(reachId) ? 1 : 0.65,
+                      }}
+                      eventHandlers={{ click: () => setReachId(Number(reach.properties.id)) }}
+                    />
+                  ))
+                )}
+              </MapContainerUnsafe>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
-        <Stat label="Min" value={fmt(stats.min)} />
-        <Stat label="Max" value={fmt(stats.max)} />
-        <Stat label="Moyenne" value={fmt(stats.avg)} />
-        <Stat label="Somme" value={fmt(stats.sum)} />
-        <Stat label="Points" value={String(stats.count)} />
-        <Stat label="Période" value={stats.period} />
-      </div>
-
-      <Card>
+      <Card className="flex flex-col">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">
-            Graphique temporel {SEDIMENT_DISPLAY_LABEL} - {selectedReachLabel}
-            {isComparisonMode ? " (comparaison)" : ""}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
-            <ChartModeSelect value={displayMode} onValueChange={setDisplayMode} />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setChartOpen(true)}
-              disabled={
-                isComparisonMode
-                  ? comparisonData.length === 0
-                  : (plottedSeries[0]?.points.length ?? 0) === 0
-              }
-            >
-              <Maximize2 className="mr-2 h-4 w-4" />
-              Agrandir
-            </Button>
-          </div>
-          {comparisonLoading ? (
-            <div className="mb-2 text-xs text-muted-foreground">Chargement des séries scénarios...</div>
-          ) : null}
-          {emptyScenarioAlerts.map((message) => (
-            <div
-              key={message}
-              className="mb-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800"
-            >
-              {message}
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="text-base">Tableau</CardTitle>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={exportCsv} disabled={!exportablePoints.length}>
+                <Download className="mr-2 h-4 w-4" />
+                Export CSV
+              </Button>
+              <Button variant="outline" size="sm" onClick={exportExcel} disabled={!exportablePoints.length}>
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Export Excel
+              </Button>
             </div>
-          ))}
-          <ReachTimeSeriesChart
-            chartData={chartData}
-            displayMode={displayMode}
-            isComparisonMode={isComparisonMode}
-            scenarioSeries={activeSeries}
-            hasLoggableValues={hasLoggableValues}
-            rowCount={isComparisonMode ? comparisonData.length : plottedSeries[0]?.points.length ?? 0}
-          />
+          </div>
+        </CardHeader>
+        <CardContent className="flex flex-col">
+          <div className="overflow-hidden rounded-md border">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/60">
+                <tr>
+                  <th className="px-3 py-2 text-left">Date</th>
+                  <th className="px-3 py-2 text-left">Reach</th>
+                  <th className="px-3 py-2 text-left">Valeur</th>
+                  <th className="px-3 py-2 text-left">Scénario</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedTableRows.map((point) => (
+                  <tr key={`${point.period}-${point.scenarioCode}-${point.scenario}`} className="border-t">
+                    <td className="px-3 py-2">{point.period}</td>
+                    <td className="px-3 py-2">{point.reach}</td>
+                    <td className="px-3 py-2 font-mono">{fmt(point.value)}</td>
+                    <td className="px-3 py-2">{point.scenario}</td>
+                  </tr>
+                ))}
+                {!exportablePoints.length ? (
+                  <tr>
+                    <td colSpan={4} className="px-3 py-8 text-center text-muted-foreground">
+                      Aucune donnée {SEDIMENT_DISPLAY_LABEL} pour cette sélection.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-auto flex flex-col gap-2 border-t border-border pt-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-xs text-muted-foreground">
+              Affichage {(tablePage - 1) * TABLE_PAGE_SIZE + 1} à{" "}
+              {Math.min(tablePage * TABLE_PAGE_SIZE, totalTableRows)} sur {totalTableRows} résultats
+            </div>
+            <div className="flex flex-wrap items-center gap-1">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={tablePage <= 1}
+                onClick={() => setTablePage((page) => Math.max(1, page - 1))}
+              >
+                <ChevronLeft className="mr-1 h-4 w-4" />
+                Précédent
+              </Button>
+              {tablePageNumbers.map((page) => (
+                <Button
+                  key={`reach-table-page-${page}`}
+                  type="button"
+                  size="sm"
+                  variant={page === tablePage ? "default" : "outline"}
+                  className="min-w-9"
+                  onClick={() => setTablePage(page)}
+                >
+                  {page}
+                </Button>
+              ))}
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={tablePage >= totalTablePages}
+                onClick={() => setTablePage((page) => Math.min(totalTablePages, page + 1))}
+              >
+                Suivant
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -738,10 +1060,6 @@ export function ReachSedimentDashboard() {
       >
         <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
           <ChartModeSelect value={displayMode} onValueChange={setDisplayMode} />
-          <Button variant="outline" size="sm" onClick={() => setChartOpen(true)}>
-            <Maximize2 className="mr-2 h-4 w-4" />
-            Agrandir
-          </Button>
         </div>
         {emptyScenarioAlerts.map((message) => (
           <div
@@ -764,63 +1082,50 @@ export function ReachSedimentDashboard() {
         </div>
       </ExpandableDialog>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between gap-2">
-            <CardTitle className="text-base">Tableau Reach</CardTitle>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={exportCsv} disabled={!exportablePoints.length}>
-                <Download className="mr-2 h-4 w-4" />
-                Export CSV
-              </Button>
-              <Button variant="outline" size="sm" onClick={exportExcel} disabled={!exportablePoints.length}>
-                <FileSpreadsheet className="mr-2 h-4 w-4" />
-                Export Excel
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="max-h-[420px] overflow-auto rounded-md border">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-muted">
-                <tr>
-                  <th className="px-3 py-2 text-left">Date</th>
-                  <th className="px-3 py-2 text-left">Reach</th>
-                  <th className="px-3 py-2 text-left">Valeur</th>
-                  <th className="px-3 py-2 text-left">Scénario</th>
-                </tr>
-              </thead>
-              <tbody>
-                {exportablePoints.map((point) => (
-                  <tr key={`${point.period}-${point.scenarioCode}-${point.scenario}`} className="border-t">
-                    <td className="px-3 py-2">{point.period}</td>
-                    <td className="px-3 py-2">{point.reach}</td>
-                    <td className="px-3 py-2 font-mono">{fmt(point.value)}</td>
-                    <td className="px-3 py-2">{point.scenario}</td>
-                  </tr>
-                ))}
-                {!exportablePoints.length ? (
-                  <tr>
-                    <td colSpan={4} className="px-3 py-4 text-muted-foreground">
-                      Aucune donnée {SEDIMENT_DISPLAY_LABEL} pour cette sélection.
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+      {staticMapOpen ? (
+        <ReachStaticMapDialog open={staticMapOpen} onOpenChange={setStaticMapOpen} />
+      ) : null}
     </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function StatCard({
+  label,
+  value,
+  compact = false,
+  micro = false,
+  wide = false,
+}: {
+  label: string;
+  value: string;
+  compact?: boolean;
+  micro?: boolean;
+  wide?: boolean;
+}) {
   return (
-    <div className="rounded-lg border bg-white px-3 py-3 shadow-sm">
-      <div className="text-[11px] text-muted-foreground">{label}</div>
-      <div className="text-lg font-semibold">{value}</div>
+    <div
+      className={cn(
+        "rounded-lg border border-border bg-muted/30",
+        micro ? "min-w-[72px] px-2 py-1.5" : compact ? "px-2 py-2" : "px-3 py-3",
+        wide && "min-w-[180px] flex-[1.4]"
+      )}
+    >
+      <div
+        className={cn(
+          "text-muted-foreground",
+          micro ? "text-[9px] uppercase tracking-wide" : compact ? "text-[10px]" : "text-[11px]"
+        )}
+      >
+        {label}
+      </div>
+      <div
+        className={cn(
+          "font-semibold break-words",
+          micro ? "text-xs leading-tight" : compact ? "text-sm leading-tight" : "text-lg"
+        )}
+      >
+        {value}
+      </div>
     </div>
   );
 }

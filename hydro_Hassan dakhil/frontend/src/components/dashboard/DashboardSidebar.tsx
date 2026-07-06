@@ -97,7 +97,7 @@ const SIDEBAR_SECTIONS: SidebarGroup[] = [
     items: [
       {
         id: "reports",
-        label: "Rapport & Export",
+        label: "Rapport & Carte",
         icon: FileText,
         color: "text-rose-500",
       },

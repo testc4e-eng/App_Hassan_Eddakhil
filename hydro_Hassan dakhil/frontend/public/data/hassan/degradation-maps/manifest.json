@@ -1,0 +1,43 @@
+{
+  "version": 3,
+  "source": "assets/Carte/dégradation spacifique",
+  "publicBase": "/assets/Carte/degradation-specifique",
+  "maps": [
+    {
+      "id": "degradation-etat-actuel",
+      "title": "Dégradation spécifique — état actuel",
+      "fileName": "degradation-specifique-etat-actuel.jpg",
+      "imagePath": "/assets/Carte/degradation-specifique/degradation-specifique-etat-actuel.jpg"
+    },
+    {
+      "id": "degradation-reboi-s1",
+      "title": "Dégradation spécifique — reboisement S1",
+      "fileName": "degradation-specifique-reboi-s1.jpg",
+      "imagePath": "/assets/Carte/degradation-specifique/degradation-specifique-reboi-s1.jpg"
+    },
+    {
+      "id": "degradation-reboi-s2",
+      "title": "Dégradation spécifique — reboisement S2",
+      "fileName": "degradation-specifique-reboi-s2.jpg",
+      "imagePath": "/assets/Carte/degradation-specifique/degradation-specifique-reboi-s2.jpg"
+    },
+    {
+      "id": "degradation-reboi-s3",
+      "title": "Dégradation spécifique — reboisement S3",
+      "fileName": "degradation-specifique-reboi-s3.jpg",
+      "imagePath": "/assets/Carte/degradation-specifique/degradation-specifique-reboi-s3.jpg"
+    },
+    {
+      "id": "production-sediments-1995-2023",
+      "title": "Production totale des sédiments (1995–2023)",
+      "fileName": "production-total-sediment-1995-2023.jpg",
+      "imagePath": "/assets/Carte/degradation-specifique/production-total-sediment-1995-2023.jpg"
+    },
+    {
+      "id": "vulnerabilite",
+      "title": "Vulnérabilité",
+      "fileName": "vulnerabilite.jpg",
+      "imagePath": "/assets/Carte/degradation-specifique/vulnerabilite.jpg"
+    }
+  ]
+}

@@ -17,6 +17,7 @@ import { buildChartImageFileName, downloadChartAsImage } from "@/lib/chartExport
 import { ChartExportMenu } from "@/components/charts/ChartExportMenu";
 import type { ChartDisplayMode } from "@/types/chart";
 import { usesLogarithmicYAxis } from "@/lib/chartDisplayMode";
+import { getScenarioChartColor } from "@/constants/scenarioColors";
 import { RECHARTS_LEGEND_BOTTOM, RECHARTS_MARGIN_STANDARD, RECHARTS_X_AXIS_BOTTOM } from "@/lib/chartLayout";
 import {
   Select,
@@ -29,15 +30,6 @@ import {
 type AggRowAny = { period?: string; datetime?: string; avg_value?: number; value?: number; value_avg?: number };
 type BundleCatalogItem = { ts_id: number; property_id: number };
 type BundleResponse = { catalog: BundleCatalogItem[]; aggregated?: Record<string, AggRowAny[]>; error?: string };
-
-const chartColors = [
-  "hsl(200, 80%, 45%)",
-  "hsl(185, 80%, 50%)",
-  "hsl(160, 65%, 45%)",
-  "hsl(35, 85%, 55%)",
-  "hsl(280, 65%, 55%)",
-  "hsl(340, 75%, 55%)",
-];
 
 function resolutionToAgg(resolution: any): "day" | "month" | "year" {
   if (resolution === "month") return "month";
@@ -455,13 +447,13 @@ export function MultiScenarioTimeSeriesChart({
               />
               <Tooltip allowEscapeViewBox={{ x: true, y: true }} wrapperStyle={{ zIndex: 50 }} />
               <Legend {...RECHARTS_LEGEND_BOTTOM} />
-              {uniqueRunIds.map((runId, i) => (
+              {uniqueRunIds.map((runId) => (
                 <Line
                   key={`run-${runId}`}
                   type="monotone"
                   dataKey={`run_${runId}`}
                   name={runLabels.get(runId) ?? `Run ${runId}`}
-                  stroke={chartColors[i % chartColors.length]}
+                  stroke={getScenarioChartColor(undefined, runId)}
                   dot={false}
                   strokeWidth={2}
                   connectNulls={false}

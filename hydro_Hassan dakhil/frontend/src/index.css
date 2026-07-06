@@ -288,6 +288,14 @@
   .animate-pulse-subtle {
     animation: pulseSoft 2s ease-in-out infinite;
   }
+
+  /* Scroll fluide — zone principale du dashboard */
+  .dashboard-main-scroll {
+    scroll-behavior: smooth;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 /* Keyframes */

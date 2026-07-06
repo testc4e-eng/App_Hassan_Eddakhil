@@ -66,7 +66,7 @@ const moduleConfig: Record<
     color: "bg-maps",
   },
   reports: {
-    title: "Rapport & Export",
+    title: "Rapport & Carte",
     color: "bg-reports",
   },
 };
