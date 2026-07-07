@@ -1,5 +1,5 @@
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { X } from "lucide-react";
+import { memo, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { X, ChevronDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -153,6 +153,74 @@ function pickFirstAvailableVariable<T extends string>(
   return found?.code ?? fallback;
 }
 
+function getProperty(
+  properties: Record<string, unknown>,
+  keys: string[]
+): { key: string; value: unknown } | null {
+  for (const key of keys) {
+    const value = properties[key];
+    if (value !== undefined && value !== null && value !== "") {
+      return { key, value };
+    }
+  }
+  return null;
+}
+
+function formatArea(value: unknown): string {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    if (value > 10000) return `${new Intl.NumberFormat("fr-FR").format(Math.round(value / 10000))} ha`;
+    if (value > 100) return `${new Intl.NumberFormat("fr-FR").format(Math.round(value))} m²`;
+    return `${new Intl.NumberFormat("fr-FR").format(value)}`;
+  }
+  return displayValue(value);
+}
+
+function EntityPropertiesGrid({
+  kind,
+  properties,
+}: {
+  kind: SpatialInspectorSelection["kind"];
+  properties: Record<string, unknown>;
+}) {
+  const items: Array<{ label: string; value: ReactNode }> = [];
+
+  if (kind === "station") {
+    const code = properties.station_code ?? properties.code;
+    const type = properties.type_station ?? properties.station_type;
+    if (code) items.push({ label: "Code", value: displayValue(code) });
+    if (type) items.push({ label: "Type", value: displayValue(type) });
+  } else if (kind === "subbasin") {
+    const code = properties.subbasin_code ?? properties.subbasin_id ?? properties.id;
+    const area = getProperty(properties, ["area", "Area", "area_km2", "area_ha", "surface"]);
+    if (code) items.push({ label: "Code", value: displayValue(code) });
+    if (area) items.push({ label: "Surface", value: formatArea(area.value) });
+  } else if (kind === "reach") {
+    const code = properties.reach_code ?? properties.id;
+    const length = getProperty(properties, ["length", "len", "len2", "length_m"]);
+    const slope = getProperty(properties, ["slope", "slo2", "pente", "slope_pct"]);
+    if (code) items.push({ label: "Code", value: displayValue(code) });
+    if (length) items.push({ label: "Longueur", value: displayValue(length.value) });
+    if (slope) items.push({ label: "Pente %", value: displayValue(slope.value) });
+  } else if (kind === "barrage") {
+    const name = properties.name ?? properties.nom_barrage;
+    const type = properties.type_barrage;
+    if (type) items.push({ label: "Type", value: displayValue(type) });
+  }
+
+  if (items.length === 0) return null;
+
+  return (
+    <div className="grid grid-cols-2 gap-2 text-xs">
+      {items.map((item) => (
+        <div key={item.label} className="rounded-lg border border-white/70 bg-white/70 p-1.5">
+          <div className="text-[10px] uppercase tracking-wide text-slate-500 truncate">{item.label}</div>
+          <div className="font-medium text-slate-900">{item.value}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function SpatialInspectorPanelComponent({ selection, onClear, className }: Props) {
   const [scenario, setScenario] = useState("etat_actuel");
   const [stationVariable, setStationVariable] = useState<SpatialStationVariableCode>("debit_observed");
@@ -168,6 +236,7 @@ function SpatialInspectorPanelComponent({ selection, onClear, className }: Props
   const [loadingScenarioAvailability, setLoadingScenarioAvailability] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [paramsOpen, setParamsOpen] = useState(true);
   const debouncedStartDate = useDebouncedValue(startDate, 350);
   const debouncedEndDate = useDebouncedValue(endDate, 350);
 
@@ -573,20 +642,6 @@ function SpatialInspectorPanelComponent({ selection, onClear, className }: Props
   }
 
   const featureProps = selection.properties || {};
-  const headerSubtitle =
-    selection.kind === "reach"
-      ? selection.code
-        ? `Code ${selection.code}`
-        : selection.subbasinId != null
-          ? `Sous-bassin ${selection.subbasinId}`
-          : "Tronçon hydro"
-      : selection.kind === "station"
-        ? selection.code
-          ? `Code ${selection.code}`
-          : selection.stationType || "Station"
-        : selection.kind === "barrage"
-          ? "Ouvrage hydraulique"
-          : "Sous-bassin";
 
   const showScenario =
     selection.kind === "subbasin" ||
@@ -622,120 +677,122 @@ function SpatialInspectorPanelComponent({ selection, onClear, className }: Props
             <div className="text-[11px] uppercase tracking-wide text-slate-500">
               {entityKindLabel(selection.kind)}
             </div>
-            <div className="text-sm font-semibold text-slate-900">{selection.name}</div>
-            <div className="text-xs text-slate-500">{headerSubtitle}</div>
+            <div className="text-sm font-semibold text-slate-900">
+              {(selection.kind === "station" || selection.kind === "reach") && selection.code
+                ? selection.name.replace(new RegExp(`\\s*\\(${selection.code.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\)$`), "")
+                : selection.name}
+            </div>
           </div>
           <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onClear}>
             <X className="h-4 w-4" />
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          {Object.entries(featureProps)
-            .filter(([key]) => !["id", "station_id", "subbasin_id", "catchment_id", "catchmentId"].includes(key))
-            .slice(0, 4)
-            .map(([key, value]) => (
-              <div key={key} className="rounded-lg border border-white/70 bg-white/70 p-1.5">
-                <div className="text-[10px] uppercase tracking-wide text-slate-500 truncate">
-                  {key.replace(/_/g, " ")}
-                </div>
-                <div className="font-medium text-slate-900">{displayValue(value)}</div>
-              </div>
-            ))}
-        </div>
+        <EntityPropertiesGrid kind={selection.kind} properties={featureProps} />
 
         {panelConfig.showChart ? (
-          <div className="grid grid-cols-1 gap-2 rounded-xl border border-white/70 bg-white/70 p-2 text-xs">
-            <div className="font-semibold text-slate-700">Paramètres d'analyse</div>
-            <div className="grid grid-cols-2 gap-2">
-              {showVariableSelector ? (
-                <Select
-                  value={selection.kind === "station" ? stationVariable : reachVariable}
-                  onValueChange={(value) => {
-                    if (selection.kind === "station") {
-                      setStationVariable(value as SpatialStationVariableCode);
-                    } else if (selection.kind === "reach") {
-                      setReachVariable(value as ReachVariableCode);
-                    }
-                  }}
-                  disabled={probingVariables}
-                >
-                  <SelectTrigger className="h-8" data-testid="spatial-variable-select">
-                    <SelectValue placeholder="Variable" />
-                  </SelectTrigger>
-                  <SelectContent data-testid="spatial-variable-options">
-                    {selection.kind === "station"
-                      ? SPATIAL_STATION_VARIABLE_DEFS.map((item) => {
-                          const available = stationVariableAvailability[item.code];
-                          return (
-                            <SelectItem
-                              key={item.code}
-                              value={item.code}
-                              disabled={!available}
-                              data-testid={`spatial-variable-option-${item.code}`}
-                            >
-                              {available ? item.label : `${item.label} — indisponible`}
-                            </SelectItem>
-                          );
-                        })
-                      : REACH_VARIABLE_DEFS.map((item) => {
-                          const available = reachVariableAvailability[item.code];
-                          return (
-                            <SelectItem
-                              key={item.code}
-                              value={item.code}
-                              disabled={!available}
-                              data-testid={`spatial-variable-option-${item.code}`}
-                            >
-                              {available ? item.label : `${item.label} — indisponible`}
-                            </SelectItem>
-                          );
-                        })}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <div className="flex h-8 items-center rounded-md border bg-white px-2">
-                  {SUBBASIN_VARIABLE.label}
-                </div>
-              )}
+          <div className="rounded-xl border border-white/70 bg-white/70 text-xs">
+            <button
+              type="button"
+              onClick={() => setParamsOpen((open) => !open)}
+              className="flex w-full items-center justify-between px-2.5 py-2 font-semibold text-slate-700"
+            >
+              <span>Paramètres d'analyse</span>
+              <ChevronDown className={`h-3.5 w-3.5 transition-transform ${paramsOpen ? "rotate-180" : ""}`} />
+            </button>
+            {paramsOpen && (
+              <div className="space-y-2 px-2.5 pb-2.5">
+                <div className="grid grid-cols-2 gap-2">
+                  {showVariableSelector ? (
+                    <Select
+                      value={selection.kind === "station" ? stationVariable : reachVariable}
+                      onValueChange={(value) => {
+                        if (selection.kind === "station") {
+                          setStationVariable(value as SpatialStationVariableCode);
+                        } else if (selection.kind === "reach") {
+                          setReachVariable(value as ReachVariableCode);
+                        }
+                      }}
+                      disabled={probingVariables}
+                    >
+                      <SelectTrigger className="h-8" data-testid="spatial-variable-select">
+                        <SelectValue placeholder="Variable" />
+                      </SelectTrigger>
+                      <SelectContent data-testid="spatial-variable-options">
+                        {selection.kind === "station"
+                          ? SPATIAL_STATION_VARIABLE_DEFS.map((item) => {
+                              const available = stationVariableAvailability[item.code];
+                              return (
+                                <SelectItem
+                                  key={item.code}
+                                  value={item.code}
+                                  disabled={!available}
+                                  data-testid={`spatial-variable-option-${item.code}`}
+                                >
+                                  {available ? item.label : `${item.label} — indisponible`}
+                                </SelectItem>
+                              );
+                            })
+                          : REACH_VARIABLE_DEFS.map((item) => {
+                              const available = reachVariableAvailability[item.code];
+                              return (
+                                <SelectItem
+                                  key={item.code}
+                                  value={item.code}
+                                  disabled={!available}
+                                  data-testid={`spatial-variable-option-${item.code}`}
+                                >
+                                  {available ? item.label : `${item.label} — indisponible`}
+                                </SelectItem>
+                              );
+                            })}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="flex h-8 items-center rounded-md border bg-white px-2">
+                      {SUBBASIN_VARIABLE.label}
+                    </div>
+                  )}
 
-              {showScenario ? (
-                <Select
-                  value={scenario}
-                  onValueChange={setScenario}
-                  disabled={loadingScenarioAvailability || !hasAvailableScenario}
-                >
-                  <SelectTrigger className="h-8">
-                    <SelectValue placeholder={loadingScenarioAvailability ? "Scénarios..." : "Scénario"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {scenarioOptions.map((item) => (
-                      <SelectItem key={item.code} value={item.code} disabled={!item.available}>
-                        {item.available ? item.label : `${item.label} — indisponible`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <div className="flex h-8 items-center rounded-md border bg-muted/30 px-2 text-muted-foreground">
-                  {selectedStationVariableDef.scenario === "OBSERVED" ? "Observé" : selectedStationVariableDef.scenario}
+                  {showScenario ? (
+                    <Select
+                      value={scenario}
+                      onValueChange={setScenario}
+                      disabled={loadingScenarioAvailability || !hasAvailableScenario}
+                    >
+                      <SelectTrigger className="h-8">
+                        <SelectValue placeholder={loadingScenarioAvailability ? "Scénarios..." : "Scénario"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {scenarioOptions.map((item) => (
+                          <SelectItem key={item.code} value={item.code} disabled={!item.available}>
+                            {item.available ? item.label : `${item.label} — indisponible`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="flex h-8 items-center rounded-md border bg-muted/30 px-2 text-muted-foreground">
+                      {selectedStationVariableDef.scenario === "OBSERVED" ? "Observé" : selectedStationVariableDef.scenario}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                type="date"
-                className="h-8 rounded-md border px-2"
-                value={startDate}
-                onChange={(event) => setStartDate(event.target.value)}
-              />
-              <input
-                type="date"
-                className="h-8 rounded-md border px-2"
-                value={endDate}
-                onChange={(event) => setEndDate(event.target.value)}
-              />
-            </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="date"
+                    className="h-8 rounded-md border px-2"
+                    value={startDate}
+                    onChange={(event) => setStartDate(event.target.value)}
+                  />
+                  <input
+                    type="date"
+                    className="h-8 rounded-md border px-2"
+                    value={endDate}
+                    onChange={(event) => setEndDate(event.target.value)}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         ) : null}
 

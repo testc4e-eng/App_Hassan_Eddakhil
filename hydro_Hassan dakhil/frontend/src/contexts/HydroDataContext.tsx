@@ -169,8 +169,13 @@ export function HydroDataProvider({ children }: { children: React.ReactNode }) {
           if (!runsResp.success)
             throw new Error(runsResp.error || "Erreur catalog/runs");
           if (!cancelled) {
+            const deduplicatedRuns = (runsResp.data || [])
+              .slice()
+              .sort((a, b) => b.run_id - a.run_id)
+              .filter((run, index, self) => self.findIndex((r) => r.scenario_code === run.scenario_code) === index)
+              .sort((a, b) => a.run_id - b.run_id);
             setRuns(
-              deduplicateSelectOptions(runsResp.data || [], (run) => run.run_id).map((run) => ({
+              deduplicatedRuns.map((run) => ({
                 ...run,
                 scenario_name: resolveSwatScenarioLabel(
                   run.scenario_code,

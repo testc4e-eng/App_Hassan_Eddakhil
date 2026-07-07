@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, RotateCcw, Eye, EyeOff } from "lucide-react";
 import { DEFAULT_REACH_COLORS } from "@/lib/thematicColors";
 import type { ThematicLayerConfig } from "@/types/thematic";
 
@@ -22,7 +22,7 @@ type Props = {
 
 export function ThematicReachPanel({ onChange }: Props) {
   const { runs } = useHydroData();
-  const { data, loading, error, load } = useThematicReach();
+  const { data, loading, error, load, reset } = useThematicReach();
 
   const [scenarioCode, setScenarioCode] = useState<string>("etat_actuel");
   const [startYear, setStartYear] = useState<number | undefined>(undefined);
@@ -31,8 +31,26 @@ export function ThematicReachPanel({ onChange }: Props) {
   const [minScale, setMinScale] = useState<number>(0);
   const [maxScale, setMaxScale] = useState<number>(100);
   const [autoScale, setAutoScale] = useState<boolean>(true);
+  const [layerVisible, setLayerVisible] = useState<boolean>(true);
+
+  const handleReset = () => {
+    setScenarioCode("etat_actuel");
+    setStartYear(undefined);
+    setEndYear(undefined);
+    setAggregation("avg");
+    setMinScale(0);
+    setMaxScale(100);
+    setAutoScale(true);
+    setLayerVisible(true);
+    reset();
+    onChange(null);
+  };
 
   useEffect(() => {
+    if (!layerVisible) {
+      onChange(null);
+      return;
+    }
     if (data?.meta) {
       const meta = data.meta;
       if (autoScale && meta.min_value !== null && meta.max_value !== null) {
@@ -49,24 +67,93 @@ export function ThematicReachPanel({ onChange }: Props) {
         label: "Sédiments par tronçon (sed_out)",
       });
     }
-  }, [data, autoScale, minScale, maxScale, onChange]);
+  }, [data, autoScale, minScale, maxScale, layerVisible, onChange]);
 
   const years = [2020, 2021, 2022, 2023, 2024, 2025, 2026];
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <Label className="text-[11px] text-slate-500">Afficher la couche</Label>
+        <Button
+          type="button"
+          size="sm"
+          variant={layerVisible ? "default" : "outline"}
+          className="h-7 gap-1.5 text-xs"
+          onClick={() => setLayerVisible((v) => !v)}
+        >
+          {layerVisible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+          {layerVisible ? "ON" : "OFF"}
+        </Button>
+      </div>
+
       <div>
         <Label className="text-[11px] text-slate-500">Scénario</Label>
-        <Select value={scenarioCode} onValueChange={setScenarioCode}>
+        <Select value={scenarioCode} onValueChange={setScenarioCode} disabled={!layerVisible}>
           <SelectTrigger className="h-9 bg-white">
             <SelectValue placeholder="Choisir un scénario" />
           </SelectTrigger>
           <SelectContent>
-            {runs.map((run) => (
-              <SelectItem key={run.run_id} value={run.scenario_code}>
-                {run.scenario_name || run.scenario_code}
-              </SelectItem>
-            ))}
+            {runs.filter((r) => r.is_observed).length > 0 && (
+              <>
+                <div className="px-2 py-1 text-[10px] font-semibold uppercase text-slate-500">Observé</div>
+                {runs
+                  .filter((r) => r.is_observed)
+                  .map((run) => (
+                    <SelectItem key={run.run_id} value={run.scenario_code}>
+                      {run.scenario_name || run.scenario_code}
+                    </SelectItem>
+                  ))}
+              </>
+            )}
+            {runs.filter((r) => r.scenario_code === "etat_actuel").length > 0 && (
+              <>
+                <div className="px-2 py-1 text-[10px] font-semibold uppercase text-slate-500">État actuel</div>
+                {runs
+                  .filter((r) => r.scenario_code === "etat_actuel")
+                  .map((run) => (
+                    <SelectItem key={run.run_id} value={run.scenario_code}>
+                      {run.scenario_name || run.scenario_code}
+                    </SelectItem>
+                  ))}
+              </>
+            )}
+            {runs.filter((r) => r.scenario_code.startsWith("scenario_")).length > 0 && (
+              <>
+                <div className="px-2 py-1 text-[10px] font-semibold uppercase text-slate-500">Aménagement</div>
+                {runs
+                  .filter((r) => r.scenario_code.startsWith("scenario_"))
+                  .map((run) => (
+                    <SelectItem key={run.run_id} value={run.scenario_code}>
+                      {run.scenario_name || run.scenario_code}
+                    </SelectItem>
+                  ))}
+              </>
+            )}
+            {runs.filter((r) => r.scenario_code.startsWith("ssp")).length > 0 && (
+              <>
+                <div className="px-2 py-1 text-[10px] font-semibold uppercase text-slate-500">Changement climatique</div>
+                {runs
+                  .filter((r) => r.scenario_code.startsWith("ssp"))
+                  .map((run) => (
+                    <SelectItem key={run.run_id} value={run.scenario_code}>
+                      {run.scenario_name || run.scenario_code}
+                    </SelectItem>
+                  ))}
+              </>
+            )}
+            {runs.filter((r) => !r.is_observed && r.scenario_code !== "etat_actuel" && !r.scenario_code.startsWith("scenario_") && !r.scenario_code.startsWith("ssp")).length > 0 && (
+              <>
+                <div className="px-2 py-1 text-[10px] font-semibold uppercase text-slate-500">Autres</div>
+                {runs
+                  .filter((r) => !r.is_observed && r.scenario_code !== "etat_actuel" && !r.scenario_code.startsWith("scenario_") && !r.scenario_code.startsWith("ssp"))
+                  .map((run) => (
+                    <SelectItem key={run.run_id} value={run.scenario_code}>
+                      {run.scenario_name || run.scenario_code}
+                    </SelectItem>
+                  ))}
+              </>
+            )}
             {runs.length === 0 && (
               <SelectItem value="etat_actuel">État actuel</SelectItem>
             )}
@@ -161,21 +248,34 @@ export function ThematicReachPanel({ onChange }: Props) {
 
       {error && <div className="text-xs text-destructive">{error}</div>}
 
-      <Button
-        className="w-full"
-        onClick={() =>
-          load({
-            scenarioCode,
-            startYear,
-            endYear,
-            aggregation,
-          })
-        }
-        disabled={loading}
-      >
-        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Appliquer la carte
-      </Button>
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          className="flex-1 gap-1.5 text-xs"
+          onClick={handleReset}
+          disabled={loading}
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+          Réinitialiser
+        </Button>
+        <Button
+          type="button"
+          className="flex-1"
+          onClick={() =>
+            load({
+              scenarioCode,
+              startYear,
+              endYear,
+              aggregation,
+            })
+          }
+          disabled={loading || !layerVisible}
+        >
+          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Appliquer
+        </Button>
+      </div>
     </div>
   );
 }

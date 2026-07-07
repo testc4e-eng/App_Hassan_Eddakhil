@@ -22,6 +22,7 @@ scripts/swat-import/logs/*.log
 dashboard_page.png
 home_page.png
 hydraulic_page.png
+lot*_*.png
 *.log
 hydro_Hassan dakhil/hassan dakhil/
 hydro_Hassan dakhil/archive/deprecated/06_1_Database synthese/backup/

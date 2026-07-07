@@ -33,7 +33,11 @@ export function useThematicSubbasin() {
     }
   }, []);
 
-  return { ...state, load };
+  const reset = useCallback(() => {
+    setState({ data: null, loading: false, error: null });
+  }, []);
+
+  return { ...state, load, reset };
 }
 
 export function useThematicReach() {
@@ -61,5 +65,9 @@ export function useThematicReach() {
     }
   }, []);
 
-  return { ...state, load };
+  const reset = useCallback(() => {
+    setState({ data: null, loading: false, error: null });
+  }, []);
+
+  return { ...state, load, reset };
 }

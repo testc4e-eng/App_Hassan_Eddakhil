@@ -1076,15 +1076,6 @@ export function OperationalSpatialModule() {
           </SelectContent>
         </Select>
 
-        <label className="mt-3 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2 text-sm text-slate-700">
-          <span>Contour du bassin</span>
-          <Checkbox checked={leftSidebarLayers.basins} onCheckedChange={() => toggleLayer("basins")} />
-        </label>
-
-        <label className="mt-2 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2 text-sm text-slate-700">
-          <span>Tronçons (reaches)</span>
-          <Checkbox checked={leftSidebarLayers.reach} onCheckedChange={() => toggleLayer("reach")} />
-        </label>
       </div>
 
       <div className="rounded-2xl border border-white/70 bg-white/80 p-3 shadow-sm">
