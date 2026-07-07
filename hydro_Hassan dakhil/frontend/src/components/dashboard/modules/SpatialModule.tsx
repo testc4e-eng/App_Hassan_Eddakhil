@@ -289,6 +289,7 @@ export function OperationalSpatialModule() {
   const [selectedStationId, setSelectedStationId] = useState<string>(""); // "" = toutes les stations
   const [showAnalysisPanel, setShowAnalysisPanel] = useState(true);
   const [mapOnlyMode, setMapOnlyMode] = useState(false);
+  const [mapResizeTick, setMapResizeTick] = useState(0);
   const [inspectorSelection, setInspectorSelection] = useState<SpatialInspectorSelection | null>(null);
   const [inspectorPopupScale, setInspectorPopupScale] = useState(1);
   const inspectorPopupRef = useRef<HTMLDivElement | null>(null);
@@ -297,6 +298,10 @@ export function OperationalSpatialModule() {
   const toggleLayer = (layer: keyof typeof leftSidebarLayers) => {
     setLeftSidebarLayers((prev) => ({ ...prev, [layer]: !prev[layer] }));
   };
+
+  useEffect(() => {
+    setMapResizeTick((tick) => tick + 1);
+  }, [mapOnlyMode]);
 
   useEffect(() => {
     window.localStorage.setItem(BASEMAP_STORAGE_KEY, basemap);
@@ -1519,7 +1524,7 @@ export function OperationalSpatialModule() {
     <div
       className={`${
         mapOnlyMode
-          ? "fixed inset-0 z-[100] bg-slate-950"
+          ? "fixed inset-0 z-[100] h-screen w-screen max-w-none bg-slate-950"
           : "relative h-[calc(100vh-8rem)] overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 shadow-xl"
       }`}
     >
@@ -1534,6 +1539,7 @@ export function OperationalSpatialModule() {
         selectionZoomRequest={{ tick: zoomTick }}
         activeTool={activeTool}
         exportPngRequest={{ tick: exportTick, filename: "analyse_spatiale.png" }}
+        resizeRequest={{ tick: mapResizeTick }}
         resetViewRequest={{ tick: resetViewTick }}
         selectedBasinId={activeBasinId}
         selectedSubBasinId={activeSubBasinId}

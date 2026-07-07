@@ -34,6 +34,7 @@ export function AssetPreviewModal({ asset, open, onOpenChange }: AssetPreviewMod
   const [hdImageSrc, setHdImageSrc] = useState<string | null>(null);
   const [pdfSrc, setPdfSrc] = useState<string | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [pdfAvailable, setPdfAvailable] = useState<boolean | null>(null);
 
   const isPdf = asset?.kind === "report" && asset.type === "PDF";
   const isImage = asset?.kind === "map";
@@ -43,6 +44,7 @@ export function AssetPreviewModal({ asset, open, onOpenChange }: AssetPreviewMod
       setHdImageSrc(null);
       setPdfSrc(null);
       setImageLoaded(false);
+      setPdfAvailable(null);
       return;
     }
 
@@ -50,6 +52,7 @@ export function AssetPreviewModal({ asset, open, onOpenChange }: AssetPreviewMod
       setHdImageSrc(asset.url);
       setPdfSrc(null);
       setImageLoaded(false);
+      setPdfAvailable(null);
       return;
     }
 
@@ -57,12 +60,17 @@ export function AssetPreviewModal({ asset, open, onOpenChange }: AssetPreviewMod
       setPdfSrc(asset.url);
       setHdImageSrc(null);
       setImageLoaded(false);
+      setPdfAvailable(null);
+      fetch(asset.url, { method: "HEAD" })
+        .then((res) => setPdfAvailable(res.ok))
+        .catch(() => setPdfAvailable(false));
       return;
     }
 
     setHdImageSrc(null);
     setPdfSrc(null);
     setImageLoaded(false);
+    setPdfAvailable(null);
   }, [open, asset]);
 
   if (!asset) return null;
@@ -82,21 +90,30 @@ export function AssetPreviewModal({ asset, open, onOpenChange }: AssetPreviewMod
             </DialogTitle>
             <p className="mt-0.5 truncate text-left text-xs text-muted-foreground">{asset.fileName}</p>
           </div>
-          <Button asChild size="sm" variant="outline" className="shrink-0 gap-1.5">
-            <a href={asset.url} download={asset.fileName}>
-              <Download className="h-4 w-4" />
-              Télécharger
-            </a>
-          </Button>
+          {(asset.kind === "map" || pdfAvailable !== false) && (
+            <Button asChild size="sm" variant="outline" className="shrink-0 gap-1.5">
+              <a href={asset.url} download={asset.fileName}>
+                <Download className="h-4 w-4" />
+                Télécharger
+              </a>
+            </Button>
+          )}
         </DialogHeader>
 
         <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto bg-slate-100/80 p-4">
-          {isPdf && pdfSrc ? (
+          {isPdf && pdfSrc && pdfAvailable !== false ? (
             <iframe
               title={asset.title}
               src={pdfSrc}
               className="h-[min(72vh,820px)] w-full rounded-lg border border-slate-200 bg-white shadow-sm"
             />
+          ) : isPdf && pdfAvailable === false ? (
+            <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
+              <FileText className="h-12 w-12 text-slate-400" />
+              <p className="max-w-md text-sm text-muted-foreground">
+                Le rapport PDF n’est pas disponible dans le paquet de démonstration.
+              </p>
+            </div>
           ) : isImage && hdImageSrc ? (
             <div className="relative flex min-h-[min(72vh,820px)] w-full items-center justify-center">
               {!imageLoaded ? (

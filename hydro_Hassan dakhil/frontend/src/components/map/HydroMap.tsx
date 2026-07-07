@@ -62,6 +62,7 @@ type Props = {
   selectionZoomRequest?: SelectionZoomRequest;
   activeTool?: "distance" | "area" | null;
   exportPngRequest?: ExportPngRequest;
+  resizeRequest?: { tick: number };
   selectedBasinId?: number | null;
   selectedSubBasinId?: number | null;
   selectedBarrageId?: number | null;
@@ -915,6 +916,20 @@ function MeasureTool({ activeTool }: { activeTool?: "distance" | "area" | null }
 }
 
 /* -------------------- MAIN COMPONENT -------------------- */
+function MapResizer({ tick }: { tick?: number }) {
+  const map = useMap();
+  useEffect(() => {
+    if (tick == null) return;
+    const t1 = setTimeout(() => map.invalidateSize(false), 50);
+    const t2 = setTimeout(() => map.invalidateSize(false), 250);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [tick, map]);
+  return null;
+}
+
 export function HydroMap({
   className,
   opacity = 1,
@@ -929,6 +944,7 @@ export function HydroMap({
   selectionZoomRequest,
   activeTool,
   exportPngRequest,
+  resizeRequest,
   selectedBasinId,
   selectedSubBasinId,
   selectedBarrageId,
@@ -1261,6 +1277,8 @@ export function HydroMap({
         {exportPngRequest && (
           <ExportPng req={exportPngRequest} containerSelector={exportSelector} />
         )}
+
+        <MapResizer tick={resizeRequest?.tick} />
 
         <MeasureTool activeTool={activeTool} />
         <ClickLocationMarker activeTool={activeTool} enabled={debugMode} />

@@ -24,8 +24,10 @@ function reportMapUrls(slug: string) {
   };
 }
 
-function assetUrl(...segments: string[]): string {
-  return `/assets/${segments.map((segment) => encodeURIComponent(segment)).join("/")}`;
+const REPORTS_BASE = "/data/hassan/reports";
+
+function reportUrl(fileName: string): string {
+  return `${REPORTS_BASE}/${encodeURIComponent(fileName)}`;
 }
 
 function resolveReportType(fileName: string): MissionReportType {
@@ -40,13 +42,13 @@ export const missionReports: MissionReport[] = [
     title: "Rapport Mission I",
     fileName: "Rapport Mission 1 VF 20262001.pdf",
     type: "PDF",
-    url: assetUrl("Rapport_final", "Rapport Mission 1 VF 20262001.pdf"),
+    url: reportUrl("Rapport Mission 1 VF 20262001.pdf"),
   },
   {
     title: "Rapport Mission II",
     fileName: "Mission II 19052026_VDf_vcremarques.pdf",
     type: "PDF",
-    url: assetUrl("Rapport_final", "Mission II 19052026_VDf_vcremarques.pdf"),
+    url: reportUrl("Mission II 19052026_VDf_vcremarques.pdf"),
   },
 ];
 
