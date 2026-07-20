@@ -136,3 +136,64 @@ URL de la PR : https://github.com/testc4e-eng/App_Hassan_Eddakhil/pull/new/dev/i
 ## 10. Conclusion
 
 La branche `dev/ilh-0107-stabilized` est fonctionnelle en local. Les cartes thématiques s’affichent correctement au-dessus des couches de base, la page d’administration DB est opérationnelle, et le catalogue des scénarios est automatiquement rafraîchi après restauration du dump. La branche est poussée sur `origin` et prête pour revue / fusion.
+
+---
+
+## 11. Mise à jour du 2026-07-20
+
+### Objet
+
+Ajout d’un outil métier d’estimation du transport solide dans le dashboard `Dashboard → Sédiments → Transport solide Reach`, puis ajustements d’interface et redéploiement Docker de la version frontend servie sur `http://localhost:8090`.
+
+### Fonctionnalité ajoutée
+
+- Nouveau composant `SedimentFlowEstimator` dans le module Sédiments / Reach.
+- Calcul de `Qs` à partir du débit liquide `Q` selon un tableau métier figé par classes de débit.
+- Affichage du résultat principal, des intervalles à 75 %, du `R²`, des points inclus et de l’appréciation métier.
+- Tableau de référence des lois d’estimation accessible via une modale.
+
+### Ajustements d’interface
+
+- Déplacement de l’estimateur **avant** la zone des filtres, car il est indépendant du reach et du scénario.
+- Transformation de la carte en **panneau repliable horizontal** :
+  - ouvert par défaut ;
+  - fermeture sur l’en-tête ;
+  - chevron `ouvrir/fermer` accessible clavier ;
+  - conservation de l’état dans `localStorage` via la clé `sediment-flow-estimator-expanded`.
+- Conservation de la saisie et du dernier résultat lors de la fermeture/réouverture du panneau.
+
+### Contraintes métier respectées
+
+- Aucune modification des formules, classes de débit, coefficients, exposants, intervalles, unités, `R²`, nombres de points, points inclus ou appréciations.
+- Vérification conservée pour la valeur de référence `Q = 8` : `4 120,11 t`.
+
+### Fichiers concernés
+
+```text
+.env.example
+docker-compose.yml
+hydro_Hassan dakhil/frontend/src/components/dashboard/modules/sediments/ReachSedimentDashboard.tsx
+hydro_Hassan dakhil/frontend/src/components/dashboard/modules/sediments/SedimentFlowEstimator.tsx
+hydro_Hassan dakhil/frontend/src/components/dashboard/modules/sediments/SolidYieldLayoutSections.tsx
+hydro_Hassan dakhil/frontend/src/components/dashboard/modules/sediments/sedimentFlowEstimation.ts
+hydro_Hassan dakhil/frontend/src/components/dashboard/modules/sediments/sedimentFlowEstimation.types.ts
+```
+
+### Rebuild / redéploiement frontend
+
+Un diagnostic a confirmé que le conteneur `hydro-hassan-ilh0107-frontend` servait encore un ancien bundle Nginx, malgré les modifications présentes localement.
+
+Actions exécutées :
+
+```bash
+docker compose build frontend --no-cache
+docker compose up -d --force-recreate frontend
+```
+
+Validation :
+
+- nouveau bundle servi sur `8090` contenant les chaînes :
+  - `sediment-flow-estimator-expanded`
+  - `sediment-flow-estimator-content`
+- `npm run build` frontend : OK
+- panneau repliable visible sur la version Dockerisée après reconstruction

@@ -16,10 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartModeSelect } from "@/components/charts/ChartModeSelect";
 import { ExpandableDialog } from "@/components/dashboard/analytics/ExpandableDialog";
-import {
-  CompareScenariosCodeMultiSelect,
-  FilterField,
-} from "@/components/dashboard/modules/sediments/SolidYieldLayoutSections";
+import { FilterField } from "@/components/dashboard/modules/sediments/SolidYieldLayoutSections";
 import {
   Select,
   SelectContent,
@@ -27,7 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import type { ChartDisplayMode } from "@/types/chart";
 import {
@@ -44,9 +40,9 @@ import {
   type ReachTimeseriesResponse,
 } from "@/api/spatial";
 import { NORMALIZED_SWAT_SCENARIOS } from "@/constants/swatScenarios";
-import { getScenarioChartColor } from "@/constants/scenarioColors";
 import { SEDIMENT_DISPLAY_LABEL } from "@/constants/sediment";
 import { ReachStaticMapDialog } from "@/components/dashboard/modules/sediments/ReachStaticMapDialog";
+import { SedimentFlowEstimator } from "@/components/dashboard/modules/sediments/SedimentFlowEstimator";
 import {
   AGGREGATION_PRIORITY,
   isAggregationSelectable,
@@ -54,14 +50,12 @@ import {
 } from "@/lib/aggregationAvailability";
 import {
   RECHARTS_LEGEND_BOTTOM,
-  RECHARTS_LEGEND_CUSTOM_WRAPPER_CLASS,
   RECHARTS_MARGIN_X_LABEL_LEGEND,
   RECHARTS_X_AXIS_BOTTOM,
   rechartsXAxisBottomLabel,
 } from "@/lib/chartLayout";
 
 type Interval = "day" | "month" | "year";
-type Mode = "simple" | "multi";
 
 const TABLE_PAGE_SIZE = 10;
 const EMPTY_DATE = "";
@@ -91,8 +85,6 @@ type ScenarioSeries = {
   label: string;
   points: SeriesPoint[];
 };
-
-type ComparisonRow = Record<string, string | number | null> & { period: string };
 
 const MapContainerUnsafe = MapContainer as unknown as ComponentType<any>;
 const TileLayerUnsafe = TileLayer as unknown as ComponentType<any>;
@@ -233,36 +225,9 @@ function emptyScenarioMessage(code: string, label: string): string {
   return `${label} ne contient aucune donnée Reach`;
 }
 
-function buildComparisonRows(series: ScenarioSeries[], interval: Interval): ComparisonRow[] {
-  const periods = new Set<string>();
-  const byScenario = new Map<string, Map<string, number | null>>();
-
-  for (const item of series) {
-    const periodMap = new Map<string, number | null>();
-    for (const point of item.points) {
-      const key = normalizePeriodKey(point.period, interval);
-      periods.add(key);
-      periodMap.set(key, point.value);
-    }
-    byScenario.set(item.scenarioCode, periodMap);
-  }
-
-  return Array.from(periods)
-    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
-    .map((period) => {
-      const row: ComparisonRow = { period };
-      for (const item of series) {
-        row[item.scenarioCode] = byScenario.get(item.scenarioCode)?.get(period) ?? null;
-      }
-      return row;
-    });
-}
-
 type ReachTimeSeriesChartProps = {
-  chartData: DisplayModeTransformResult<ComparisonRow | SeriesPoint, "period">;
+  chartData: DisplayModeTransformResult<SeriesPoint, "period">;
   displayMode: ChartDisplayMode;
-  isComparisonMode: boolean;
-  scenarioSeries: ScenarioSeries[];
   hasLoggableValues: boolean;
   rowCount: number;
   heightClassName?: string;
@@ -271,16 +236,10 @@ type ReachTimeSeriesChartProps = {
 function ReachTimeSeriesChart({
   chartData,
   displayMode,
-  isComparisonMode,
-  scenarioSeries,
   hasLoggableValues,
   rowCount,
   heightClassName = "h-[380px]",
 }: ReachTimeSeriesChartProps) {
-  const plottedSeries = isComparisonMode
-    ? scenarioSeries.filter(hasReachSeriesData)
-    : scenarioSeries;
-
   return (
     <div className={heightClassName}>
       {usesLogarithmicYAxis(displayMode) && chartData.excludedForLog > 0 ? (
@@ -319,61 +278,16 @@ function ReachTimeSeriesChart({
                 : String(value)
             }
           />
-          {isComparisonMode ? (
-            <Legend
-              {...RECHARTS_LEGEND_BOTTOM}
-              content={() => (
-                <div className={RECHARTS_LEGEND_CUSTOM_WRAPPER_CLASS}>
-                  {scenarioSeries.map((item) => {
-                    const hasData = hasReachSeriesData(item);
-                    return (
-                      <div key={item.scenarioCode} className="flex items-center gap-2">
-                        <span
-                          className="inline-block h-0.5 w-4"
-                          style={{
-                            backgroundColor: hasData
-                              ? getScenarioChartColor(item.scenarioCode)
-                              : "#cbd5e1",
-                            opacity: hasData ? 1 : 0.65,
-                          }}
-                        />
-                        <span className={hasData ? "" : "text-muted-foreground"}>
-                          {item.label}
-                          {!hasData ? " (sans données)" : ""}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            />
-          ) : (
-            <Legend {...RECHARTS_LEGEND_BOTTOM} />
-          )}
-          {isComparisonMode ? (
-            plottedSeries.map((item) => (
-                <Line
-                  key={item.scenarioCode}
-                  type="monotone"
-                  dataKey={item.scenarioCode}
-                  name={item.label}
-                  stroke={getScenarioChartColor(item.scenarioCode)}
-                  strokeWidth={2}
-                  dot={false}
-                  connectNulls
-                />
-              ))
-          ) : (
-            <Line
-              type="monotone"
-              dataKey="value"
-              name={SEDIMENT_DISPLAY_LABEL}
-              stroke="#f97316"
-              strokeWidth={2}
-              dot={false}
-              connectNulls
-            />
-          )}
+          <Legend {...RECHARTS_LEGEND_BOTTOM} />
+          <Line
+            type="monotone"
+            dataKey="value"
+            name={SEDIMENT_DISPLAY_LABEL}
+            stroke="#f97316"
+            strokeWidth={2}
+            dot={false}
+            connectNulls
+          />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -389,15 +303,13 @@ export function ReachSedimentDashboard() {
   const [reaches, setReaches] = useState<ReachFeature[]>([]);
   const [reachId, setReachId] = useState<number | undefined>();
   const [scenarioCode, setScenarioCode] = useState("etat_actuel");
-  const [compareScenarios, setCompareScenarios] = useState<string[]>(["etat_actuel"]);
-  const [mode, setMode] = useState<Mode>("simple");
   const [interval, setInterval] = useState<Interval>("year");
   const [startDate, setStartDate] = useState(EMPTY_DATE);
   const [endDate, setEndDate] = useState(EMPTY_DATE);
   const [periodAvailability, setPeriodAvailability] = useState<ReachPeriodBounds | null>(null);
   const [seriesFetchAttempted, setSeriesFetchAttempted] = useState(false);
   const [scenarioSeries, setScenarioSeries] = useState<ScenarioSeries[]>([]);
-  const [comparisonLoading, setComparisonLoading] = useState(false);
+  const [seriesLoading, setSeriesLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [displayMode, setDisplayMode] = useState<ChartDisplayMode>("normal");
@@ -405,14 +317,6 @@ export function ReachSedimentDashboard() {
   const [staticMapOpen, setStaticMapOpen] = useState(false);
   const [tablePage, setTablePage] = useState(1);
   const periodSyncKeyRef = useRef("");
-
-  const activeScenarioCodes = useMemo(() => {
-    if (compareScenarios.length >= 2) return compareScenarios;
-    if (compareScenarios.length === 1) return [compareScenarios[0]];
-    return [scenarioCode];
-  }, [compareScenarios, scenarioCode]);
-
-  const isComparisonMode = activeScenarioCodes.length >= 2;
 
   const hasReachData = useMemo(
     () =>
@@ -525,9 +429,9 @@ export function ReachSedimentDashboard() {
     const shouldSyncPeriod =
       !startDate || !endDate || periodSyncKeyRef.current !== periodSyncKey;
 
-    setComparisonLoading(true);
+    setSeriesLoading(true);
 
-    loadScenarioSeries(activeScenarioCodes, scenarioCode)
+    loadScenarioSeries([scenarioCode], scenarioCode)
       .then(({ rows, periodBounds }) => {
         if (!alive) return;
 
@@ -548,7 +452,7 @@ export function ReachSedimentDashboard() {
       .catch((e) => setError(String(e?.message || e)))
       .finally(() => {
         if (alive) {
-          setComparisonLoading(false);
+          setSeriesLoading(false);
           setSeriesFetchAttempted(true);
         }
       });
@@ -557,11 +461,8 @@ export function ReachSedimentDashboard() {
       alive = false;
     };
   }, [
-    activeScenarioCodes,
-    compareScenarios,
     endDate,
     interval,
-    isComparisonMode,
     loadScenarioSeries,
     periodSyncKey,
     reachId,
@@ -569,16 +470,9 @@ export function ReachSedimentDashboard() {
     startDate,
   ]);
 
-  const activeSeries = useMemo(() => {
-    if (isComparisonMode) {
-      return scenarioSeries.filter((item) => activeScenarioCodes.includes(item.scenarioCode));
-    }
-    return scenarioSeries.filter((item) => item.scenarioCode === activeScenarioCodes[0]);
-  }, [activeScenarioCodes, isComparisonMode, scenarioSeries]);
-
-  const comparisonData = useMemo(
-    () => (isComparisonMode ? buildComparisonRows(activeSeries, interval) : []),
-    [activeSeries, interval, isComparisonMode]
+  const activeSeries = useMemo(
+    () => scenarioSeries.filter((item) => item.scenarioCode === scenarioCode),
+    [scenarioCode, scenarioSeries]
   );
 
   const plottedSeries = useMemo(
@@ -618,16 +512,6 @@ export function ReachSedimentDashboard() {
   }, [exportablePoints]);
 
   const chartData = useMemo(() => {
-    if (isComparisonMode) {
-      return transformSeriesForDisplayMode({
-        mode: displayMode,
-        rows: comparisonData,
-        xKey: "period",
-        valueKeys: plottedSeries.map((item) => item.scenarioCode),
-        normalLabel: "Periode",
-      });
-    }
-
     const singleRows = plottedSeries[0]?.points ?? activeSeries[0]?.points ?? [];
     return transformSeriesForDisplayMode({
       mode: displayMode,
@@ -636,28 +520,16 @@ export function ReachSedimentDashboard() {
       valueKeys: ["value"],
       normalLabel: "Periode",
     });
-  }, [activeSeries, comparisonData, displayMode, isComparisonMode, plottedSeries]);
+  }, [activeSeries, displayMode, plottedSeries]);
 
   const hasLoggableValues = useMemo(() => {
-    const valueKeys = isComparisonMode
-      ? plottedSeries.map((item) => item.scenarioCode)
-      : ["value"];
-    const rows = isComparisonMode ? comparisonData : plottedSeries[0]?.points ?? activeSeries[0]?.points ?? [];
-    return hasStrictlyPositiveValues(rows, valueKeys);
-  }, [activeSeries, comparisonData, isComparisonMode, plottedSeries]);
-
-  const toggleCompareScenario = (code: string) => {
-    setCompareScenarios((prev) => {
-      const next = prev.includes(code) ? prev.filter((item) => item !== code) : [...prev, code];
-      return next.length ? next : [scenarioCode];
-    });
-  };
+    const rows = plottedSeries[0]?.points ?? activeSeries[0]?.points ?? [];
+    return hasStrictlyPositiveValues(rows, ["value"]);
+  }, [activeSeries, plottedSeries]);
 
   const resetFilters = () => {
     setReachId(reaches[0]?.properties?.id);
     setScenarioCode("etat_actuel");
-    setCompareScenarios(["etat_actuel"]);
-    setMode("simple");
     setInterval("year");
     setStartDate(EMPTY_DATE);
     setEndDate(EMPTY_DATE);
@@ -688,7 +560,7 @@ export function ReachSedimentDashboard() {
 
   useEffect(() => {
     setTablePage(1);
-  }, [reachId, scenarioCode, compareScenarios, interval, startDate, endDate, mode]);
+  }, [reachId, scenarioCode, interval, startDate, endDate]);
 
   useEffect(() => {
     if (tablePage > totalTablePages) {
@@ -703,7 +575,7 @@ export function ReachSedimentDashboard() {
       ...exportablePoints.map((p) => [p.period, p.reach, p.value, p.scenario]),
     ];
     downloadBlob(
-      `transport_solide_reach_${reachId ?? "NA"}_${isComparisonMode ? "comparison" : scenarioCode}_${interval}.csv`,
+      `transport_solide_reach_${reachId ?? "NA"}_${scenarioCode}_${interval}.csv`,
       rows.map((row) => row.map(csvEscape).join(",")).join("\n"),
       "text/csv;charset=utf-8"
     );
@@ -716,7 +588,7 @@ export function ReachSedimentDashboard() {
       ...exportablePoints.map((p) => [p.period, p.reach, p.value, p.scenario]),
     ];
     downloadBlob(
-      `transport_solide_reach_${reachId ?? "NA"}_${isComparisonMode ? "comparison" : scenarioCode}_${interval}.xls`,
+      `transport_solide_reach_${reachId ?? "NA"}_${scenarioCode}_${interval}.xls`,
       rows.map((row) => row.map(csvEscape).join("\t")).join("\n"),
       "application/vnd.ms-excel;charset=utf-8"
     );
@@ -732,105 +604,95 @@ export function ReachSedimentDashboard() {
         <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
       ) : null}
 
+      <SedimentFlowEstimator />
+
       <Card className="rounded-xl border bg-card p-4 shadow-sm">
-        <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
-          <FilterField label="Mode">
-            <Tabs value={mode} onValueChange={(v) => setMode(v as Mode)}>
-              <TabsList className="grid h-9 grid-cols-2">
-                <TabsTrigger value="simple" className="px-3 text-xs">
-                  Mode simple
-                </TabsTrigger>
-                <TabsTrigger value="multi" className="px-3 text-xs">
-                  Mode multicouche
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </FilterField>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <FilterField label="Reach">
+              <Select value={reachId ? String(reachId) : ""} onValueChange={(v) => setReachId(Number(v))}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Choisir un reach" />
+                </SelectTrigger>
+                <SelectContent>
+                  {reaches.map((reach) => (
+                    <SelectItem key={reach.properties.id} value={String(reach.properties.id)}>
+                      {`Reach ${reach.properties.id} - Subbasin ${reach.properties.subbasin_id}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FilterField>
 
-          <FilterField label="Reach" className="min-w-[180px]">
-            <Select value={reachId ? String(reachId) : ""} onValueChange={(v) => setReachId(Number(v))}>
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="Choisir un reach" />
-              </SelectTrigger>
-              <SelectContent>
-                {reaches.map((reach) => (
-                  <SelectItem key={reach.properties.id} value={String(reach.properties.id)}>
-                    {`Reach ${reach.properties.id} - Subbasin ${reach.properties.subbasin_id}`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FilterField>
+            <FilterField label="Scénario / Run">
+              <Select value={scenarioCode} onValueChange={setScenarioCode}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Choisir un scénario" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SCENARIOS.map((scenario) => (
+                    <SelectItem key={scenario.code} value={scenario.code}>
+                      {scenario.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FilterField>
 
-          <FilterField label="Scénario / Run" className="min-w-[200px]">
-            <Select
-              value={scenarioCode}
-              onValueChange={(v) => {
-                setScenarioCode(v);
-                setCompareScenarios((prev) => (prev.includes(v) ? prev : [...prev, v]));
-              }}
+            <FilterField label="Variable" className="sm:col-span-2 lg:col-span-1">
+              <div className="flex h-9 items-center rounded-md border border-input bg-muted/40 px-3 text-sm">
+                {SEDIMENT_DISPLAY_LABEL}
+              </div>
+            </FilterField>
+          </div>
+
+          <div className="flex flex-col gap-4 border-t border-border/50 pt-4 sm:flex-row sm:items-end sm:justify-between sm:gap-8 lg:gap-12">
+            <FilterField label="Période" className="w-full min-w-0 sm:max-w-[420px] sm:flex-1">
+              {seriesFetchAttempted && !seriesLoading && !periodAvailability ? (
+                <div className="flex h-9 items-center text-sm text-muted-foreground">
+                  Aucune donnée disponible
+                </div>
+              ) : (
+                <div className="grid w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+                  <input
+                    type="date"
+                    className="h-9 min-w-0 rounded-md border border-input bg-background px-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                    value={startDate}
+                    disabled={seriesLoading || !periodAvailability}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                  <span className="shrink-0 px-0.5 text-xs text-muted-foreground">→</span>
+                  <input
+                    type="date"
+                    className="h-9 min-w-0 rounded-md border border-input bg-background px-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                    value={endDate}
+                    disabled={seriesLoading || !periodAvailability}
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
+                </div>
+              )}
+            </FilterField>
+
+            <FilterField
+              label="Agrégation"
+              className="w-full shrink-0 sm:w-auto sm:border-l sm:border-border/60 sm:pl-8 lg:pl-10"
             >
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="Choisir un scénario" />
-              </SelectTrigger>
-              <SelectContent>
-                {SCENARIOS.map((scenario) => (
-                  <SelectItem key={scenario.code} value={scenario.code}>
-                    {scenario.label}
-                  </SelectItem>
+              <div className="flex h-9 w-full items-center gap-1.5 sm:w-auto">
+                {(["day", "month", "year"] as const).map((item) => (
+                  <Button
+                    key={item}
+                    size="sm"
+                    className="h-9 flex-1 sm:flex-none"
+                    variant={interval === item ? "default" : "outline"}
+                    disabled={!isAggregationSelectable(item, intervalAvailability)}
+                    onClick={() => setInterval(item)}
+                  >
+                    {item === "day" ? "Jour" : item === "month" ? "Mois" : "Année"}
+                  </Button>
                 ))}
-              </SelectContent>
-            </Select>
-          </FilterField>
-
-          <FilterField label="Variable" className="min-w-[200px]">
-            <div className="flex h-9 items-center rounded-md border border-input bg-muted/40 px-3 text-sm">
-              {SEDIMENT_DISPLAY_LABEL}
-            </div>
-          </FilterField>
-
-          <FilterField label="Période" className="min-w-[280px]">
-            {seriesFetchAttempted && !comparisonLoading && !periodAvailability ? (
-              <div className="flex h-9 items-center text-sm text-muted-foreground">
-                Aucune donnée disponible
               </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <input
-                  type="date"
-                  className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                  value={startDate}
-                  disabled={comparisonLoading || !periodAvailability}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
-                <span className="text-xs text-muted-foreground">→</span>
-                <input
-                  type="date"
-                  className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                  value={endDate}
-                  disabled={comparisonLoading || !periodAvailability}
-                  onChange={(e) => setEndDate(e.target.value)}
-                />
-              </div>
-            )}
-          </FilterField>
-
-          <FilterField label="Agrégation">
-            <div className="flex h-9 items-center gap-1">
-              {(["day", "month", "year"] as const).map((item) => (
-                <Button
-                  key={item}
-                  size="sm"
-                  className="h-9"
-                  variant={interval === item ? "default" : "outline"}
-                  disabled={!isAggregationSelectable(item, intervalAvailability)}
-                  onClick={() => setInterval(item)}
-                >
-                  {item === "day" ? "Jour" : item === "month" ? "Mois" : "Année"}
-                </Button>
-              ))}
-            </div>
-          </FilterField>
+            </FilterField>
+          </div>
         </div>
 
         <div className="mt-3 flex flex-wrap items-end gap-x-4 gap-y-3 border-t border-border/70 pt-3">
@@ -841,19 +703,6 @@ export function ReachSedimentDashboard() {
           <Button size="sm" className="h-9" onClick={applyFilters}>
             Appliquer
           </Button>
-
-          {mode === "simple" ? (
-            <FilterField label="Scénarios à comparer" className="min-w-[220px]">
-              <CompareScenariosCodeMultiSelect
-                options={SCENARIOS.map((scenario) => ({
-                  code: scenario.code,
-                  label: scenario.label,
-                }))}
-                selectedCodes={compareScenarios}
-                onToggle={toggleCompareScenario}
-              />
-            </FilterField>
-          ) : null}
         </div>
       </Card>
 
@@ -873,7 +722,6 @@ export function ReachSedimentDashboard() {
           <CardHeader className="pb-2 pt-0">
             <CardTitle className="text-base">
               Graphique temporel {SEDIMENT_DISPLAY_LABEL}
-              {isComparisonMode ? " (comparaison)" : ""}
             </CardTitle>
           </CardHeader>
           <CardContent className="flex min-h-0 flex-1 flex-col pb-4">
@@ -883,17 +731,13 @@ export function ReachSedimentDashboard() {
                 variant="outline"
                 size="sm"
                 onClick={() => setChartOpen(true)}
-                disabled={
-                  isComparisonMode
-                    ? comparisonData.length === 0
-                    : (plottedSeries[0]?.points.length ?? 0) === 0
-                }
+                disabled={(plottedSeries[0]?.points.length ?? 0) === 0}
               >
                 <Maximize2 className="mr-2 h-4 w-4" />
                 Agrandir
               </Button>
             </div>
-            {comparisonLoading ? (
+            {seriesLoading ? (
               <div className="mb-2 text-xs text-muted-foreground">Chargement des séries scénarios...</div>
             ) : null}
             {emptyScenarioAlerts.map((message) => (
@@ -908,10 +752,8 @@ export function ReachSedimentDashboard() {
               <ReachTimeSeriesChart
                 chartData={chartData}
                 displayMode={displayMode}
-                isComparisonMode={isComparisonMode}
-                scenarioSeries={activeSeries}
                 hasLoggableValues={hasLoggableValues}
-                rowCount={isComparisonMode ? comparisonData.length : plottedSeries[0]?.points.length ?? 0}
+                rowCount={plottedSeries[0]?.points.length ?? 0}
                 heightClassName="h-full min-h-[280px]"
               />
             </div>
@@ -1056,7 +898,7 @@ export function ReachSedimentDashboard() {
       <ExpandableDialog
         open={chartOpen}
         onOpenChange={setChartOpen}
-        title={`Graphique temporel ${SEDIMENT_DISPLAY_LABEL} - ${selectedReachLabel}${isComparisonMode ? " - comparaison multi-scénarios" : ""}`}
+        title={`Graphique temporel ${SEDIMENT_DISPLAY_LABEL} - ${selectedReachLabel}`}
       >
         <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
           <ChartModeSelect value={displayMode} onValueChange={setDisplayMode} />
@@ -1073,10 +915,8 @@ export function ReachSedimentDashboard() {
           <ReachTimeSeriesChart
             chartData={chartData}
             displayMode={displayMode}
-            isComparisonMode={isComparisonMode}
-            scenarioSeries={activeSeries}
             hasLoggableValues={hasLoggableValues}
-            rowCount={isComparisonMode ? comparisonData.length : plottedSeries[0]?.points.length ?? 0}
+            rowCount={plottedSeries[0]?.points.length ?? 0}
             heightClassName="h-full"
           />
         </div>
