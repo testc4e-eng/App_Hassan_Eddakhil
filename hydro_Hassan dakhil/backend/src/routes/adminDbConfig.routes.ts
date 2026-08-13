@@ -1,8 +1,11 @@
 // backend/src/routes/adminDbConfig.routes.ts
 import { Router } from "express";
 import { adminDbConfigController } from "../controllers/adminDbConfig.controller";
+import { requireRole, verifyToken } from "../middleware/auth";
 
 const router = Router();
+
+router.use(verifyToken, requireRole("ADMIN"));
 
 router.get(
   "/db-config",

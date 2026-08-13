@@ -35,6 +35,10 @@ const envCorsOrigins =
     .filter(Boolean) ?? [];
 
 const devCorsOrigins = [
+  "http://localhost:8090",
+  "http://127.0.0.1:8090",
+  "http://localhost:8089",
+  "http://127.0.0.1:8089",
   "http://localhost:3001",
   "http://127.0.0.1:3001",
   "http://localhost:5173",
