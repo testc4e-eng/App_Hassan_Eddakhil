@@ -1,0 +1,382 @@
+=== SESSION ===
+{
+  "current_database": "hydro_hd",
+  "current_user": "postgres",
+  "server_addr": "127.0.0.1/32",
+  "server_port": 5432,
+  "version": "PostgreSQL 17.8 on x86_64-windows, compiled by msvc-19.44.35222, 64-bit"
+}
+=== CONNECTION (no password) ===
+{"host": "127.0.0.1", "port": 5432, "requested_db": "hydro_hd", "user": "postgres", "password_set": true}
+=== API ===
+{"q": "api.mv_dashboard_catchment_counts", "relkind": "m", "owner": "postgres", "size": "8192 bytes", "inc": 0, "out": 1, "cascade": "NO", "deps": [], "srcs": [{"schema": "api", "name": "v_dashboard_catchment_counts", "type": "view", "qualified": "api.v_dashboard_catchment_counts"}]}
+{"q": "api.mv_dashboard_reservoir_counts", "relkind": "m", "owner": "postgres", "size": "24 kB", "inc": 0, "out": 1, "cascade": "NO", "deps": [], "srcs": [{"schema": "api", "name": "v_dashboard_reservoir_counts", "type": "view", "qualified": "api.v_dashboard_reservoir_counts"}]}
+{"q": "api.mv_scenario_catalog", "relkind": "m", "owner": "postgres", "size": "24 kB", "inc": 0, "out": 5, "cascade": "NO", "deps": [], "srcs": [{"schema": "access", "name": "hru_results", "type": "table", "qualified": "access.hru_results"}, {"schema": "access", "name": "rch_results", "type": "table", "qualified": "access.rch_results"}, {"schema": "access", "name": "sub_results", "type": "table", "qualified": "access.sub_results"}, {"schema": "access", "name": "weather_inputs", "type": "table", "qualified": "access.weather_inputs"}, {"schema": "core", "name": "model_runs", "type": "table", "qualified": "core.model_runs"}]}
+{"q": "api.v_catalog_properties", "relkind": "v", "owner": "postgres", "size": null, "inc": 0, "out": 2, "cascade": "NO", "deps": [], "srcs": [{"schema": "ref", "name": "observed_properties", "type": "table", "qualified": "ref.observed_properties"}, {"schema": "ref", "name": "property_domain_membership", "type": "table", "qualified": "ref.property_domain_membership"}]}
+{"q": "api.v_catalog_scenarios", "relkind": "v", "owner": "postgres", "size": null, "inc": 0, "out": 3, "cascade": "NO", "deps": [], "srcs": [{"schema": "api", "name": "v_timeseries_enriched", "type": "view", "qualified": "api.v_timeseries_enriched"}, {"schema": "core", "name": "model_runs", "type": "table", "qualified": "core.model_runs"}, {"schema": "ref", "name": "property_domain_membership", "type": "table", "qualified": "ref.property_domain_membership"}]}
+{"q": "api.v_catalog_series", "relkind": "v", "owner": "postgres", "size": null, "inc": 0, "out": 2, "cascade": "NO", "deps": [], "srcs": [{"schema": "api", "name": "v_timeseries_enriched", "type": "view", "qualified": "api.v_timeseries_enriched"}, {"schema": "ref", "name": "property_domain_membership", "type": "table", "qualified": "ref.property_domain_membership"}]}
+{"q": "api.v_catalog_stations", "relkind": "v", "owner": "postgres", "size": null, "inc": 0, "out": 3, "cascade": "NO", "deps": [], "srcs": [{"schema": "api", "name": "v_timeseries_enriched", "type": "view", "qualified": "api.v_timeseries_enriched"}, {"schema": "core", "name": "stations", "type": "table", "qualified": "core.stations"}, {"schema": "ref", "name": "property_domain_membership", "type": "table", "qualified": "ref.property_domain_membership"}]}
+{"q": "api.v_compare_monthly", "relkind": "v", "owner": "postgres", "size": null, "inc": 0, "out": 2, "cascade": "NO", "deps": [], "srcs": [{"schema": "api", "name": "v_measurements_monthly", "type": "view", "qualified": "api.v_measurements_monthly"}, {"schema": "api", "name": "v_timeseries_enriched", "type": "view", "qualified": "api.v_timeseries_enriched"}]}
+{"q": "api.v_dashboard_catchment_counts", "relkind": "v", "owner": "postgres", "size": null, "inc": 1, "out": 7, "cascade": "YES", "deps": [{"schema": "api", "name": "mv_dashboard_catchment_counts", "type": "materialized_view", "qualified": "api.mv_dashboard_catchment_counts"}], "srcs": [{"schema": "core", "name": "catchments", "type": "table", "qualified": "core.catchments"}, {"schema": "core", "name": "measurements", "type": "table", "qualified": "core.measurements"}, {"schema": "core", "name": "reaches", "type": "table", "qualified": "core.reaches"}, {"schema": "core", "name": "reservoirs", "type": "table", "qualified": "core.reservoirs"}, {"schema": "core", "name": "stations", "type": "table", "qualified": "core.stations"}, {"schema": "core", "name": "subbasins", "type": "table", "qualified": "core.subbasins"}, {"schema": "core", "name": "timeseries", "type": "table", "qualified": "core.timeseries"}]}
+{"q": "api.v_dashboard_national_counts", "relkind": "v", "owner": "postgres", "size": null, "inc": 0, "out": 8, "cascade": "NO", "deps": [], "srcs": [{"schema": "core", "name": "catchments", "type": "table", "qualified": "core.catchments"}, {"schema": "core", "name": "measurements", "type": "table", "qualified": "core.measurements"}, {"schema": "core", "name": "reaches", "type": "table", "qualified": "core.reaches"}, {"schema": "core", "name": "reservoirs", "type": "table", "qualified": "core.reservoirs"}, {"schema": "core", "name": "rivers", "type": "table", "qualified": "core.rivers"}, {"schema": "core", "name": "stations", "type": "table", "qualified": "core.stations"}, {"schema": "core", "name": "subbasins", "type": "table", "qualified": "core.subbasins"}, {"schema": "core", "name": "timeseries", "type": "table", "qualified": "core.timeseries"}]}
+{"q": "api.v_dashboard_reservoir_counts", "relkind": "v", "owner": "postgres", "size": null, "inc": 1, "out": 3, "cascade": "YES", "deps": [{"schema": "api", "name": "mv_dashboard_reservoir_counts", "type": "materialized_view", "qualified": "api.mv_dashboard_reservoir_counts"}], "srcs": [{"schema": "core", "name": "catchments", "type": "table", "qualified": "core.catchments"}, {"schema": "core", "name": "reservoir_bathymetry", "type": "table", "qualified": "core.reservoir_bathymetry"}, {"schema": "core", "name": "reservoirs", "type": "table", "qualified": "core.reservoirs"}]}
+{"q": "api.v_erosion_subbasins_annual", "relkind": "v", "owner": "postgres", "size": null, "inc": 0, "out": 5, "cascade": "NO", "deps": [], "srcs": [{"schema": "core", "name": "model_runs", "type": "table", "qualified": "core.model_runs"}, {"schema": "core", "name": "subbasin_metrics_annual", "type": "table", "qualified": "core.subbasin_metrics_annual"}, {"schema": "core", "name": "subbasins", "type": "table", "qualified": "core.subbasins"}, {"schema": "ref", "name": "observed_properties", "type": "table", "qualified": "ref.observed_properties"}, {"schema": "ref", "name": "property_domain_membership", "type": "table", "qualified": "ref.property_domain_membership"}]}
+{"q": "api.v_map_catchments_annual", "relkind": "v", "owner": "postgres", "size": null, "inc": 0, "out": 5, "cascade": "NO", "deps": [], "srcs": [{"schema": "api", "name": "v_measurements_annual", "type": "view", "qualified": "api.v_measurements_annual"}, {"schema": "api", "name": "v_timeseries_enriched", "type": "view", "qualified": "api.v_timeseries_enriched"}, {"schema": "core", "name": "catchments", "type": "table", "qualified": "core.catchments"}, {"schema": "core", "name": "stations", "type": "table", "qualified": "core.stations"}, {"schema": "ref", "name": "property_domain_membership", "type": "table", "qualified": "ref.property_domain_membership"}]}
+{"q": "api.v_map_stations_latest", "relkind": "v", "owner": "postgres", "size": null, "inc": 0, "out": 4, "cascade": "NO", "deps": [], "srcs": [{"schema": "api", "name": "v_measurements_latest", "type": "view", "qualified": "api.v_measurements_latest"}, {"schema": "api", "name": "v_timeseries_enriched", "type": "view", "qualified": "api.v_timeseries_enriched"}, {"schema": "core", "name": "stations", "type": "table", "qualified": "core.stations"}, {"schema": "ref", "name": "property_domain_membership", "type": "table", "qualified": "ref.property_domain_membership"}]}
+{"q": "api.v_measurements_annual", "relkind": "v", "owner": "postgres", "size": null, "inc": 1, "out": 1, "cascade": "YES", "deps": [{"schema": "api", "name": "v_map_catchments_annual", "type": "view", "qualified": "api.v_map_catchments_annual"}], "srcs": [{"schema": "core", "name": "measurements", "type": "table", "qualified": "core.measurements"}]}
+{"q": "api.v_measurements_annual_agg", "relkind": "v", "owner": "postgres", "size": null, "inc": 0, "out": 1, "cascade": "NO", "deps": [], "srcs": [{"schema": "core", "name": "measurements", "type": "table", "qualified": "core.measurements"}]}
+{"q": "api.v_measurements_daily", "relkind": "v", "owner": "postgres", "size": null, "inc": 0, "out": 1, "cascade": "NO", "deps": [], "srcs": [{"schema": "core", "name": "measurements", "type": "table", "qualified": "core.measurements"}]}
+{"q": "api.v_measurements_latest", "relkind": "v", "owner": "postgres", "size": null, "inc": 1, "out": 1, "cascade": "YES", "deps": [{"schema": "api", "name": "v_map_stations_latest", "type": "view", "qualified": "api.v_map_stations_latest"}], "srcs": [{"schema": "core", "name": "measurements", "type": "table", "qualified": "core.measurements"}]}
+{"q": "api.v_measurements_monthly", "relkind": "v", "owner": "postgres", "size": null, "inc": 1, "out": 1, "cascade": "YES", "deps": [{"schema": "api", "name": "v_compare_monthly", "type": "view", "qualified": "api.v_compare_monthly"}], "srcs": [{"schema": "core", "name": "measurements", "type": "table", "qualified": "core.measurements"}]}
+{"q": "api.v_measurements_monthly_agg", "relkind": "v", "owner": "postgres", "size": null, "inc": 0, "out": 1, "cascade": "NO", "deps": [], "srcs": [{"schema": "core", "name": "measurements", "type": "table", "qualified": "core.measurements"}]}
+{"q": "api.v_qc_property_domain_tovalidate", "relkind": "v", "owner": "postgres", "size": null, "inc": 0, "out": 2, "cascade": "NO", "deps": [], "srcs": [{"schema": "ref", "name": "observed_properties", "type": "table", "qualified": "ref.observed_properties"}, {"schema": "ref", "name": "property_domain_membership", "type": "table", "qualified": "ref.property_domain_membership"}]}
+{"q": "api.v_series_stats", "relkind": "v", "owner": "postgres", "size": null, "inc": 0, "out": 3, "cascade": "NO", "deps": [], "srcs": [{"schema": "api", "name": "v_timeseries_enriched", "type": "view", "qualified": "api.v_timeseries_enriched"}, {"schema": "core", "name": "measurements", "type": "table", "qualified": "core.measurements"}, {"schema": "ref", "name": "property_domain_membership", "type": "table", "qualified": "ref.property_domain_membership"}]}
+{"q": "api.v_timeseries_enriched", "relkind": "v", "owner": "postgres", "size": null, "inc": 7, "out": 4, "cascade": "YES", "deps": [{"schema": "api", "name": "v_catalog_scenarios", "type": "view", "qualified": "api.v_catalog_scenarios"}, {"schema": "api", "name": "v_catalog_series", "type": "view", "qualified": "api.v_catalog_series"}, {"schema": "api", "name": "v_catalog_stations", "type": "view", "qualified": "api.v_catalog_stations"}, {"schema": "api", "name": "v_compare_monthly", "type": "view", "qualified": "api.v_compare_monthly"}, {"schema": "api", "name": "v_map_catchments_annual", "type": "view", "qualified": "api.v_map_catchments_annual"}, {"schema": "api", "name": "v_map_stations_latest", "type": "view", "qualified": "api.v_map_stations_latest"}, {"schema": "api", "name": "v_series_stats", "type": "view", "qualified": "api.v_series_stats"}], "srcs": [{"schema": "core", "name": "model_runs", "type": "table", "qualified": "core.model_runs"}, {"schema": "core", "name": "stations", "type": "table", "qualified": "core.stations"}, {"schema": "core", "name": "timeseries", "type": "table", "qualified": "core.timeseries"}, {"schema": "ref", "name": "observed_properties", "type": "table", "qualified": "ref.observed_properties"}]}
+=== AUDIT ===
+{"q": "audit.v_qc_measurements_duplicates", "relkind": "v", "owner": "postgres", "inc": 0, "out": 1, "cascade": "NO", "deps": [], "srcs": [{"schema": "core", "name": "measurements", "type": "table", "qualified": "core.measurements"}]}
+{"q": "audit.v_qc_measurements_orphans", "relkind": "v", "owner": "postgres", "inc": 0, "out": 2, "cascade": "NO", "deps": [], "srcs": [{"schema": "core", "name": "measurements", "type": "table", "qualified": "core.measurements"}, {"schema": "core", "name": "timeseries", "type": "table", "qualified": "core.timeseries"}]}
+{"q": "audit.v_qc_null_geometry", "relkind": "v", "owner": "postgres", "inc": 0, "out": 7, "cascade": "NO", "deps": [], "srcs": [{"schema": "core", "name": "catchments", "type": "table", "qualified": "core.catchments"}, {"schema": "core", "name": "reaches", "type": "table", "qualified": "core.reaches"}, {"schema": "core", "name": "reservoirs", "type": "table", "qualified": "core.reservoirs"}, {"schema": "core", "name": "stations", "type": "table", "qualified": "core.stations"}, {"schema": "core", "name": "subbasins", "type": "table", "qualified": "core.subbasins"}, {"schema": "geo", "name": "landcover", "type": "table", "qualified": "geo.landcover"}, {"schema": "ref", "name": "communes", "type": "table", "qualified": "ref.communes"}]}
+{"q": "audit.v_qc_timeseries_duplicates", "relkind": "v", "owner": "postgres", "inc": 0, "out": 1, "cascade": "NO", "deps": [], "srcs": [{"schema": "core", "name": "timeseries", "type": "table", "qualified": "core.timeseries"}]}
+{"q": "audit.v_qc_timeseries_without_measurements", "relkind": "v", "owner": "postgres", "inc": 0, "out": 2, "cascade": "NO", "deps": [], "srcs": [{"schema": "core", "name": "measurements", "type": "table", "qualified": "core.measurements"}, {"schema": "core", "name": "timeseries", "type": "table", "qualified": "core.timeseries"}]}
+=== CASCADE YES ===
+api.v_dashboard_catchment_counts v deps=['api.mv_dashboard_catchment_counts:materialized_view']
+api.v_dashboard_reservoir_counts v deps=['api.mv_dashboard_reservoir_counts:materialized_view']
+api.v_measurements_annual v deps=['api.v_map_catchments_annual:view']
+api.v_measurements_latest v deps=['api.v_map_stations_latest:view']
+api.v_measurements_monthly v deps=['api.v_compare_monthly:view']
+api.v_timeseries_enriched v deps=['api.v_catalog_scenarios:view', 'api.v_catalog_series:view', 'api.v_catalog_stations:view', 'api.v_compare_monthly:view', 'api.v_map_catchments_annual:view', 'api.v_map_stations_latest:view', 'api.v_series_stats:view']
+public.v_property_catalog v deps=['public.v_property_catalog_final:view']
+public.v_property_module v deps=['public.v_property_agg_rule:view']
+public.v_stats_property_station_timestep v deps=['public.v_stats_evaporation:view', 'public.v_stats_humidity:view', 'public.v_stats_lachers:view', 'public.v_stats_precipitation:view', 'public.v_stats_sediment_load:view', 'public.v_stats_streamflow:view', 'public.v_stats_temperature_all:view', 'public.v_stats_temperature_max:view', 'public.v_stats_temperature_mean:view', 'public.v_stats_temperature_min:view', 'public.v_stats_wind_speed:view']
+public.v_stats_property_timestep v deps=['public.v_stats_evaporation_global:view', 'public.v_stats_humidity_global:view', 'public.v_stats_lachers_global:view', 'public.v_stats_precipitation_global:view', 'public.v_stats_sediment_load_global:view', 'public.v_stats_streamflow_global:view', 'public.v_stats_temperature_all_global:view', 'public.v_stats_temperature_max_global:view', 'public.v_stats_temperature_mean_global:view', 'public.v_stats_temperature_min_global:view', 'public.v_stats_wind_speed_global:view']
+public.v_ts_catalog v deps=['public.v_measurements_full:view', 'public.v_ts_catalog_enriched:view']
+public.v_values_annual v deps=['public.v_values_evaporation_annual:view', 'public.v_values_humidity_annual:view', 'public.v_values_lachers_annual:view', 'public.v_values_precipitation_annual:view', 'public.v_values_sediment_load_annual:view', 'public.v_values_streamflow_annual:view', 'public.v_values_temperature_max_annual:view', 'public.v_values_temperature_mean_annual:view', 'public.v_values_temperature_min_annual:view', 'public.v_values_wind_speed_annual:view']
+public.v_values_measurements v deps=['public.v_values_annual:view', 'public.v_values_evaporation_obs:view', 'public.v_values_humidity_obs:view', 'public.v_values_lachers_obs:view', 'public.v_values_monthly:view', 'public.v_values_precipitation_obs:view', 'public.v_values_sediment_load_obs:view', 'public.v_values_streamflow_obs:view', 'public.v_values_temperature_all_obs:view', 'public.v_values_temperature_max_obs:view', 'public.v_values_temperature_mean_obs:view', 'public.v_values_temperature_min_obs:view', 'public.v_values_wind_speed_obs:view']
+public.v_values_monthly v deps=['public.v_values_evaporation_monthly:view', 'public.v_values_humidity_monthly:view', 'public.v_values_lachers_monthly:view', 'public.v_values_precipitation_monthly:view', 'public.v_values_sediment_load_monthly:view', 'public.v_values_streamflow_monthly:view', 'public.v_values_temperature_max_monthly:view', 'public.v_values_temperature_mean_monthly:view', 'public.v_values_temperature_min_monthly:view', 'public.v_values_wind_speed_monthly:view']
+=== CATALOG ===
+[
+  {
+    "qualified": "api.mv_barrage_catalog",
+    "status": "ABSENT",
+    "relkind": null,
+    "kind": null,
+    "owner": null,
+    "pg_size_pretty": null
+  },
+  {
+    "qualified": "api.mv_basin_catalog",
+    "status": "ABSENT",
+    "relkind": null,
+    "kind": null,
+    "owner": null,
+    "pg_size_pretty": null
+  },
+  {
+    "qualified": "api.mv_hydro_station_stats",
+    "status": "ABSENT",
+    "relkind": null,
+    "kind": null,
+    "owner": null,
+    "pg_size_pretty": null
+  },
+  {
+    "qualified": "api.mv_hydro_station_timeseries",
+    "status": "ABSENT",
+    "relkind": null,
+    "kind": null,
+    "owner": null,
+    "pg_size_pretty": null
+  },
+  {
+    "qualified": "api.mv_reach_catalog",
+    "status": "ABSENT",
+    "relkind": null,
+    "kind": null,
+    "owner": null,
+    "pg_size_pretty": null
+  },
+  {
+    "qualified": "api.mv_station_catalog",
+    "status": "ABSENT",
+    "relkind": null,
+    "kind": null,
+    "owner": null,
+    "pg_size_pretty": null
+  },
+  {
+    "qualified": "api.mv_subbasin_catalog",
+    "status": "ABSENT",
+    "relkind": null,
+    "kind": null,
+    "owner": null,
+    "pg_size_pretty": null
+  },
+  {
+    "qualified": "api.mv_scenario_catalog",
+    "status": "PRESENT",
+    "relkind": "m",
+    "kind": "materialized_view",
+    "owner": "postgres",
+    "pg_size_pretty": "24 kB"
+  },
+  {
+    "qualified": "api.v_catalog_properties",
+    "status": "PRESENT",
+    "relkind": "v",
+    "kind": "view",
+    "owner": "postgres",
+    "pg_size_pretty": null
+  }
+]
+=== PATTERN ===
+public.v_catchments_geo	v	postgres
+public.v_property_agg_rule	v	postgres
+public.v_property_catalog	v	postgres
+public.v_property_catalog_final	v	postgres
+public.v_property_module	v	postgres
+public.v_reaches_geo	v	postgres
+public.v_reservoirs_geo	v	postgres
+public.v_stations_geo	v	postgres
+public.v_stats_bathymetry	v	postgres
+public.v_stats_bathymetry_global	v	postgres
+public.v_stats_evaporation	v	postgres
+public.v_stats_evaporation_global	v	postgres
+public.v_stats_humidity	v	postgres
+public.v_stats_humidity_global	v	postgres
+public.v_stats_lachers	v	postgres
+public.v_stats_lachers_global	v	postgres
+public.v_stats_precipitation	v	postgres
+public.v_stats_precipitation_global	v	postgres
+public.v_stats_property_station_timestep	v	postgres
+public.v_stats_property_timestep	v	postgres
+public.v_stats_sediment_load	v	postgres
+public.v_stats_sediment_load_global	v	postgres
+public.v_stats_streamflow	v	postgres
+public.v_stats_streamflow_global	v	postgres
+public.v_stats_temperature_all	v	postgres
+public.v_stats_temperature_all_global	v	postgres
+public.v_stats_temperature_max	v	postgres
+public.v_stats_temperature_max_global	v	postgres
+public.v_stats_temperature_mean	v	postgres
+public.v_stats_temperature_mean_global	v	postgres
+public.v_stats_temperature_min	v	postgres
+public.v_stats_temperature_min_global	v	postgres
+public.v_stats_wind_speed	v	postgres
+public.v_stats_wind_speed_global	v	postgres
+public.v_subbasins_geo	v	postgres
+public.v_values_annual	v	postgres
+public.v_values_bathymetry	v	postgres
+public.v_values_evaporation_annual	v	postgres
+public.v_values_evaporation_monthly	v	postgres
+public.v_values_evaporation_obs	v	postgres
+public.v_values_humidity_annual	v	postgres
+public.v_values_humidity_monthly	v	postgres
+public.v_values_humidity_obs	v	postgres
+public.v_values_lachers_annual	v	postgres
+public.v_values_lachers_monthly	v	postgres
+public.v_values_lachers_obs	v	postgres
+public.v_values_measurements	v	postgres
+public.v_values_monthly	v	postgres
+public.v_values_precipitation_annual	v	postgres
+public.v_values_precipitation_monthly	v	postgres
+public.v_values_precipitation_obs	v	postgres
+public.v_values_sediment_load_annual	v	postgres
+public.v_values_sediment_load_monthly	v	postgres
+public.v_values_sediment_load_obs	v	postgres
+public.v_values_streamflow_annual	v	postgres
+public.v_values_streamflow_monthly	v	postgres
+public.v_values_streamflow_obs	v	postgres
+public.v_values_temperature_all_obs	v	postgres
+public.v_values_temperature_max_annual	v	postgres
+public.v_values_temperature_max_monthly	v	postgres
+public.v_values_temperature_max_obs	v	postgres
+public.v_values_temperature_mean_annual	v	postgres
+public.v_values_temperature_mean_monthly	v	postgres
+public.v_values_temperature_mean_obs	v	postgres
+public.v_values_temperature_min_annual	v	postgres
+public.v_values_temperature_min_monthly	v	postgres
+public.v_values_temperature_min_obs	v	postgres
+public.v_values_wind_speed_annual	v	postgres
+public.v_values_wind_speed_monthly	v	postgres
+public.v_values_wind_speed_obs	v	postgres
+=== PUBLIC ALL ===
+public.catchments	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['core.catchments:table']
+public.communes	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['ref.communes:table']
+public.geography_columns	v	postgres	inc=0	out=0	cascade=NO	deps=[]
+public.geometry_columns	v	postgres	inc=0	out=0	cascade=NO	deps=[]
+public.landcover	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['geo.landcover:table']
+public.landcover_classes	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['ref.landcover_classes:table']
+public.landcover_periods	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['ref.landcover_periods:table']
+public.measurements	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['core.measurements:table']
+public.model_runs	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['core.model_runs:table']
+public.observed_properties	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['ref.observed_properties:table']
+public.reaches	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['core.reaches:table']
+public.reservoir_bathymetry	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['core.reservoir_bathymetry:table']
+public.reservoirs	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['core.reservoirs:table']
+public.rivers	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['core.rivers:table']
+public.stations	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['core.stations:table']
+public.subbasins	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['core.subbasins:table']
+public.timeseries	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['core.timeseries:table']
+public.v_catchments_geo	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['core.catchments:table']
+public.v_map_station	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['core.stations:table']
+public.v_measurements_full	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['core.measurements:table', 'public.v_ts_catalog:view']
+public.v_property_agg_rule	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['public.v_property_module:view']
+public.v_property_catalog	v	postgres	inc=1	out=1	cascade=YES	deps=['public.v_property_catalog_final']
+  srcs=['ref.observed_properties:table']
+public.v_property_catalog_final	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.property_module_override:table', 'public.v_property_catalog:view']
+public.v_property_module	v	postgres	inc=1	out=1	cascade=YES	deps=['public.v_property_agg_rule']
+  srcs=['ref.observed_properties:table']
+public.v_reaches_geo	v	postgres	inc=0	out=4	cascade=NO	deps=[]
+  srcs=['core.catchments:table', 'core.reaches:table', 'core.rivers:table', 'core.subbasins:table']
+public.v_reservoirs_geo	v	postgres	inc=0	out=4	cascade=NO	deps=[]
+  srcs=['core.catchments:table', 'core.reaches:table', 'core.reservoir_bathymetry:table', 'core.reservoirs:table']
+public.v_stations_geo	v	postgres	inc=0	out=4	cascade=NO	deps=[]
+  srcs=['core.catchments:table', 'core.reaches:table', 'core.rivers:table', 'core.stations:table']
+public.v_stats_bathymetry	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['core.reservoir_bathymetry:table', 'core.reservoirs:table']
+public.v_stats_bathymetry_global	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['core.reservoir_bathymetry:table']
+public.v_stats_evaporation	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['public.v_stats_property_station_timestep:view']
+public.v_stats_evaporation_global	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['public.v_stats_property_timestep:view']
+public.v_stats_humidity	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['public.v_stats_property_station_timestep:view']
+public.v_stats_humidity_global	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['public.v_stats_property_timestep:view']
+public.v_stats_lachers	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['public.v_stats_property_station_timestep:view']
+public.v_stats_lachers_global	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['public.v_stats_property_timestep:view']
+public.v_stats_precipitation	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['public.v_stats_property_station_timestep:view']
+public.v_stats_precipitation_global	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['public.v_stats_property_timestep:view']
+public.v_stats_property_station_timestep	v	postgres	inc=11	out=4	cascade=YES	deps=['public.v_stats_evaporation', 'public.v_stats_humidity', 'public.v_stats_lachers', 'public.v_stats_precipitation', 'public.v_stats_sediment_load', 'public.v_stats_streamflow', 'public.v_stats_temperature_all', 'public.v_stats_temperature_max', 'public.v_stats_temperature_mean', 'public.v_stats_temperature_min', 'public.v_stats_wind_speed']
+  srcs=['core.measurements:table', 'core.stations:table', 'core.timeseries:table', 'ref.observed_properties:table']
+public.v_stats_property_timestep	v	postgres	inc=11	out=3	cascade=YES	deps=['public.v_stats_evaporation_global', 'public.v_stats_humidity_global', 'public.v_stats_lachers_global', 'public.v_stats_precipitation_global', 'public.v_stats_sediment_load_global', 'public.v_stats_streamflow_global', 'public.v_stats_temperature_all_global', 'public.v_stats_temperature_max_global', 'public.v_stats_temperature_mean_global', 'public.v_stats_temperature_min_global', 'public.v_stats_wind_speed_global']
+  srcs=['core.measurements:table', 'core.timeseries:table', 'ref.observed_properties:table']
+public.v_stats_sediment_load	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['public.v_stats_property_station_timestep:view']
+public.v_stats_sediment_load_global	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['public.v_stats_property_timestep:view']
+public.v_stats_streamflow	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['public.v_stats_property_station_timestep:view']
+public.v_stats_streamflow_global	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['public.v_stats_property_timestep:view']
+public.v_stats_temperature_all	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['public.v_stats_property_station_timestep:view']
+public.v_stats_temperature_all_global	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['public.v_stats_property_timestep:view']
+public.v_stats_temperature_max	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['public.v_stats_property_station_timestep:view']
+public.v_stats_temperature_max_global	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['public.v_stats_property_timestep:view']
+public.v_stats_temperature_mean	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['public.v_stats_property_station_timestep:view']
+public.v_stats_temperature_mean_global	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['public.v_stats_property_timestep:view']
+public.v_stats_temperature_min	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['public.v_stats_property_station_timestep:view']
+public.v_stats_temperature_min_global	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['public.v_stats_property_timestep:view']
+public.v_stats_wind_speed	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['public.v_stats_property_station_timestep:view']
+public.v_stats_wind_speed_global	v	postgres	inc=0	out=1	cascade=NO	deps=[]
+  srcs=['public.v_stats_property_timestep:view']
+public.v_subbasins_geo	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['core.catchments:table', 'core.subbasins:table']
+public.v_ts_catalog	v	postgres	inc=2	out=5	cascade=YES	deps=['public.v_measurements_full', 'public.v_ts_catalog_enriched']
+  srcs=['core.catchments:table', 'core.model_runs:table', 'core.stations:table', 'core.timeseries:table', 'ref.observed_properties:table']
+public.v_ts_catalog_enriched	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['core.measurements:table', 'public.v_ts_catalog:view']
+public.v_values_annual	v	postgres	inc=10	out=1	cascade=YES	deps=['public.v_values_evaporation_annual', 'public.v_values_humidity_annual', 'public.v_values_lachers_annual', 'public.v_values_precipitation_annual', 'public.v_values_sediment_load_annual', 'public.v_values_streamflow_annual', 'public.v_values_temperature_max_annual', 'public.v_values_temperature_mean_annual', 'public.v_values_temperature_min_annual', 'public.v_values_wind_speed_annual']
+  srcs=['public.v_values_measurements:view']
+public.v_values_bathymetry	v	postgres	inc=0	out=3	cascade=NO	deps=[]
+  srcs=['core.catchments:table', 'core.reservoir_bathymetry:table', 'core.reservoirs:table']
+public.v_values_evaporation_annual	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_annual:view', 'ref.observed_properties:table']
+public.v_values_evaporation_monthly	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_monthly:view', 'ref.observed_properties:table']
+public.v_values_evaporation_obs	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_measurements:view', 'ref.observed_properties:table']
+public.v_values_humidity_annual	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_annual:view', 'ref.observed_properties:table']
+public.v_values_humidity_monthly	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_monthly:view', 'ref.observed_properties:table']
+public.v_values_humidity_obs	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_measurements:view', 'ref.observed_properties:table']
+public.v_values_lachers_annual	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_annual:view', 'ref.observed_properties:table']
+public.v_values_lachers_monthly	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_monthly:view', 'ref.observed_properties:table']
+public.v_values_lachers_obs	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_measurements:view', 'ref.observed_properties:table']
+public.v_values_measurements	v	postgres	inc=13	out=6	cascade=YES	deps=['public.v_values_annual', 'public.v_values_evaporation_obs', 'public.v_values_humidity_obs', 'public.v_values_lachers_obs', 'public.v_values_monthly', 'public.v_values_precipitation_obs', 'public.v_values_sediment_load_obs', 'public.v_values_streamflow_obs', 'public.v_values_temperature_all_obs', 'public.v_values_temperature_max_obs', 'public.v_values_temperature_mean_obs', 'public.v_values_temperature_min_obs', 'public.v_values_wind_speed_obs']
+  srcs=['core.catchments:table', 'core.measurements:table', 'core.model_runs:table', 'core.stations:table', 'core.timeseries:table', 'ref.observed_properties:table']
+public.v_values_monthly	v	postgres	inc=10	out=1	cascade=YES	deps=['public.v_values_evaporation_monthly', 'public.v_values_humidity_monthly', 'public.v_values_lachers_monthly', 'public.v_values_precipitation_monthly', 'public.v_values_sediment_load_monthly', 'public.v_values_streamflow_monthly', 'public.v_values_temperature_max_monthly', 'public.v_values_temperature_mean_monthly', 'public.v_values_temperature_min_monthly', 'public.v_values_wind_speed_monthly']
+  srcs=['public.v_values_measurements:view']
+public.v_values_precipitation_annual	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_annual:view', 'ref.observed_properties:table']
+public.v_values_precipitation_monthly	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_monthly:view', 'ref.observed_properties:table']
+public.v_values_precipitation_obs	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_measurements:view', 'ref.observed_properties:table']
+public.v_values_sediment_load_annual	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_annual:view', 'ref.observed_properties:table']
+public.v_values_sediment_load_monthly	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_monthly:view', 'ref.observed_properties:table']
+public.v_values_sediment_load_obs	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_measurements:view', 'ref.observed_properties:table']
+public.v_values_streamflow_annual	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_annual:view', 'ref.observed_properties:table']
+public.v_values_streamflow_monthly	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_monthly:view', 'ref.observed_properties:table']
+public.v_values_streamflow_obs	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_measurements:view', 'ref.observed_properties:table']
+public.v_values_temperature_all_obs	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_measurements:view', 'ref.observed_properties:table']
+public.v_values_temperature_max_annual	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_annual:view', 'ref.observed_properties:table']
+public.v_values_temperature_max_monthly	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_monthly:view', 'ref.observed_properties:table']
+public.v_values_temperature_max_obs	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_measurements:view', 'ref.observed_properties:table']
+public.v_values_temperature_mean_annual	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_annual:view', 'ref.observed_properties:table']
+public.v_values_temperature_mean_monthly	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_monthly:view', 'ref.observed_properties:table']
+public.v_values_temperature_mean_obs	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_measurements:view', 'ref.observed_properties:table']
+public.v_values_temperature_min_annual	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_annual:view', 'ref.observed_properties:table']
+public.v_values_temperature_min_monthly	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_monthly:view', 'ref.observed_properties:table']
+public.v_values_temperature_min_obs	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_measurements:view', 'ref.observed_properties:table']
+public.v_values_wind_speed_annual	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_annual:view', 'ref.observed_properties:table']
+public.v_values_wind_speed_monthly	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_monthly:view', 'ref.observed_properties:table']
+public.v_values_wind_speed_obs	v	postgres	inc=0	out=2	cascade=NO	deps=[]
+  srcs=['public.v_values_measurements:view', 'ref.observed_properties:table']

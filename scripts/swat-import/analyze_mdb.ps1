@@ -7,15 +7,65 @@ $ErrorActionPreference = "Stop"
 
 function Resolve-MdbPath {
   param([string]$Path)
-  if ($Path -and (Test-Path $Path)) {
-    return (Resolve-Path $Path).Path
+
+  function Add-Candidate {
+    param(
+      [System.Collections.Generic.List[string]]$Bucket,
+      [string]$Candidate
+    )
+    $value = [string]$Candidate
+    if ([string]::IsNullOrWhiteSpace($value)) { return }
+    $trimmed = $value.Trim()
+    if (-not $Bucket.Contains($trimmed)) {
+      $Bucket.Add($trimmed)
+    }
+  }
+
+  function Add-CandidatesFromRoot {
+    param(
+      [System.Collections.Generic.List[string]]$Bucket,
+      [string]$Root
+    )
+    $value = [string]$Root
+    if ([string]::IsNullOrWhiteSpace($value)) { return }
+    $trimmed = $value.Trim()
+
+    Add-Candidate -Bucket $Bucket -Candidate $trimmed
+    Add-Candidate -Bucket $Bucket -Candidate (Join-Path $trimmed "SWATOutput.mdb")
+    Add-Candidate -Bucket $Bucket -Candidate (Join-Path $trimmed "Access\\SWATOutput.mdb")
+    Add-Candidate -Bucket $Bucket -Candidate (Join-Path $trimmed "TablesOut\\SWATOutput.mdb")
+    Add-Candidate -Bucket $Bucket -Candidate (Join-Path $trimmed "Daily\\TablesOut\\SWATOutput.mdb")
+    Add-Candidate -Bucket $Bucket -Candidate (Join-Path $trimmed "Monthly\\TablesOut\\SWATOutput.mdb")
+    Add-Candidate -Bucket $Bucket -Candidate (Join-Path $trimmed "Yealy\\TablesOut\\SWATOutput.mdb")
+    Add-Candidate -Bucket $Bucket -Candidate (Join-Path $trimmed "Scenarios\\Daily\\TablesOut\\SWATOutput.mdb")
+    Add-Candidate -Bucket $Bucket -Candidate (Join-Path $trimmed "Scenarios\\Monthly\\TablesOut\\SWATOutput.mdb")
+    Add-Candidate -Bucket $Bucket -Candidate (Join-Path $trimmed "Scenarios\\Yealy\\TablesOut\\SWATOutput.mdb")
+  }
+
+  $candidates = New-Object 'System.Collections.Generic.List[string]'
+  Add-Candidate -Bucket $candidates -Candidate $Path
+  Add-Candidate -Bucket $candidates -Candidate $env:SWAT_MDB_PATH
+  Add-CandidatesFromRoot -Bucket $candidates -Root $env:SWAT_DATA_ROOT
+  Add-CandidatesFromRoot -Bucket $candidates -Root $env:HASSAN_DATA_ROOT
+
+  foreach ($candidate in $candidates) {
+    if (Test-Path -LiteralPath $candidate -PathType Leaf) {
+      return (Resolve-Path -LiteralPath $candidate).Path
+    }
   }
 
   $repoRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-  $candidate = Get-ChildItem -Path $repoRoot -Recurse -Filter "SWATOutput.mdb" -File | Select-Object -First 1
-  if ($candidate) { return $candidate.FullName }
+  $repoCandidate = Get-ChildItem -Path $repoRoot -Recurse -Filter "SWATOutput.mdb" -File -ErrorAction SilentlyContinue |
+    Select-Object -First 1
+  if ($repoCandidate) { return $repoCandidate.FullName }
 
-  throw "Impossible de trouver SWATOutput.mdb."
+  $checked = if ($candidates.Count -gt 0) {
+    ($candidates | ForEach-Object { " - $_" }) -join "`n"
+  } else {
+    " - (aucun candidat explicite)"
+  }
+
+  throw "Impossible de trouver SWATOutput.mdb.`nCandidats testes:`n$checked`nVariables supportees: SWAT_MDB_PATH, SWAT_DATA_ROOT, HASSAN_DATA_ROOT."
 }
 
 function New-AdoConnection {

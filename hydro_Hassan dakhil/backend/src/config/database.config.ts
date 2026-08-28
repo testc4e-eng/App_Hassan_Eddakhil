@@ -1,19 +1,20 @@
 //src/config/database.config.ts
 
 import { Pool, PoolConfig } from "pg";
-import dotenv from "dotenv";
-import { requireEnv, getEnvOrDefault } from "./env";
+import { requireEnv, requireEnvAny, getEnvOrDefault } from "./env";
+import { loadBackendEnv } from "./loadEnv";
 
-dotenv.config();
+loadBackendEnv();
 
 const dbConfig: PoolConfig = {
   host: requireEnv("DB_HOST"),
   port: parseInt(requireEnv("DB_PORT")),
-  database: requireEnv("DB_NAME"),
-  user: requireEnv("DB_USER"),
-  password: requireEnv("DB_PASSWORD"),
+  database: requireEnvAny("HDI_DB_NAME", "DB_NAME", "POSTGRES_DB"),
+  user: requireEnvAny("DB_USER", "POSTGRES_USER"),
+  password: requireEnvAny("DB_PASSWORD", "POSTGRES_PASSWORD"),
   ssl: getEnvOrDefault("DB_SSL", "false") === "true" ? { rejectUnauthorized: false } : false,
-  max: 20,
+  max: 10,
+  application_name: "hydro_hassan_backend",
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,
 };

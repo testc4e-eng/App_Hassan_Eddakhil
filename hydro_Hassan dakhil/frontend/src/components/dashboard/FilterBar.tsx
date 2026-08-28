@@ -6,10 +6,7 @@ import { useHydroData, ModuleCode, type CatalogStation } from "@/contexts/HydroD
 import { hydroApi } from "@/api/hydro";
 import { timeseriesApi, type AggregationAvailabilityResponse } from "@/api/timeseries";
 import {
-  HIDDEN_SCENARIO_CODES,
-  NORMALIZED_SWAT_SCENARIOS,
   NORMALIZED_SWAT_SCENARIO_ORDER,
-  isNormalizedSwatScenarioCode,
   resolveSwatScenarioLabel,
 } from "@/constants/swatScenarios";
 import { resolveSyldtHaDisplayLabel } from "@/constants/syldtHa";
@@ -173,8 +170,12 @@ export function FilterBar({
   } = useHydroData();
 
   useEffect(() => {
-    loadAvailability(moduleCode).catch(() => {});
-    loadModuleProperties(moduleCode).catch(() => {});
+    loadAvailability(moduleCode).catch((error) => {
+      console.warn("[filter-bar] failed to load availability", { moduleCode, error });
+    });
+    loadModuleProperties(moduleCode).catch((error) => {
+      console.warn("[filter-bar] failed to load module properties", { moduleCode, error });
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduleCode]);
 
@@ -862,8 +863,15 @@ export function FilterBar({
         });
         if (!alive) return;
         setAggregationAvailability(availability);
-      } catch {
+      } catch (error) {
         if (!alive) return;
+        console.warn("[filter-bar] failed to load aggregation availability", {
+          moduleCode,
+          selectedStationId,
+          selectedRunId,
+          selectedVarId,
+          error,
+        });
         setAggregationAvailability(null);
       }
     })();
@@ -918,8 +926,15 @@ export function FilterBar({
         } else {
           setAvailableRange(null);
         }
-      } catch {
+      } catch (error) {
         if (!alive) return;
+        console.warn("[filter-bar] failed to load date range", {
+          moduleCode,
+          selectedStationId,
+          selectedRunId,
+          selectedVarId,
+          error,
+        });
         setAvailableRange(null);
       }
     })();

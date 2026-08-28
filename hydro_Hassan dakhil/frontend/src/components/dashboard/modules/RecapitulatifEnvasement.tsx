@@ -132,12 +132,12 @@ export function RecapitulatifEnvasement() {
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<SiltationSummaryResponse | null>(null);
   const [hsv, setHsv] = useState<SiltationHsvRow[]>([]);
-  const [evolution, setEvolution] = useState<SiltationEvolutionRow[]>([]);
+  const [_evolution, setEvolution] = useState<SiltationEvolutionRow[]>([]);
   const [availability, setAvailability] = useState<SiltationAvailabilityResponse | null>(null);
   const [bathyCampaigns, setBathyCampaigns] = useState<BathymetryCampaignsResponse | null>(null);
   const [mapData, setMapData] = useState<DamMapData>({ basinCoords: [], station: null });
   const [search, setSearch] = useState("");
-  const [sortKey, setSortKey] = useState<"campaign_year" | "level_m" | "surface_km2" | "volume_mhm3">("campaign_year");
+  const [sortKey, _setSortKey] = useState<"campaign_year" | "level_m" | "surface_km2" | "volume_mhm3">("campaign_year");
   const [sortAsc, setSortAsc] = useState(true);
   const [page, setPage] = useState(1);
 

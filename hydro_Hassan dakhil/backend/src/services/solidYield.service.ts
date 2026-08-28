@@ -7,6 +7,7 @@ import {
   SolidYieldStats,
   SolidYieldSubbasinRow,
 } from "../types/solidYield.types";
+import { VISIBLE_SWAT_SCENARIO_CODES } from "../constants/swatDataSources";
 
 type PeriodFilter = {
   subbasinStationId: number;
@@ -15,16 +16,7 @@ type PeriodFilter = {
   endDate?: string;
 };
 
-const EROSION_SCENARIO_CODES = [
-  "etat_actuel",
-  "ssp126",
-  "ssp245",
-  "ssp585",
-  "scenario_1",
-  "scenario_2",
-  "scenario_3",
-  "scenario_4",
-] as const;
+const EROSION_SCENARIO_CODES = VISIBLE_SWAT_SCENARIO_CODES;
 
 type SedimentDiagnosticVariableCode = "SED_IN" | "SED_OUT" | "SED_CONC" | "SYLDT_HA";
 

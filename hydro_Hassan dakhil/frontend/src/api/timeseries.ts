@@ -41,6 +41,23 @@ export type TimeseriesBundleResponse = {
   aggregated: Record<string, TimeseriesAggPoint[]>;
 };
 
+export type TimeseriesStatsResponse = {
+  count: number;
+  min: number | null;
+  max: number | null;
+  mean: number | null;
+  sum: number | null;
+  missing: number;
+};
+
+export type TimeseriesTableResponse = {
+  items: Array<Record<string, string | number | null>>;
+  page: number;
+  page_size: number;
+  total: number;
+  total_pages: number;
+};
+
 export type AggregationAvailabilityResponse = {
   daily: boolean;
   monthly: boolean;
@@ -93,12 +110,54 @@ export const timeseriesApi = {
     agg?: "day" | "month" | "year";
     startDate?: string;
     endDate?: string;
+    propertyIds?: number[];
+    maxPoints?: number;
   }) => {
     const key = buildKey("bundle", args);
     return cacheRequest(bundleCache, key, () => {
-      const query = qs(args);
+      const query = qs({
+        ...args,
+        propertyIds: args.propertyIds?.join(","),
+      });
       return apiGet<TimeseriesBundleResponse>(`/timeseries/bundle${query}`);
     });
+  },
+
+  stats: (args: {
+    stationId: number;
+    runId: number;
+    module: string;
+    agg?: "day" | "month" | "year";
+    startDate?: string;
+    endDate?: string;
+    propertyIds?: number[];
+  }) => {
+    const query = qs({
+      ...args,
+      propertyIds: args.propertyIds?.join(","),
+    });
+    return apiGet<TimeseriesStatsResponse>(`/timeseries/stats${query}`);
+  },
+
+  table: (args: {
+    stationId: number;
+    runId: number;
+    module: string;
+    agg?: "day" | "month" | "year";
+    startDate?: string;
+    endDate?: string;
+    propertyIds?: number[];
+    page?: number;
+    page_size?: number;
+    search?: string;
+    sortColumn?: string;
+    sortDirection?: "asc" | "desc";
+  }) => {
+    const query = qs({
+      ...args,
+      propertyIds: args.propertyIds?.join(","),
+    });
+    return apiGet<TimeseriesTableResponse>(`/timeseries/table${query}`);
   },
 
   availability: (args: {

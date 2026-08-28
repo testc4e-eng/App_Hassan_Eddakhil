@@ -1,4 +1,5 @@
 // frontend/src/lib/thematicColors.ts
+import { EMPTY_VALUE_PLACEHOLDER } from "@/lib/display";
 
 export const DEFAULT_SUBBASIN_COLORS = [
   "#ffffcc",
@@ -43,7 +44,7 @@ export function valueToColor(
 
 export function formatValue(value: number | null | undefined, unit: string): string {
   if (value === null || value === undefined || !Number.isFinite(value)) {
-    return `— ${unit}`;
+    return `${EMPTY_VALUE_PLACEHOLDER} ${unit}`;
   }
   const formatted = Math.abs(value) >= 100 ? value.toFixed(1) : value.toFixed(2);
   return `${formatted} ${unit}`;

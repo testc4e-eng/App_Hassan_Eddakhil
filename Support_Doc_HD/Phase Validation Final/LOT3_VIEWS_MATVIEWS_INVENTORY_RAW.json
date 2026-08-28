@@ -1,0 +1,4490 @@
+{
+  "connection": {
+    "host": "127.0.0.1",
+    "port": 5432,
+    "requested_db": "hydro_hd",
+    "user": "postgres",
+    "password_set": true
+  },
+  "session": {
+    "current_database": "hydro_hd",
+    "current_user": "postgres",
+    "server_addr": "127.0.0.1/32",
+    "server_port": 5432,
+    "version": "PostgreSQL 17.8 on x86_64-windows, compiled by msvc-19.44.35222, 64-bit"
+  },
+  "row_counts": {
+    "core.timeseries": {
+      "ok": true,
+      "count": 383
+    },
+    "core.measurements": {
+      "ok": true,
+      "count": 3773400
+    },
+    "gis.reach_shapes": {
+      "ok": true,
+      "count": 19
+    },
+    "gis.subbasin_shapes": {
+      "ok": true,
+      "count": 19
+    }
+  },
+  "row_count_expected": {
+    "core.timeseries": 383,
+    "core.measurements": 3773400,
+    "gis.reach_shapes": 19,
+    "gis.subbasin_shapes": 19
+  },
+  "row_count_match": {
+    "core.timeseries": true,
+    "core.measurements": true,
+    "gis.reach_shapes": true,
+    "gis.subbasin_shapes": true
+  },
+  "inventory_count": 119,
+  "inventory_by_schema": {
+    "api": {
+      "views": 20,
+      "matviews": 3
+    },
+    "audit": {
+      "views": 5,
+      "matviews": 0
+    },
+    "public": {
+      "views": 91,
+      "matviews": 0
+    }
+  },
+  "inventory": [
+    {
+      "schema": "api",
+      "name": "mv_dashboard_catchment_counts",
+      "qualified": "api.mv_dashboard_catchment_counts",
+      "relkind": "m",
+      "kind": "materialized_view",
+      "owner": "postgres",
+      "pg_size_pretty": "8192 bytes",
+      "size_bytes": 8192,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "api",
+          "name": "v_dashboard_catchment_counts",
+          "type": "view",
+          "qualified": "api.v_dashboard_catchment_counts"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "api",
+      "name": "mv_dashboard_reservoir_counts",
+      "qualified": "api.mv_dashboard_reservoir_counts",
+      "relkind": "m",
+      "kind": "materialized_view",
+      "owner": "postgres",
+      "pg_size_pretty": "24 kB",
+      "size_bytes": 24576,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "api",
+          "name": "v_dashboard_reservoir_counts",
+          "type": "view",
+          "qualified": "api.v_dashboard_reservoir_counts"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "api",
+      "name": "mv_scenario_catalog",
+      "qualified": "api.mv_scenario_catalog",
+      "relkind": "m",
+      "kind": "materialized_view",
+      "owner": "postgres",
+      "pg_size_pretty": "24 kB",
+      "size_bytes": 24576,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 5,
+      "outgoing_sources": [
+        {
+          "schema": "access",
+          "name": "hru_results",
+          "type": "table",
+          "qualified": "access.hru_results"
+        },
+        {
+          "schema": "access",
+          "name": "rch_results",
+          "type": "table",
+          "qualified": "access.rch_results"
+        },
+        {
+          "schema": "access",
+          "name": "sub_results",
+          "type": "table",
+          "qualified": "access.sub_results"
+        },
+        {
+          "schema": "access",
+          "name": "weather_inputs",
+          "type": "table",
+          "qualified": "access.weather_inputs"
+        },
+        {
+          "schema": "core",
+          "name": "model_runs",
+          "type": "table",
+          "qualified": "core.model_runs"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "api",
+      "name": "v_catalog_properties",
+      "qualified": "api.v_catalog_properties",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        },
+        {
+          "schema": "ref",
+          "name": "property_domain_membership",
+          "type": "table",
+          "qualified": "ref.property_domain_membership"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "api",
+      "name": "v_catalog_scenarios",
+      "qualified": "api.v_catalog_scenarios",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 3,
+      "outgoing_sources": [
+        {
+          "schema": "api",
+          "name": "v_timeseries_enriched",
+          "type": "view",
+          "qualified": "api.v_timeseries_enriched"
+        },
+        {
+          "schema": "core",
+          "name": "model_runs",
+          "type": "table",
+          "qualified": "core.model_runs"
+        },
+        {
+          "schema": "ref",
+          "name": "property_domain_membership",
+          "type": "table",
+          "qualified": "ref.property_domain_membership"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "api",
+      "name": "v_catalog_series",
+      "qualified": "api.v_catalog_series",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "api",
+          "name": "v_timeseries_enriched",
+          "type": "view",
+          "qualified": "api.v_timeseries_enriched"
+        },
+        {
+          "schema": "ref",
+          "name": "property_domain_membership",
+          "type": "table",
+          "qualified": "ref.property_domain_membership"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "api",
+      "name": "v_catalog_stations",
+      "qualified": "api.v_catalog_stations",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 3,
+      "outgoing_sources": [
+        {
+          "schema": "api",
+          "name": "v_timeseries_enriched",
+          "type": "view",
+          "qualified": "api.v_timeseries_enriched"
+        },
+        {
+          "schema": "core",
+          "name": "stations",
+          "type": "table",
+          "qualified": "core.stations"
+        },
+        {
+          "schema": "ref",
+          "name": "property_domain_membership",
+          "type": "table",
+          "qualified": "ref.property_domain_membership"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "api",
+      "name": "v_compare_monthly",
+      "qualified": "api.v_compare_monthly",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "api",
+          "name": "v_measurements_monthly",
+          "type": "view",
+          "qualified": "api.v_measurements_monthly"
+        },
+        {
+          "schema": "api",
+          "name": "v_timeseries_enriched",
+          "type": "view",
+          "qualified": "api.v_timeseries_enriched"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "api",
+      "name": "v_dashboard_catchment_counts",
+      "qualified": "api.v_dashboard_catchment_counts",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 1,
+      "outgoing_sources_count": 7,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "catchments",
+          "type": "table",
+          "qualified": "core.catchments"
+        },
+        {
+          "schema": "core",
+          "name": "measurements",
+          "type": "table",
+          "qualified": "core.measurements"
+        },
+        {
+          "schema": "core",
+          "name": "reaches",
+          "type": "table",
+          "qualified": "core.reaches"
+        },
+        {
+          "schema": "core",
+          "name": "reservoirs",
+          "type": "table",
+          "qualified": "core.reservoirs"
+        },
+        {
+          "schema": "core",
+          "name": "stations",
+          "type": "table",
+          "qualified": "core.stations"
+        },
+        {
+          "schema": "core",
+          "name": "subbasins",
+          "type": "table",
+          "qualified": "core.subbasins"
+        },
+        {
+          "schema": "core",
+          "name": "timeseries",
+          "type": "table",
+          "qualified": "core.timeseries"
+        }
+      ],
+      "drop_would_fail_without_cascade": true,
+      "needs_cascade": "YES",
+      "dependents": [
+        {
+          "schema": "api",
+          "name": "mv_dashboard_catchment_counts",
+          "type": "materialized_view",
+          "qualified": "api.mv_dashboard_catchment_counts"
+        }
+      ]
+    },
+    {
+      "schema": "api",
+      "name": "v_dashboard_national_counts",
+      "qualified": "api.v_dashboard_national_counts",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 8,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "catchments",
+          "type": "table",
+          "qualified": "core.catchments"
+        },
+        {
+          "schema": "core",
+          "name": "measurements",
+          "type": "table",
+          "qualified": "core.measurements"
+        },
+        {
+          "schema": "core",
+          "name": "reaches",
+          "type": "table",
+          "qualified": "core.reaches"
+        },
+        {
+          "schema": "core",
+          "name": "reservoirs",
+          "type": "table",
+          "qualified": "core.reservoirs"
+        },
+        {
+          "schema": "core",
+          "name": "rivers",
+          "type": "table",
+          "qualified": "core.rivers"
+        },
+        {
+          "schema": "core",
+          "name": "stations",
+          "type": "table",
+          "qualified": "core.stations"
+        },
+        {
+          "schema": "core",
+          "name": "subbasins",
+          "type": "table",
+          "qualified": "core.subbasins"
+        },
+        {
+          "schema": "core",
+          "name": "timeseries",
+          "type": "table",
+          "qualified": "core.timeseries"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "api",
+      "name": "v_dashboard_reservoir_counts",
+      "qualified": "api.v_dashboard_reservoir_counts",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 1,
+      "outgoing_sources_count": 3,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "catchments",
+          "type": "table",
+          "qualified": "core.catchments"
+        },
+        {
+          "schema": "core",
+          "name": "reservoir_bathymetry",
+          "type": "table",
+          "qualified": "core.reservoir_bathymetry"
+        },
+        {
+          "schema": "core",
+          "name": "reservoirs",
+          "type": "table",
+          "qualified": "core.reservoirs"
+        }
+      ],
+      "drop_would_fail_without_cascade": true,
+      "needs_cascade": "YES",
+      "dependents": [
+        {
+          "schema": "api",
+          "name": "mv_dashboard_reservoir_counts",
+          "type": "materialized_view",
+          "qualified": "api.mv_dashboard_reservoir_counts"
+        }
+      ]
+    },
+    {
+      "schema": "api",
+      "name": "v_erosion_subbasins_annual",
+      "qualified": "api.v_erosion_subbasins_annual",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 5,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "model_runs",
+          "type": "table",
+          "qualified": "core.model_runs"
+        },
+        {
+          "schema": "core",
+          "name": "subbasin_metrics_annual",
+          "type": "table",
+          "qualified": "core.subbasin_metrics_annual"
+        },
+        {
+          "schema": "core",
+          "name": "subbasins",
+          "type": "table",
+          "qualified": "core.subbasins"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        },
+        {
+          "schema": "ref",
+          "name": "property_domain_membership",
+          "type": "table",
+          "qualified": "ref.property_domain_membership"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "api",
+      "name": "v_map_catchments_annual",
+      "qualified": "api.v_map_catchments_annual",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 5,
+      "outgoing_sources": [
+        {
+          "schema": "api",
+          "name": "v_measurements_annual",
+          "type": "view",
+          "qualified": "api.v_measurements_annual"
+        },
+        {
+          "schema": "api",
+          "name": "v_timeseries_enriched",
+          "type": "view",
+          "qualified": "api.v_timeseries_enriched"
+        },
+        {
+          "schema": "core",
+          "name": "catchments",
+          "type": "table",
+          "qualified": "core.catchments"
+        },
+        {
+          "schema": "core",
+          "name": "stations",
+          "type": "table",
+          "qualified": "core.stations"
+        },
+        {
+          "schema": "ref",
+          "name": "property_domain_membership",
+          "type": "table",
+          "qualified": "ref.property_domain_membership"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "api",
+      "name": "v_map_stations_latest",
+      "qualified": "api.v_map_stations_latest",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 4,
+      "outgoing_sources": [
+        {
+          "schema": "api",
+          "name": "v_measurements_latest",
+          "type": "view",
+          "qualified": "api.v_measurements_latest"
+        },
+        {
+          "schema": "api",
+          "name": "v_timeseries_enriched",
+          "type": "view",
+          "qualified": "api.v_timeseries_enriched"
+        },
+        {
+          "schema": "core",
+          "name": "stations",
+          "type": "table",
+          "qualified": "core.stations"
+        },
+        {
+          "schema": "ref",
+          "name": "property_domain_membership",
+          "type": "table",
+          "qualified": "ref.property_domain_membership"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "api",
+      "name": "v_measurements_annual",
+      "qualified": "api.v_measurements_annual",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 1,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "measurements",
+          "type": "table",
+          "qualified": "core.measurements"
+        }
+      ],
+      "drop_would_fail_without_cascade": true,
+      "needs_cascade": "YES",
+      "dependents": [
+        {
+          "schema": "api",
+          "name": "v_map_catchments_annual",
+          "type": "view",
+          "qualified": "api.v_map_catchments_annual"
+        }
+      ]
+    },
+    {
+      "schema": "api",
+      "name": "v_measurements_annual_agg",
+      "qualified": "api.v_measurements_annual_agg",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "measurements",
+          "type": "table",
+          "qualified": "core.measurements"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "api",
+      "name": "v_measurements_daily",
+      "qualified": "api.v_measurements_daily",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "measurements",
+          "type": "table",
+          "qualified": "core.measurements"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "api",
+      "name": "v_measurements_latest",
+      "qualified": "api.v_measurements_latest",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 1,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "measurements",
+          "type": "table",
+          "qualified": "core.measurements"
+        }
+      ],
+      "drop_would_fail_without_cascade": true,
+      "needs_cascade": "YES",
+      "dependents": [
+        {
+          "schema": "api",
+          "name": "v_map_stations_latest",
+          "type": "view",
+          "qualified": "api.v_map_stations_latest"
+        }
+      ]
+    },
+    {
+      "schema": "api",
+      "name": "v_measurements_monthly",
+      "qualified": "api.v_measurements_monthly",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 1,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "measurements",
+          "type": "table",
+          "qualified": "core.measurements"
+        }
+      ],
+      "drop_would_fail_without_cascade": true,
+      "needs_cascade": "YES",
+      "dependents": [
+        {
+          "schema": "api",
+          "name": "v_compare_monthly",
+          "type": "view",
+          "qualified": "api.v_compare_monthly"
+        }
+      ]
+    },
+    {
+      "schema": "api",
+      "name": "v_measurements_monthly_agg",
+      "qualified": "api.v_measurements_monthly_agg",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "measurements",
+          "type": "table",
+          "qualified": "core.measurements"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "api",
+      "name": "v_qc_property_domain_tovalidate",
+      "qualified": "api.v_qc_property_domain_tovalidate",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        },
+        {
+          "schema": "ref",
+          "name": "property_domain_membership",
+          "type": "table",
+          "qualified": "ref.property_domain_membership"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "api",
+      "name": "v_series_stats",
+      "qualified": "api.v_series_stats",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 3,
+      "outgoing_sources": [
+        {
+          "schema": "api",
+          "name": "v_timeseries_enriched",
+          "type": "view",
+          "qualified": "api.v_timeseries_enriched"
+        },
+        {
+          "schema": "core",
+          "name": "measurements",
+          "type": "table",
+          "qualified": "core.measurements"
+        },
+        {
+          "schema": "ref",
+          "name": "property_domain_membership",
+          "type": "table",
+          "qualified": "ref.property_domain_membership"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "api",
+      "name": "v_timeseries_enriched",
+      "qualified": "api.v_timeseries_enriched",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 7,
+      "outgoing_sources_count": 4,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "model_runs",
+          "type": "table",
+          "qualified": "core.model_runs"
+        },
+        {
+          "schema": "core",
+          "name": "stations",
+          "type": "table",
+          "qualified": "core.stations"
+        },
+        {
+          "schema": "core",
+          "name": "timeseries",
+          "type": "table",
+          "qualified": "core.timeseries"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": true,
+      "needs_cascade": "YES",
+      "dependents": [
+        {
+          "schema": "api",
+          "name": "v_catalog_scenarios",
+          "type": "view",
+          "qualified": "api.v_catalog_scenarios"
+        },
+        {
+          "schema": "api",
+          "name": "v_catalog_series",
+          "type": "view",
+          "qualified": "api.v_catalog_series"
+        },
+        {
+          "schema": "api",
+          "name": "v_catalog_stations",
+          "type": "view",
+          "qualified": "api.v_catalog_stations"
+        },
+        {
+          "schema": "api",
+          "name": "v_compare_monthly",
+          "type": "view",
+          "qualified": "api.v_compare_monthly"
+        },
+        {
+          "schema": "api",
+          "name": "v_map_catchments_annual",
+          "type": "view",
+          "qualified": "api.v_map_catchments_annual"
+        },
+        {
+          "schema": "api",
+          "name": "v_map_stations_latest",
+          "type": "view",
+          "qualified": "api.v_map_stations_latest"
+        },
+        {
+          "schema": "api",
+          "name": "v_series_stats",
+          "type": "view",
+          "qualified": "api.v_series_stats"
+        }
+      ]
+    },
+    {
+      "schema": "audit",
+      "name": "v_qc_measurements_duplicates",
+      "qualified": "audit.v_qc_measurements_duplicates",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "measurements",
+          "type": "table",
+          "qualified": "core.measurements"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "audit",
+      "name": "v_qc_measurements_orphans",
+      "qualified": "audit.v_qc_measurements_orphans",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "measurements",
+          "type": "table",
+          "qualified": "core.measurements"
+        },
+        {
+          "schema": "core",
+          "name": "timeseries",
+          "type": "table",
+          "qualified": "core.timeseries"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "audit",
+      "name": "v_qc_null_geometry",
+      "qualified": "audit.v_qc_null_geometry",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 7,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "catchments",
+          "type": "table",
+          "qualified": "core.catchments"
+        },
+        {
+          "schema": "core",
+          "name": "reaches",
+          "type": "table",
+          "qualified": "core.reaches"
+        },
+        {
+          "schema": "core",
+          "name": "reservoirs",
+          "type": "table",
+          "qualified": "core.reservoirs"
+        },
+        {
+          "schema": "core",
+          "name": "stations",
+          "type": "table",
+          "qualified": "core.stations"
+        },
+        {
+          "schema": "core",
+          "name": "subbasins",
+          "type": "table",
+          "qualified": "core.subbasins"
+        },
+        {
+          "schema": "geo",
+          "name": "landcover",
+          "type": "table",
+          "qualified": "geo.landcover"
+        },
+        {
+          "schema": "ref",
+          "name": "communes",
+          "type": "table",
+          "qualified": "ref.communes"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "audit",
+      "name": "v_qc_timeseries_duplicates",
+      "qualified": "audit.v_qc_timeseries_duplicates",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "timeseries",
+          "type": "table",
+          "qualified": "core.timeseries"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "audit",
+      "name": "v_qc_timeseries_without_measurements",
+      "qualified": "audit.v_qc_timeseries_without_measurements",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "measurements",
+          "type": "table",
+          "qualified": "core.measurements"
+        },
+        {
+          "schema": "core",
+          "name": "timeseries",
+          "type": "table",
+          "qualified": "core.timeseries"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "catchments",
+      "qualified": "public.catchments",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "catchments",
+          "type": "table",
+          "qualified": "core.catchments"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "communes",
+      "qualified": "public.communes",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "ref",
+          "name": "communes",
+          "type": "table",
+          "qualified": "ref.communes"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "geography_columns",
+      "qualified": "public.geography_columns",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 0,
+      "outgoing_sources": [],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "geometry_columns",
+      "qualified": "public.geometry_columns",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 0,
+      "outgoing_sources": [],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "landcover",
+      "qualified": "public.landcover",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "geo",
+          "name": "landcover",
+          "type": "table",
+          "qualified": "geo.landcover"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "landcover_classes",
+      "qualified": "public.landcover_classes",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "ref",
+          "name": "landcover_classes",
+          "type": "table",
+          "qualified": "ref.landcover_classes"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "landcover_periods",
+      "qualified": "public.landcover_periods",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "ref",
+          "name": "landcover_periods",
+          "type": "table",
+          "qualified": "ref.landcover_periods"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "measurements",
+      "qualified": "public.measurements",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "measurements",
+          "type": "table",
+          "qualified": "core.measurements"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "model_runs",
+      "qualified": "public.model_runs",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "model_runs",
+          "type": "table",
+          "qualified": "core.model_runs"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "observed_properties",
+      "qualified": "public.observed_properties",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "reaches",
+      "qualified": "public.reaches",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "reaches",
+          "type": "table",
+          "qualified": "core.reaches"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "reservoir_bathymetry",
+      "qualified": "public.reservoir_bathymetry",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "reservoir_bathymetry",
+          "type": "table",
+          "qualified": "core.reservoir_bathymetry"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "reservoirs",
+      "qualified": "public.reservoirs",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "reservoirs",
+          "type": "table",
+          "qualified": "core.reservoirs"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "rivers",
+      "qualified": "public.rivers",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "rivers",
+          "type": "table",
+          "qualified": "core.rivers"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "stations",
+      "qualified": "public.stations",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "stations",
+          "type": "table",
+          "qualified": "core.stations"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "subbasins",
+      "qualified": "public.subbasins",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "subbasins",
+          "type": "table",
+          "qualified": "core.subbasins"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "timeseries",
+      "qualified": "public.timeseries",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "timeseries",
+          "type": "table",
+          "qualified": "core.timeseries"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_catchments_geo",
+      "qualified": "public.v_catchments_geo",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "catchments",
+          "type": "table",
+          "qualified": "core.catchments"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_map_station",
+      "qualified": "public.v_map_station",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "stations",
+          "type": "table",
+          "qualified": "core.stations"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_measurements_full",
+      "qualified": "public.v_measurements_full",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "measurements",
+          "type": "table",
+          "qualified": "core.measurements"
+        },
+        {
+          "schema": "public",
+          "name": "v_ts_catalog",
+          "type": "view",
+          "qualified": "public.v_ts_catalog"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_property_agg_rule",
+      "qualified": "public.v_property_agg_rule",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_property_module",
+          "type": "view",
+          "qualified": "public.v_property_module"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_property_catalog",
+      "qualified": "public.v_property_catalog",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 1,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": true,
+      "needs_cascade": "YES",
+      "dependents": [
+        {
+          "schema": "public",
+          "name": "v_property_catalog_final",
+          "type": "view",
+          "qualified": "public.v_property_catalog_final"
+        }
+      ]
+    },
+    {
+      "schema": "public",
+      "name": "v_property_catalog_final",
+      "qualified": "public.v_property_catalog_final",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "property_module_override",
+          "type": "table",
+          "qualified": "public.property_module_override"
+        },
+        {
+          "schema": "public",
+          "name": "v_property_catalog",
+          "type": "view",
+          "qualified": "public.v_property_catalog"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_property_module",
+      "qualified": "public.v_property_module",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 1,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": true,
+      "needs_cascade": "YES",
+      "dependents": [
+        {
+          "schema": "public",
+          "name": "v_property_agg_rule",
+          "type": "view",
+          "qualified": "public.v_property_agg_rule"
+        }
+      ]
+    },
+    {
+      "schema": "public",
+      "name": "v_reaches_geo",
+      "qualified": "public.v_reaches_geo",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 4,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "catchments",
+          "type": "table",
+          "qualified": "core.catchments"
+        },
+        {
+          "schema": "core",
+          "name": "reaches",
+          "type": "table",
+          "qualified": "core.reaches"
+        },
+        {
+          "schema": "core",
+          "name": "rivers",
+          "type": "table",
+          "qualified": "core.rivers"
+        },
+        {
+          "schema": "core",
+          "name": "subbasins",
+          "type": "table",
+          "qualified": "core.subbasins"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_reservoirs_geo",
+      "qualified": "public.v_reservoirs_geo",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 4,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "catchments",
+          "type": "table",
+          "qualified": "core.catchments"
+        },
+        {
+          "schema": "core",
+          "name": "reaches",
+          "type": "table",
+          "qualified": "core.reaches"
+        },
+        {
+          "schema": "core",
+          "name": "reservoir_bathymetry",
+          "type": "table",
+          "qualified": "core.reservoir_bathymetry"
+        },
+        {
+          "schema": "core",
+          "name": "reservoirs",
+          "type": "table",
+          "qualified": "core.reservoirs"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_stations_geo",
+      "qualified": "public.v_stations_geo",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 4,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "catchments",
+          "type": "table",
+          "qualified": "core.catchments"
+        },
+        {
+          "schema": "core",
+          "name": "reaches",
+          "type": "table",
+          "qualified": "core.reaches"
+        },
+        {
+          "schema": "core",
+          "name": "rivers",
+          "type": "table",
+          "qualified": "core.rivers"
+        },
+        {
+          "schema": "core",
+          "name": "stations",
+          "type": "table",
+          "qualified": "core.stations"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_bathymetry",
+      "qualified": "public.v_stats_bathymetry",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "reservoir_bathymetry",
+          "type": "table",
+          "qualified": "core.reservoir_bathymetry"
+        },
+        {
+          "schema": "core",
+          "name": "reservoirs",
+          "type": "table",
+          "qualified": "core.reservoirs"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_bathymetry_global",
+      "qualified": "public.v_stats_bathymetry_global",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "reservoir_bathymetry",
+          "type": "table",
+          "qualified": "core.reservoir_bathymetry"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_evaporation",
+      "qualified": "public.v_stats_evaporation",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_stats_property_station_timestep",
+          "type": "view",
+          "qualified": "public.v_stats_property_station_timestep"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_evaporation_global",
+      "qualified": "public.v_stats_evaporation_global",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_stats_property_timestep",
+          "type": "view",
+          "qualified": "public.v_stats_property_timestep"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_humidity",
+      "qualified": "public.v_stats_humidity",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_stats_property_station_timestep",
+          "type": "view",
+          "qualified": "public.v_stats_property_station_timestep"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_humidity_global",
+      "qualified": "public.v_stats_humidity_global",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_stats_property_timestep",
+          "type": "view",
+          "qualified": "public.v_stats_property_timestep"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_lachers",
+      "qualified": "public.v_stats_lachers",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_stats_property_station_timestep",
+          "type": "view",
+          "qualified": "public.v_stats_property_station_timestep"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_lachers_global",
+      "qualified": "public.v_stats_lachers_global",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_stats_property_timestep",
+          "type": "view",
+          "qualified": "public.v_stats_property_timestep"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_precipitation",
+      "qualified": "public.v_stats_precipitation",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_stats_property_station_timestep",
+          "type": "view",
+          "qualified": "public.v_stats_property_station_timestep"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_precipitation_global",
+      "qualified": "public.v_stats_precipitation_global",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_stats_property_timestep",
+          "type": "view",
+          "qualified": "public.v_stats_property_timestep"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_property_station_timestep",
+      "qualified": "public.v_stats_property_station_timestep",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 11,
+      "outgoing_sources_count": 4,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "measurements",
+          "type": "table",
+          "qualified": "core.measurements"
+        },
+        {
+          "schema": "core",
+          "name": "stations",
+          "type": "table",
+          "qualified": "core.stations"
+        },
+        {
+          "schema": "core",
+          "name": "timeseries",
+          "type": "table",
+          "qualified": "core.timeseries"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": true,
+      "needs_cascade": "YES",
+      "dependents": [
+        {
+          "schema": "public",
+          "name": "v_stats_evaporation",
+          "type": "view",
+          "qualified": "public.v_stats_evaporation"
+        },
+        {
+          "schema": "public",
+          "name": "v_stats_humidity",
+          "type": "view",
+          "qualified": "public.v_stats_humidity"
+        },
+        {
+          "schema": "public",
+          "name": "v_stats_lachers",
+          "type": "view",
+          "qualified": "public.v_stats_lachers"
+        },
+        {
+          "schema": "public",
+          "name": "v_stats_precipitation",
+          "type": "view",
+          "qualified": "public.v_stats_precipitation"
+        },
+        {
+          "schema": "public",
+          "name": "v_stats_sediment_load",
+          "type": "view",
+          "qualified": "public.v_stats_sediment_load"
+        },
+        {
+          "schema": "public",
+          "name": "v_stats_streamflow",
+          "type": "view",
+          "qualified": "public.v_stats_streamflow"
+        },
+        {
+          "schema": "public",
+          "name": "v_stats_temperature_all",
+          "type": "view",
+          "qualified": "public.v_stats_temperature_all"
+        },
+        {
+          "schema": "public",
+          "name": "v_stats_temperature_max",
+          "type": "view",
+          "qualified": "public.v_stats_temperature_max"
+        },
+        {
+          "schema": "public",
+          "name": "v_stats_temperature_mean",
+          "type": "view",
+          "qualified": "public.v_stats_temperature_mean"
+        },
+        {
+          "schema": "public",
+          "name": "v_stats_temperature_min",
+          "type": "view",
+          "qualified": "public.v_stats_temperature_min"
+        },
+        {
+          "schema": "public",
+          "name": "v_stats_wind_speed",
+          "type": "view",
+          "qualified": "public.v_stats_wind_speed"
+        }
+      ]
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_property_timestep",
+      "qualified": "public.v_stats_property_timestep",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 11,
+      "outgoing_sources_count": 3,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "measurements",
+          "type": "table",
+          "qualified": "core.measurements"
+        },
+        {
+          "schema": "core",
+          "name": "timeseries",
+          "type": "table",
+          "qualified": "core.timeseries"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": true,
+      "needs_cascade": "YES",
+      "dependents": [
+        {
+          "schema": "public",
+          "name": "v_stats_evaporation_global",
+          "type": "view",
+          "qualified": "public.v_stats_evaporation_global"
+        },
+        {
+          "schema": "public",
+          "name": "v_stats_humidity_global",
+          "type": "view",
+          "qualified": "public.v_stats_humidity_global"
+        },
+        {
+          "schema": "public",
+          "name": "v_stats_lachers_global",
+          "type": "view",
+          "qualified": "public.v_stats_lachers_global"
+        },
+        {
+          "schema": "public",
+          "name": "v_stats_precipitation_global",
+          "type": "view",
+          "qualified": "public.v_stats_precipitation_global"
+        },
+        {
+          "schema": "public",
+          "name": "v_stats_sediment_load_global",
+          "type": "view",
+          "qualified": "public.v_stats_sediment_load_global"
+        },
+        {
+          "schema": "public",
+          "name": "v_stats_streamflow_global",
+          "type": "view",
+          "qualified": "public.v_stats_streamflow_global"
+        },
+        {
+          "schema": "public",
+          "name": "v_stats_temperature_all_global",
+          "type": "view",
+          "qualified": "public.v_stats_temperature_all_global"
+        },
+        {
+          "schema": "public",
+          "name": "v_stats_temperature_max_global",
+          "type": "view",
+          "qualified": "public.v_stats_temperature_max_global"
+        },
+        {
+          "schema": "public",
+          "name": "v_stats_temperature_mean_global",
+          "type": "view",
+          "qualified": "public.v_stats_temperature_mean_global"
+        },
+        {
+          "schema": "public",
+          "name": "v_stats_temperature_min_global",
+          "type": "view",
+          "qualified": "public.v_stats_temperature_min_global"
+        },
+        {
+          "schema": "public",
+          "name": "v_stats_wind_speed_global",
+          "type": "view",
+          "qualified": "public.v_stats_wind_speed_global"
+        }
+      ]
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_sediment_load",
+      "qualified": "public.v_stats_sediment_load",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_stats_property_station_timestep",
+          "type": "view",
+          "qualified": "public.v_stats_property_station_timestep"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_sediment_load_global",
+      "qualified": "public.v_stats_sediment_load_global",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_stats_property_timestep",
+          "type": "view",
+          "qualified": "public.v_stats_property_timestep"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_streamflow",
+      "qualified": "public.v_stats_streamflow",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_stats_property_station_timestep",
+          "type": "view",
+          "qualified": "public.v_stats_property_station_timestep"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_streamflow_global",
+      "qualified": "public.v_stats_streamflow_global",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_stats_property_timestep",
+          "type": "view",
+          "qualified": "public.v_stats_property_timestep"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_temperature_all",
+      "qualified": "public.v_stats_temperature_all",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_stats_property_station_timestep",
+          "type": "view",
+          "qualified": "public.v_stats_property_station_timestep"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_temperature_all_global",
+      "qualified": "public.v_stats_temperature_all_global",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_stats_property_timestep",
+          "type": "view",
+          "qualified": "public.v_stats_property_timestep"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_temperature_max",
+      "qualified": "public.v_stats_temperature_max",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_stats_property_station_timestep",
+          "type": "view",
+          "qualified": "public.v_stats_property_station_timestep"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_temperature_max_global",
+      "qualified": "public.v_stats_temperature_max_global",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_stats_property_timestep",
+          "type": "view",
+          "qualified": "public.v_stats_property_timestep"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_temperature_mean",
+      "qualified": "public.v_stats_temperature_mean",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_stats_property_station_timestep",
+          "type": "view",
+          "qualified": "public.v_stats_property_station_timestep"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_temperature_mean_global",
+      "qualified": "public.v_stats_temperature_mean_global",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_stats_property_timestep",
+          "type": "view",
+          "qualified": "public.v_stats_property_timestep"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_temperature_min",
+      "qualified": "public.v_stats_temperature_min",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_stats_property_station_timestep",
+          "type": "view",
+          "qualified": "public.v_stats_property_station_timestep"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_temperature_min_global",
+      "qualified": "public.v_stats_temperature_min_global",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_stats_property_timestep",
+          "type": "view",
+          "qualified": "public.v_stats_property_timestep"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_wind_speed",
+      "qualified": "public.v_stats_wind_speed",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_stats_property_station_timestep",
+          "type": "view",
+          "qualified": "public.v_stats_property_station_timestep"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_wind_speed_global",
+      "qualified": "public.v_stats_wind_speed_global",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_stats_property_timestep",
+          "type": "view",
+          "qualified": "public.v_stats_property_timestep"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_subbasins_geo",
+      "qualified": "public.v_subbasins_geo",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "catchments",
+          "type": "table",
+          "qualified": "core.catchments"
+        },
+        {
+          "schema": "core",
+          "name": "subbasins",
+          "type": "table",
+          "qualified": "core.subbasins"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_ts_catalog",
+      "qualified": "public.v_ts_catalog",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 2,
+      "outgoing_sources_count": 5,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "catchments",
+          "type": "table",
+          "qualified": "core.catchments"
+        },
+        {
+          "schema": "core",
+          "name": "model_runs",
+          "type": "table",
+          "qualified": "core.model_runs"
+        },
+        {
+          "schema": "core",
+          "name": "stations",
+          "type": "table",
+          "qualified": "core.stations"
+        },
+        {
+          "schema": "core",
+          "name": "timeseries",
+          "type": "table",
+          "qualified": "core.timeseries"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": true,
+      "needs_cascade": "YES",
+      "dependents": [
+        {
+          "schema": "public",
+          "name": "v_measurements_full",
+          "type": "view",
+          "qualified": "public.v_measurements_full"
+        },
+        {
+          "schema": "public",
+          "name": "v_ts_catalog_enriched",
+          "type": "view",
+          "qualified": "public.v_ts_catalog_enriched"
+        }
+      ]
+    },
+    {
+      "schema": "public",
+      "name": "v_ts_catalog_enriched",
+      "qualified": "public.v_ts_catalog_enriched",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "measurements",
+          "type": "table",
+          "qualified": "core.measurements"
+        },
+        {
+          "schema": "public",
+          "name": "v_ts_catalog",
+          "type": "view",
+          "qualified": "public.v_ts_catalog"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_annual",
+      "qualified": "public.v_values_annual",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 10,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_measurements",
+          "type": "view",
+          "qualified": "public.v_values_measurements"
+        }
+      ],
+      "drop_would_fail_without_cascade": true,
+      "needs_cascade": "YES",
+      "dependents": [
+        {
+          "schema": "public",
+          "name": "v_values_evaporation_annual",
+          "type": "view",
+          "qualified": "public.v_values_evaporation_annual"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_humidity_annual",
+          "type": "view",
+          "qualified": "public.v_values_humidity_annual"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_lachers_annual",
+          "type": "view",
+          "qualified": "public.v_values_lachers_annual"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_precipitation_annual",
+          "type": "view",
+          "qualified": "public.v_values_precipitation_annual"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_sediment_load_annual",
+          "type": "view",
+          "qualified": "public.v_values_sediment_load_annual"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_streamflow_annual",
+          "type": "view",
+          "qualified": "public.v_values_streamflow_annual"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_temperature_max_annual",
+          "type": "view",
+          "qualified": "public.v_values_temperature_max_annual"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_temperature_mean_annual",
+          "type": "view",
+          "qualified": "public.v_values_temperature_mean_annual"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_temperature_min_annual",
+          "type": "view",
+          "qualified": "public.v_values_temperature_min_annual"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_wind_speed_annual",
+          "type": "view",
+          "qualified": "public.v_values_wind_speed_annual"
+        }
+      ]
+    },
+    {
+      "schema": "public",
+      "name": "v_values_bathymetry",
+      "qualified": "public.v_values_bathymetry",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 3,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "catchments",
+          "type": "table",
+          "qualified": "core.catchments"
+        },
+        {
+          "schema": "core",
+          "name": "reservoir_bathymetry",
+          "type": "table",
+          "qualified": "core.reservoir_bathymetry"
+        },
+        {
+          "schema": "core",
+          "name": "reservoirs",
+          "type": "table",
+          "qualified": "core.reservoirs"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_evaporation_annual",
+      "qualified": "public.v_values_evaporation_annual",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_annual",
+          "type": "view",
+          "qualified": "public.v_values_annual"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_evaporation_monthly",
+      "qualified": "public.v_values_evaporation_monthly",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_monthly",
+          "type": "view",
+          "qualified": "public.v_values_monthly"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_evaporation_obs",
+      "qualified": "public.v_values_evaporation_obs",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_measurements",
+          "type": "view",
+          "qualified": "public.v_values_measurements"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_humidity_annual",
+      "qualified": "public.v_values_humidity_annual",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_annual",
+          "type": "view",
+          "qualified": "public.v_values_annual"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_humidity_monthly",
+      "qualified": "public.v_values_humidity_monthly",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_monthly",
+          "type": "view",
+          "qualified": "public.v_values_monthly"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_humidity_obs",
+      "qualified": "public.v_values_humidity_obs",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_measurements",
+          "type": "view",
+          "qualified": "public.v_values_measurements"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_lachers_annual",
+      "qualified": "public.v_values_lachers_annual",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_annual",
+          "type": "view",
+          "qualified": "public.v_values_annual"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_lachers_monthly",
+      "qualified": "public.v_values_lachers_monthly",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_monthly",
+          "type": "view",
+          "qualified": "public.v_values_monthly"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_lachers_obs",
+      "qualified": "public.v_values_lachers_obs",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_measurements",
+          "type": "view",
+          "qualified": "public.v_values_measurements"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_measurements",
+      "qualified": "public.v_values_measurements",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 13,
+      "outgoing_sources_count": 6,
+      "outgoing_sources": [
+        {
+          "schema": "core",
+          "name": "catchments",
+          "type": "table",
+          "qualified": "core.catchments"
+        },
+        {
+          "schema": "core",
+          "name": "measurements",
+          "type": "table",
+          "qualified": "core.measurements"
+        },
+        {
+          "schema": "core",
+          "name": "model_runs",
+          "type": "table",
+          "qualified": "core.model_runs"
+        },
+        {
+          "schema": "core",
+          "name": "stations",
+          "type": "table",
+          "qualified": "core.stations"
+        },
+        {
+          "schema": "core",
+          "name": "timeseries",
+          "type": "table",
+          "qualified": "core.timeseries"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": true,
+      "needs_cascade": "YES",
+      "dependents": [
+        {
+          "schema": "public",
+          "name": "v_values_annual",
+          "type": "view",
+          "qualified": "public.v_values_annual"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_evaporation_obs",
+          "type": "view",
+          "qualified": "public.v_values_evaporation_obs"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_humidity_obs",
+          "type": "view",
+          "qualified": "public.v_values_humidity_obs"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_lachers_obs",
+          "type": "view",
+          "qualified": "public.v_values_lachers_obs"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_monthly",
+          "type": "view",
+          "qualified": "public.v_values_monthly"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_precipitation_obs",
+          "type": "view",
+          "qualified": "public.v_values_precipitation_obs"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_sediment_load_obs",
+          "type": "view",
+          "qualified": "public.v_values_sediment_load_obs"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_streamflow_obs",
+          "type": "view",
+          "qualified": "public.v_values_streamflow_obs"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_temperature_all_obs",
+          "type": "view",
+          "qualified": "public.v_values_temperature_all_obs"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_temperature_max_obs",
+          "type": "view",
+          "qualified": "public.v_values_temperature_max_obs"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_temperature_mean_obs",
+          "type": "view",
+          "qualified": "public.v_values_temperature_mean_obs"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_temperature_min_obs",
+          "type": "view",
+          "qualified": "public.v_values_temperature_min_obs"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_wind_speed_obs",
+          "type": "view",
+          "qualified": "public.v_values_wind_speed_obs"
+        }
+      ]
+    },
+    {
+      "schema": "public",
+      "name": "v_values_monthly",
+      "qualified": "public.v_values_monthly",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 10,
+      "outgoing_sources_count": 1,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_measurements",
+          "type": "view",
+          "qualified": "public.v_values_measurements"
+        }
+      ],
+      "drop_would_fail_without_cascade": true,
+      "needs_cascade": "YES",
+      "dependents": [
+        {
+          "schema": "public",
+          "name": "v_values_evaporation_monthly",
+          "type": "view",
+          "qualified": "public.v_values_evaporation_monthly"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_humidity_monthly",
+          "type": "view",
+          "qualified": "public.v_values_humidity_monthly"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_lachers_monthly",
+          "type": "view",
+          "qualified": "public.v_values_lachers_monthly"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_precipitation_monthly",
+          "type": "view",
+          "qualified": "public.v_values_precipitation_monthly"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_sediment_load_monthly",
+          "type": "view",
+          "qualified": "public.v_values_sediment_load_monthly"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_streamflow_monthly",
+          "type": "view",
+          "qualified": "public.v_values_streamflow_monthly"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_temperature_max_monthly",
+          "type": "view",
+          "qualified": "public.v_values_temperature_max_monthly"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_temperature_mean_monthly",
+          "type": "view",
+          "qualified": "public.v_values_temperature_mean_monthly"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_temperature_min_monthly",
+          "type": "view",
+          "qualified": "public.v_values_temperature_min_monthly"
+        },
+        {
+          "schema": "public",
+          "name": "v_values_wind_speed_monthly",
+          "type": "view",
+          "qualified": "public.v_values_wind_speed_monthly"
+        }
+      ]
+    },
+    {
+      "schema": "public",
+      "name": "v_values_precipitation_annual",
+      "qualified": "public.v_values_precipitation_annual",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_annual",
+          "type": "view",
+          "qualified": "public.v_values_annual"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_precipitation_monthly",
+      "qualified": "public.v_values_precipitation_monthly",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_monthly",
+          "type": "view",
+          "qualified": "public.v_values_monthly"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_precipitation_obs",
+      "qualified": "public.v_values_precipitation_obs",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_measurements",
+          "type": "view",
+          "qualified": "public.v_values_measurements"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_sediment_load_annual",
+      "qualified": "public.v_values_sediment_load_annual",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_annual",
+          "type": "view",
+          "qualified": "public.v_values_annual"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_sediment_load_monthly",
+      "qualified": "public.v_values_sediment_load_monthly",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_monthly",
+          "type": "view",
+          "qualified": "public.v_values_monthly"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_sediment_load_obs",
+      "qualified": "public.v_values_sediment_load_obs",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_measurements",
+          "type": "view",
+          "qualified": "public.v_values_measurements"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_streamflow_annual",
+      "qualified": "public.v_values_streamflow_annual",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_annual",
+          "type": "view",
+          "qualified": "public.v_values_annual"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_streamflow_monthly",
+      "qualified": "public.v_values_streamflow_monthly",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_monthly",
+          "type": "view",
+          "qualified": "public.v_values_monthly"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_streamflow_obs",
+      "qualified": "public.v_values_streamflow_obs",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_measurements",
+          "type": "view",
+          "qualified": "public.v_values_measurements"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_temperature_all_obs",
+      "qualified": "public.v_values_temperature_all_obs",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_measurements",
+          "type": "view",
+          "qualified": "public.v_values_measurements"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_temperature_max_annual",
+      "qualified": "public.v_values_temperature_max_annual",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_annual",
+          "type": "view",
+          "qualified": "public.v_values_annual"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_temperature_max_monthly",
+      "qualified": "public.v_values_temperature_max_monthly",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_monthly",
+          "type": "view",
+          "qualified": "public.v_values_monthly"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_temperature_max_obs",
+      "qualified": "public.v_values_temperature_max_obs",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_measurements",
+          "type": "view",
+          "qualified": "public.v_values_measurements"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_temperature_mean_annual",
+      "qualified": "public.v_values_temperature_mean_annual",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_annual",
+          "type": "view",
+          "qualified": "public.v_values_annual"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_temperature_mean_monthly",
+      "qualified": "public.v_values_temperature_mean_monthly",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_monthly",
+          "type": "view",
+          "qualified": "public.v_values_monthly"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_temperature_mean_obs",
+      "qualified": "public.v_values_temperature_mean_obs",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_measurements",
+          "type": "view",
+          "qualified": "public.v_values_measurements"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_temperature_min_annual",
+      "qualified": "public.v_values_temperature_min_annual",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_annual",
+          "type": "view",
+          "qualified": "public.v_values_annual"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_temperature_min_monthly",
+      "qualified": "public.v_values_temperature_min_monthly",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_monthly",
+          "type": "view",
+          "qualified": "public.v_values_monthly"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_temperature_min_obs",
+      "qualified": "public.v_values_temperature_min_obs",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_measurements",
+          "type": "view",
+          "qualified": "public.v_values_measurements"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_wind_speed_annual",
+      "qualified": "public.v_values_wind_speed_annual",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_annual",
+          "type": "view",
+          "qualified": "public.v_values_annual"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_wind_speed_monthly",
+      "qualified": "public.v_values_wind_speed_monthly",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_monthly",
+          "type": "view",
+          "qualified": "public.v_values_monthly"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    },
+    {
+      "schema": "public",
+      "name": "v_values_wind_speed_obs",
+      "qualified": "public.v_values_wind_speed_obs",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null,
+      "size_bytes": null,
+      "incoming_dependents_count": 0,
+      "outgoing_sources_count": 2,
+      "outgoing_sources": [
+        {
+          "schema": "public",
+          "name": "v_values_measurements",
+          "type": "view",
+          "qualified": "public.v_values_measurements"
+        },
+        {
+          "schema": "ref",
+          "name": "observed_properties",
+          "type": "table",
+          "qualified": "ref.observed_properties"
+        }
+      ],
+      "drop_would_fail_without_cascade": false,
+      "needs_cascade": "NO",
+      "dependents": []
+    }
+  ],
+  "catalog_objects": [
+    {
+      "qualified": "api.mv_barrage_catalog",
+      "status": "ABSENT",
+      "relkind": null,
+      "kind": null,
+      "owner": null,
+      "pg_size_pretty": null
+    },
+    {
+      "qualified": "api.mv_basin_catalog",
+      "status": "ABSENT",
+      "relkind": null,
+      "kind": null,
+      "owner": null,
+      "pg_size_pretty": null
+    },
+    {
+      "qualified": "api.mv_hydro_station_stats",
+      "status": "ABSENT",
+      "relkind": null,
+      "kind": null,
+      "owner": null,
+      "pg_size_pretty": null
+    },
+    {
+      "qualified": "api.mv_hydro_station_timeseries",
+      "status": "ABSENT",
+      "relkind": null,
+      "kind": null,
+      "owner": null,
+      "pg_size_pretty": null
+    },
+    {
+      "qualified": "api.mv_reach_catalog",
+      "status": "ABSENT",
+      "relkind": null,
+      "kind": null,
+      "owner": null,
+      "pg_size_pretty": null
+    },
+    {
+      "qualified": "api.mv_station_catalog",
+      "status": "ABSENT",
+      "relkind": null,
+      "kind": null,
+      "owner": null,
+      "pg_size_pretty": null
+    },
+    {
+      "qualified": "api.mv_subbasin_catalog",
+      "status": "ABSENT",
+      "relkind": null,
+      "kind": null,
+      "owner": null,
+      "pg_size_pretty": null
+    },
+    {
+      "qualified": "api.mv_scenario_catalog",
+      "status": "PRESENT",
+      "relkind": "m",
+      "kind": "materialized_view",
+      "owner": "postgres",
+      "pg_size_pretty": "24 kB"
+    },
+    {
+      "qualified": "api.v_catalog_properties",
+      "status": "PRESENT",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres",
+      "pg_size_pretty": null
+    }
+  ],
+  "public_pattern_views": [
+    {
+      "schema": "public",
+      "name": "v_catchments_geo",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_property_agg_rule",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_property_catalog",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_property_catalog_final",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_property_module",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_reaches_geo",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_reservoirs_geo",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stations_geo",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_bathymetry",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_bathymetry_global",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_evaporation",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_evaporation_global",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_humidity",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_humidity_global",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_lachers",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_lachers_global",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_precipitation",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_precipitation_global",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_property_station_timestep",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_property_timestep",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_sediment_load",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_sediment_load_global",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_streamflow",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_streamflow_global",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_temperature_all",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_temperature_all_global",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_temperature_max",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_temperature_max_global",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_temperature_mean",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_temperature_mean_global",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_temperature_min",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_temperature_min_global",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_wind_speed",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_stats_wind_speed_global",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_subbasins_geo",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_annual",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_bathymetry",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_evaporation_annual",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_evaporation_monthly",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_evaporation_obs",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_humidity_annual",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_humidity_monthly",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_humidity_obs",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_lachers_annual",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_lachers_monthly",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_lachers_obs",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_measurements",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_monthly",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_precipitation_annual",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_precipitation_monthly",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_precipitation_obs",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_sediment_load_annual",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_sediment_load_monthly",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_sediment_load_obs",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_streamflow_annual",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_streamflow_monthly",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_streamflow_obs",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_temperature_all_obs",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_temperature_max_annual",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_temperature_max_monthly",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_temperature_max_obs",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_temperature_mean_annual",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_temperature_mean_monthly",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_temperature_mean_obs",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_temperature_min_annual",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_temperature_min_monthly",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_temperature_min_obs",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_wind_speed_annual",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_wind_speed_monthly",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "name": "v_values_wind_speed_obs",
+      "relkind": "v",
+      "kind": "view",
+      "owner": "postgres"
+    }
+  ],
+  "public_pattern_counts": {
+    "v_stats_*": 26,
+    "v_values_*": 35,
+    "v_property_*": 4,
+    "v_*_geo": 5
+  },
+  "cascade_summary": {
+    "needs_cascade_count": 14,
+    "safe_drop_count": 105,
+    "needs_cascade": [
+      "api.v_dashboard_catchment_counts",
+      "api.v_dashboard_reservoir_counts",
+      "api.v_measurements_annual",
+      "api.v_measurements_latest",
+      "api.v_measurements_monthly",
+      "api.v_timeseries_enriched",
+      "public.v_property_catalog",
+      "public.v_property_module",
+      "public.v_stats_property_station_timestep",
+      "public.v_stats_property_timestep",
+      "public.v_ts_catalog",
+      "public.v_values_annual",
+      "public.v_values_measurements",
+      "public.v_values_monthly"
+    ]
+  }
+}

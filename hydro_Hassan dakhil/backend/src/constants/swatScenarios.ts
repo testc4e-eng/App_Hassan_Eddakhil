@@ -42,3 +42,71 @@ export const LEGACY_SWAT_SCENARIO_CODES = new Set<string>([
   "SWAT_OUTPUT",
   "SWAT_OUTPUT_01",
 ]);
+
+export const TECHNICAL_SWAT_IMPORT_SCENARIO_CODE = "SWAT_OUTPUT";
+export const TECHNICAL_SWAT_CORE_RUN_CODE = "SWAT_OUTPUT_01";
+
+export const TECHNICAL_SWAT_IMPORT_SCENARIO_CODES = new Set<string>([
+  TECHNICAL_SWAT_IMPORT_SCENARIO_CODE,
+]);
+
+export const TECHNICAL_SWAT_CORE_RUN_CODES = new Set<string>([
+  TECHNICAL_SWAT_CORE_RUN_CODE,
+]);
+
+export const LEGACY_SWAT_IMPORT_TO_RUN_CODE = new Map<string, string>([
+  [TECHNICAL_SWAT_IMPORT_SCENARIO_CODE, TECHNICAL_SWAT_CORE_RUN_CODE],
+]);
+
+export function resolveDefaultSwatRunCode(scenarioCode: string): string {
+  const code = String(scenarioCode || "").trim();
+  if (!code) return TECHNICAL_SWAT_CORE_RUN_CODE;
+  return LEGACY_SWAT_IMPORT_TO_RUN_CODE.get(code) || code;
+}
+
+export function validateSwatImportCodes(scenarioCode: string, runCode: string): string[] {
+  const scenario = String(scenarioCode || "").trim();
+  const run = String(runCode || "").trim();
+  const errors: string[] = [];
+
+  if (!scenario) {
+    errors.push("scenarioCode is required.");
+    return errors;
+  }
+
+  if (!run) {
+    errors.push("runCode is required.");
+    return errors;
+  }
+
+  if (scenario.startsWith("SWAT_") && !TECHNICAL_SWAT_IMPORT_SCENARIO_CODES.has(scenario)) {
+    errors.push(
+      `Unsupported technical SWAT scenarioCode "${scenario}". Allowed technical provenance code(s): ${[
+        ...TECHNICAL_SWAT_IMPORT_SCENARIO_CODES,
+      ].join(", ")}.`
+    );
+  }
+
+  if (run.startsWith("SWAT_") && !TECHNICAL_SWAT_CORE_RUN_CODES.has(run)) {
+    errors.push(
+      `Unsupported technical SWAT runCode "${run}". Allowed technical core run code(s): ${[
+        ...TECHNICAL_SWAT_CORE_RUN_CODES,
+      ].join(", ")}.`
+    );
+  }
+
+  const expectedRunCode = LEGACY_SWAT_IMPORT_TO_RUN_CODE.get(scenario);
+  if (expectedRunCode && run !== expectedRunCode) {
+    errors.push(
+      `scenarioCode "${scenario}" must use runCode "${expectedRunCode}", received "${run}".`
+    );
+  }
+
+  if (!expectedRunCode && TECHNICAL_SWAT_CORE_RUN_CODES.has(run)) {
+    errors.push(
+      `runCode "${run}" is reserved for the legacy technical provenance "${TECHNICAL_SWAT_IMPORT_SCENARIO_CODE}".`
+    );
+  }
+
+  return errors;
+}

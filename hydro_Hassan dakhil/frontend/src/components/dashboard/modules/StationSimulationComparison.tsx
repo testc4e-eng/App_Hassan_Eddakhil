@@ -138,6 +138,7 @@ export function StationSimulationComparison({
         scenarioCode: simulationRun?.scenario_code,
         startDate: filters.startDate || undefined,
         endDate: filters.endDate || undefined,
+        view: "paired",
       })
       .then((response) => {
         if (!alive) return;

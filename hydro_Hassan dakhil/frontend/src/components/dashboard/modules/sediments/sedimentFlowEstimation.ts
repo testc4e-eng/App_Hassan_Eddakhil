@@ -6,6 +6,7 @@ import type {
   SedimentEstimationRule,
   SedimentEstimationValidationError,
 } from "./sedimentFlowEstimation.types";
+import { EMPTY_VALUE_PLACEHOLDER } from "@/lib/display";
 
 // Source métier : tableau officiel des lois d’estimation du transport solide.
 // Ne pas modifier les coefficients sans validation de l’équipe métier.
@@ -94,7 +95,7 @@ export function formatNumber(
   value: number,
   options?: { minimumFractionDigits?: number; maximumFractionDigits?: number }
 ): string {
-  if (!Number.isFinite(value)) return "—";
+  if (!Number.isFinite(value)) return EMPTY_VALUE_PLACEHOLDER;
   const minimumFractionDigits = options?.minimumFractionDigits;
   const maximumFractionDigits = options?.maximumFractionDigits;
   if (minimumFractionDigits === 2 && maximumFractionDigits === 2) {

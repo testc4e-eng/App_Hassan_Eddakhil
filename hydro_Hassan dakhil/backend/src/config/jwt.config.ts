@@ -1,9 +1,16 @@
 import jwt from "jsonwebtoken";
 import type { AuthTokenPayload } from "../types/auth";
-import { requireEnv, getEnvOrDefault } from "./env";
+import { getEnvOrDefault, isWeakSecret, requireEnv, warnIfWeakSecret } from "./env";
 
 const JWT_SECRET = requireEnv("JWT_SECRET");
 const JWT_EXPIRES_IN = getEnvOrDefault("JWT_EXPIRES_IN", "8h");
+const isProd = String(process.env.NODE_ENV ?? "").trim().toLowerCase() === "production";
+
+if (isProd && isWeakSecret(JWT_SECRET)) {
+  throw new Error("JWT_SECRET must be replaced with a strong non-placeholder value in production");
+}
+
+warnIfWeakSecret("JWT_SECRET");
 
 export function signAuthToken(payload: AuthTokenPayload): string {
   return jwt.sign(payload, JWT_SECRET, {

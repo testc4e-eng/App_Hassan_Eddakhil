@@ -1,9 +1,16 @@
 import { NextFunction, Request, Response } from "express";
+import { AppError } from "../middleware/errorHandler";
 import { siltationService } from "../services/siltation.service";
 
 function qDamCode(req: Request): string {
   const raw = req.query.damCode;
-  if (typeof raw === "string" && raw.trim()) return raw.trim().toUpperCase();
+  if (typeof raw === "string" && raw.trim()) {
+    const normalized = raw.trim().toUpperCase();
+    if (!/^[A-Z0-9_-]+$/.test(normalized)) {
+      throw new AppError("Invalid damCode parameter.", 400);
+    }
+    return normalized;
+  }
   return "HASSAN_ADDAKHIL";
 }
 

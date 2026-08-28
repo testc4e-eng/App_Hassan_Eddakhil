@@ -1,5 +1,13 @@
 import { DatabaseService } from "./database.service";
-import { NORMALIZED_SWAT_SCENARIOS } from "../constants/swatScenarios";
+import {
+  NORMALIZED_SWAT_SCENARIOS,
+  NORMALIZED_SWAT_SCENARIO_BY_RUN_ID,
+} from "../constants/swatScenarios";
+import {
+  SWAT_EROSION_PROPERTY_DEFS,
+  VISIBLE_SWAT_SCENARIO_CODES,
+  resolveSwatStorageTimeStep,
+} from "../constants/swatDataSources";
 import {
   HASSAN_ADDAKHIL_STATION_IDS,
   isHassanAddakhilStationId,
@@ -10,55 +18,23 @@ import {
   pickSourceTimeStep,
 } from "../utils/aggregationAvailability";
 
-const EROSION_SCENARIO_CODES = [
-  "etat_actuel",
-  "ssp126",
-  "ssp245",
-  "ssp585",
-  "scenario_1",
-  "scenario_2",
-  "scenario_3",
-  "scenario_4",
-] as const;
+const EROSION_SCENARIO_CODES = VISIBLE_SWAT_SCENARIO_CODES;
+
+const EROSION_SCENARIO_NAME_BY_CODE: Record<(typeof EROSION_SCENARIO_CODES)[number], string> = {
+  etat_actuel: "Scénario état actuel",
+  ssp126: "Scénario changement climatique SSP126",
+  ssp245: "Scénario changement climatique SSP245",
+  ssp585: "Scénario changement climatique SSP585",
+  scenario_1: "Scénario reboisement pente 9 %",
+  scenario_2: "Scénario reboisement pente 15 %",
+  scenario_3: "Scénario reboisement pente 25 %",
+  scenario_4: "Scénario reboisement Buffer zone",
+};
 
 type AggInterval = "day" | "month" | "year";
 type ErosionTimeStep = "daily" | "monthly" | "annual";
 
 type ErosionScenarioCode = (typeof EROSION_SCENARIO_CODES)[number];
-const EROSION_TIME_STEP_PRIORITY: Record<ErosionTimeStep, number> = {
-  daily: 0,
-  monthly: 1,
-  annual: 2,
-};
-
-function mergeSubbasinAvailabilityRows(
-  ...sources: ErosionSubbasinAvailabilityRow[][]
-): ErosionSubbasinAvailabilityRow[] {
-  const map = new Map<string, ErosionSubbasinAvailabilityRow>();
-
-  for (const rows of sources) {
-    for (const row of rows) {
-      const key = `${row.subbasin_station_id}:${row.run_id}`;
-      const existing = map.get(key);
-      const rowPoints = Number(row.points_count || 0);
-      const existingPoints = Number(existing?.points_count || 0);
-      const rowHasPeriod = Boolean(row.min_date && row.max_date);
-      const existingHasPeriod = Boolean(existing?.min_date && existing?.max_date);
-
-      if (
-        !existing ||
-        rowPoints > existingPoints ||
-        (rowPoints === existingPoints && rowHasPeriod && !existingHasPeriod)
-      ) {
-        map.set(key, row);
-      }
-    }
-  }
-
-  return Array.from(map.values()).sort(
-    (a, b) => a.subbasin_id - b.subbasin_id || a.run_id - b.run_id
-  );
-}
 
 type ErosionSourceTable = "access.rch_results" | "access.sub_results";
 type ErosionEntityType = "rch" | "sub";
@@ -243,6 +219,31 @@ export const EROSION_VARIABLE_DEFS: ErosionVariableDef[] = [
   },
 ];
 
+const SHARED_EROSION_VARIABLE_DEFS: ErosionVariableDef[] =
+  SWAT_EROSION_PROPERTY_DEFS.map(
+    ({
+      property_id,
+      standard_name,
+      name,
+      unit,
+      description,
+      source_table,
+      source_column,
+      entity_type,
+      sort_order,
+    }) => ({
+      property_id,
+      standard_name,
+      name,
+      unit,
+      description,
+      source_table: source_table as ErosionSourceTable,
+      source_column,
+      entity_type: entity_type as ErosionEntityType,
+      sort_order,
+    })
+  );
+
 function toNumber(value: number | string | null | undefined): number | null {
   if (value === null || value === undefined) return null;
   const n = typeof value === "number" ? value : Number(value);
@@ -253,28 +254,8 @@ function toDateKey(value: string): string {
   return String(value).slice(0, 10);
 }
 
-function timeStepRank(timeStep: string | null | undefined): number {
-  if (!timeStep) return Number.POSITIVE_INFINITY;
-  if (timeStep === "daily") return EROSION_TIME_STEP_PRIORITY.daily;
-  if (timeStep === "monthly") return EROSION_TIME_STEP_PRIORITY.monthly;
-  if (timeStep === "annual") return EROSION_TIME_STEP_PRIORITY.annual;
-  return Number.POSITIVE_INFINITY;
-}
-
 function resolveStorageTimeStep(scenarioCode: string, catalogTimeStep: string): string {
-  if (scenarioCode.startsWith("scenario_")) {
-    return "yearly";
-  }
-  if (catalogTimeStep === "annual") {
-    return "yearly";
-  }
-  return catalogTimeStep || "daily";
-}
-
-function aggToErosionTimeStep(agg: AggInterval): ErosionTimeStep {
-  if (agg === "year") return "annual";
-  if (agg === "month") return "monthly";
-  return "daily";
+  return resolveSwatStorageTimeStep(scenarioCode, catalogTimeStep);
 }
 
 function periodKey(date: string, agg: AggInterval): string {
@@ -484,6 +465,20 @@ export class ErosionSwatSeriesService {
   }
 
   private async resolveScenario(runId: number): Promise<{ run_id: number; scenario_code: string; scenario_name: string } | null> {
+    const virtualScenario = NORMALIZED_SWAT_SCENARIO_BY_RUN_ID.get(runId);
+    if (
+      virtualScenario &&
+      (EROSION_SCENARIO_CODES as readonly string[]).includes(
+        virtualScenario.scenario_code
+      )
+    ) {
+      return {
+        run_id: virtualScenario.run_id,
+        scenario_code: virtualScenario.scenario_code,
+        scenario_name: virtualScenario.scenario_name,
+      };
+    }
+
     return this.queryOne<{ run_id: number; scenario_code: string; scenario_name: string }>(
       `
       SELECT run_id, scenario_code, scenario_name
@@ -498,7 +493,7 @@ export class ErosionSwatSeriesService {
 
   private getErosionVariableDefs(): Promise<ErosionVariableDef[]> {
     if (!this.variableDefsCache) {
-      this.variableDefsCache = Promise.resolve(EROSION_VARIABLE_DEFS);
+      this.variableDefsCache = Promise.resolve(SHARED_EROSION_VARIABLE_DEFS);
     }
     return this.variableDefsCache;
   }
@@ -519,6 +514,207 @@ export class ErosionSwatSeriesService {
       defRows.set(def.property_id, def);
     }
     const displayStationMaps = await this.getDisplayStationMaps();
+    const propertyIds = SHARED_EROSION_VARIABLE_DEFS.map((def) => def.property_id);
+
+    const fastCatalogRows = await this.query<{
+      ts_id: number;
+      station_id: number;
+      station_code: string;
+      station_name: string;
+      run_id: number;
+      scenario_code: string;
+      scenario_name: string;
+      time_step: string;
+      property_id: number;
+      property_name: string;
+      standard_name: string;
+      unit: string | null;
+      created_at: string | null;
+    }>(
+      `
+      SELECT
+        ts_id,
+        station_id,
+        station_code,
+        station_name,
+        run_id,
+        scenario_code,
+        scenario_name,
+        time_step,
+        property_id,
+        property_name,
+        standard_name,
+        unit,
+        ts_created_at::timestamptz::text AS created_at
+      FROM (
+        SELECT
+          v.*,
+          ROW_NUMBER() OVER (
+            PARTITION BY v.station_id, v.run_id, v.property_id
+            ORDER BY CASE v.time_step
+              WHEN 'daily' THEN 1
+              WHEN 'monthly' THEN 2
+              WHEN 'annual' THEN 3
+              ELSE 99
+            END,
+            v.ts_id
+          ) AS rn
+        FROM public.v_ts_catalog v
+        WHERE v.source_type = 'simulated'
+          AND v.scenario_code = ANY($1::text[])
+          AND v.property_id = ANY($2::int[])
+      ) ranked
+      WHERE rn = 1
+      ORDER BY station_id, run_id, property_id, ts_id
+      `,
+      [EROSION_SCENARIO_CODES, propertyIds]
+    );
+
+    if (!fastCatalogRows.length) {
+      return [];
+    }
+
+    const subbasinIds = fastCatalogRows
+      .filter((row) => row.station_code.startsWith("swat_sub_"))
+      .map((row) => this.extractStationSuffix(row.station_code))
+      .filter((value): value is number => value !== null);
+    const reachIds = fastCatalogRows
+      .filter((row) => row.station_code.startsWith("swat_rch_"))
+      .map((row) => this.extractStationSuffix(row.station_code))
+      .filter((value): value is number => value !== null);
+
+    const [validSubbasinRows, validReachRows] = await Promise.all([
+      subbasinIds.length
+        ? this.query<{ subbasin_id: number }>(
+            `
+            SELECT subbasin_id
+            FROM gis.subbasin_shapes
+            WHERE subbasin_id = ANY($1::int[])
+            `,
+            [[...new Set(subbasinIds)]]
+          )
+        : Promise.resolve([] as Array<{ subbasin_id: number }>),
+      reachIds.length
+        ? this.query<{ reach_id: number }>(
+            `
+            SELECT reach_id
+            FROM gis.reach_shapes
+            WHERE reach_id = ANY($1::int[])
+            `,
+            [[...new Set(reachIds)]]
+          )
+        : Promise.resolve([] as Array<{ reach_id: number }>),
+    ]);
+
+    const validSubbasinIds = new Set(validSubbasinRows.map((row) => Number(row.subbasin_id)));
+    const validReachIds = new Set(validReachRows.map((row) => Number(row.reach_id)));
+
+    const fastRankedRows = fastCatalogRows.filter((row) => {
+      const suffix = this.extractStationSuffix(row.station_code);
+      if (row.station_code.startsWith("swat_sub_")) {
+        return suffix !== null && validSubbasinIds.has(suffix);
+      }
+      if (row.station_code.startsWith("swat_rch_")) {
+        return suffix !== null && validReachIds.has(suffix);
+      }
+      return !/^swat_(sub|rch)_/i.test(row.station_code);
+    });
+
+    if (!fastRankedRows.length) {
+      return [];
+    }
+
+    const fastMeasurementStats = await this.query<{
+      ts_id: number;
+      n_measures: string | number;
+      dt_min: string | null;
+      dt_max: string | null;
+    }>(
+      `
+      SELECT
+        m.ts_id,
+        COUNT(*)::bigint AS n_measures,
+        MIN(m.datetime)::date::text AS dt_min,
+        MAX(m.datetime)::date::text AS dt_max
+      FROM core.measurements m
+      WHERE m.ts_id = ANY($1::int[])
+      GROUP BY m.ts_id
+      `,
+      [[...new Set(fastRankedRows.map((row) => Number(row.ts_id)))]]
+    );
+
+    const fastStatsByTsId = new Map(
+      fastMeasurementStats.map((row) => [
+        Number(row.ts_id),
+        {
+          n_measures: Number(row.n_measures || 0),
+          dt_min: row.dt_min,
+          dt_max: row.dt_max,
+        },
+      ])
+    );
+
+    const fastAvailability: ErosionAvailabilityRow[] = [];
+    for (const row of fastRankedRows) {
+      const def = defRows.get(Number(row.property_id));
+      if (!def) continue;
+      const displayStation = this.resolveDisplayStation(
+        {
+          station_id: Number(row.station_id),
+          station_code: String(row.station_code),
+          station_name: String(row.station_name),
+        },
+        def.entity_type,
+        displayStationMaps
+      );
+      const stats = fastStatsByTsId.get(Number(row.ts_id));
+      const nPoints = stats?.n_measures ?? 0;
+      const dtMin = stats?.dt_min ?? null;
+      const dtMax = stats?.dt_max ?? null;
+      const timeStep = (String(row.time_step) as ErosionTimeStep) || "daily";
+      fastAvailability.push({
+        ts_id: this.syntheticTsId(
+          Number(row.run_id),
+          displayStation.station_id,
+          def.property_id,
+          timeStep
+        ),
+        module_code: "erosion",
+        station_id: displayStation.station_id,
+        station_code: displayStation.station_code,
+        station_name: displayStation.station_name,
+        station_label: `${displayStation.station_code} - ${displayStation.station_name}`,
+        property_id: def.property_id,
+        property_name: def.name,
+        unit: def.unit,
+        standard_name: def.standard_name,
+        run_id: Number(row.run_id),
+        scenario_code: String(row.scenario_code),
+        scenario_name: String(row.scenario_name),
+        source_type: "simulated",
+        time_step: timeStep,
+        n_measures: nPoints,
+        dt_min: dtMin,
+        dt_max: dtMax,
+        v_min: null,
+        v_max: null,
+        created_at: row.created_at,
+        period_days:
+          dtMin && dtMax
+            ? Math.max(
+                0,
+                Math.round((new Date(dtMax).getTime() - new Date(dtMin).getTime()) / 86400000)
+              )
+            : null,
+      });
+    }
+
+    return fastAvailability.sort(
+      (a, b) =>
+        a.station_id - b.station_id ||
+        a.run_id - b.run_id ||
+        a.property_id - b.property_id
+    );
 
     const rows = await this.query<{
       station_id: number;
@@ -586,29 +782,41 @@ export class ErosionSwatSeriesService {
         END,
         v.ts_id
       `,
-      [EROSION_SCENARIO_CODES, EROSION_VARIABLE_DEFS.map((def) => def.property_id)]
+      [EROSION_SCENARIO_CODES, SHARED_EROSION_VARIABLE_DEFS.map((def) => def.property_id)]
     );
 
     const availability: ErosionAvailabilityRow[] = [];
     for (const row of rows) {
       const def = defRows.get(Number(row.property_id));
       if (!def) continue;
+      const variableDef = def as ErosionVariableDef;
       const displayStation = this.resolveDisplayStation(
         {
           station_id: Number(row.station_id),
           station_code: String(row.station_code),
           station_name: String(row.station_name),
         },
-        def.entity_type,
+        variableDef.entity_type,
         displayStationMaps
       );
       const nPoints = toNumber(row.n_measures) ?? 0;
       const timeStep = (String(row.time_step) as ErosionTimeStep) || "daily";
+      const dtMin = row.dt_min;
+      const dtMax = row.dt_max;
+      const periodDays =
+        dtMin && dtMax
+          ? Math.max(
+              0,
+              Math.round(
+                (new Date(dtMax as string).getTime() - new Date(dtMin as string).getTime()) / 86400000
+              )
+            )
+          : null;
       availability.push({
         ts_id: this.syntheticTsId(
           Number(row.run_id),
           displayStation.station_id,
-          def.property_id,
+          variableDef.property_id,
           timeStep
         ),
         module_code: "erosion",
@@ -616,30 +824,22 @@ export class ErosionSwatSeriesService {
         station_code: displayStation.station_code,
         station_name: displayStation.station_name,
         station_label: `${displayStation.station_code} - ${displayStation.station_name}`,
-        property_id: def.property_id,
-        property_name: def.name,
-        unit: def.unit,
-        standard_name: def.standard_name,
+        property_id: variableDef.property_id,
+        property_name: variableDef.name,
+        unit: variableDef.unit,
+        standard_name: variableDef.standard_name,
         run_id: Number(row.run_id),
         scenario_code: String(row.scenario_code),
         scenario_name: String(row.scenario_name),
         source_type: "simulated",
         time_step: timeStep,
         n_measures: nPoints,
-        dt_min: row.dt_min,
-        dt_max: row.dt_max,
+        dt_min: dtMin,
+        dt_max: dtMax,
         v_min: null,
         v_max: null,
         created_at: row.created_at,
-        period_days:
-          row.dt_min && row.dt_max
-            ? Math.max(
-                0,
-                Math.round(
-                  (new Date(row.dt_max).getTime() - new Date(row.dt_min).getTime()) / 86400000
-                )
-              )
-            : null,
+        period_days: periodDays,
       });
     }
 
@@ -1064,6 +1264,53 @@ export class ErosionSwatSeriesService {
     return this.resolveScenario(runId);
   }
 
+  private async getAvailabilityRowsForRun(
+    runId: number,
+    filters?: {
+      stationId?: number;
+      propertyId?: number;
+    }
+  ): Promise<ErosionAvailabilityRow[]> {
+    const scenario = await this.resolveScenario(runId);
+    const rows = await this.getAvailability({
+      stationId: filters?.stationId,
+      propertyId: filters?.propertyId,
+      scenarioCode: scenario?.scenario_code,
+    });
+    const exact = rows.filter((row) => row.run_id === runId);
+
+    if (exact.length || !scenario) {
+      return exact;
+    }
+
+    return rows.filter((row) => row.scenario_code === scenario.scenario_code);
+  }
+
+  private toCatalogRow(
+    row: ErosionAvailabilityRow,
+    requestedRunId: number
+  ): ErosionCatalogRow {
+    return {
+      ts_id: row.ts_id,
+      station_id: row.station_id,
+      station_code: row.station_code,
+      station_name: row.station_name,
+      property_id: row.property_id,
+      property_name: row.property_name,
+      unit: row.unit,
+      standard_name: row.standard_name,
+      run_id: requestedRunId,
+      scenario_code: row.scenario_code,
+      scenario_name: row.scenario_name,
+      source_type: row.source_type,
+      time_step: row.time_step,
+      ts_created_at: row.created_at || new Date().toISOString(),
+      n_points: row.n_measures,
+      start_date: row.dt_min,
+      end_date: row.dt_max,
+    };
+  }
+
   async getStationsForRun(runId: number): Promise<
     Array<{
       station_id: number;
@@ -1071,8 +1318,7 @@ export class ErosionSwatSeriesService {
       station_name: string;
     }>
   > {
-    const rows = await this.getAvailability({});
-    const filtered = rows.filter((row) => row.run_id === runId);
+    const filtered = await this.getAvailabilityRowsForRun(runId);
     const map = new Map<number, { station_id: number; station_code: string; station_name: string }>();
     for (const row of filtered) {
       if (!map.has(row.station_id)) {
@@ -1087,28 +1333,8 @@ export class ErosionSwatSeriesService {
   }
 
   async getCatalog(stationId: number, runId: number): Promise<ErosionCatalogRow[]> {
-    const rows = await this.getAvailability({ stationId });
-    const direct = rows
-      .filter((row) => row.run_id === runId)
-      .map((row) => ({
-        ts_id: row.ts_id,
-        station_id: row.station_id,
-        station_code: row.station_code,
-        station_name: row.station_name,
-        property_id: row.property_id,
-        property_name: row.property_name,
-        unit: row.unit,
-        standard_name: row.standard_name,
-        run_id: row.run_id,
-        scenario_code: row.scenario_code,
-        scenario_name: row.scenario_name,
-        source_type: row.source_type,
-        time_step: row.time_step,
-        ts_created_at: row.created_at || new Date().toISOString(),
-        n_points: row.n_measures,
-        start_date: row.dt_min,
-        end_date: row.dt_max,
-      }))
+    const direct = (await this.getAvailabilityRowsForRun(runId, { stationId }))
+      .map((row) => this.toCatalogRow(row, runId))
       .sort((a, b) => a.property_id - b.property_id);
 
     if (direct.length) {
@@ -1121,37 +1347,23 @@ export class ErosionSwatSeriesService {
     }
 
     const suffix = String(subbasinId);
-    const fallbackRows = (await this.getAvailability({})).filter((row) => {
-      if (row.run_id !== runId) return false;
+    const fallbackRows = (await this.getAvailabilityRowsForRun(runId)).filter(
+      (row) => {
       return row.station_code === `swat_sub_${suffix}` || row.station_code === `swat_rch_${suffix}`;
-    });
+      }
+    );
 
     return fallbackRows
-      .map((row) => ({
-        ts_id: row.ts_id,
-        station_id: row.station_id,
-        station_code: row.station_code,
-        station_name: row.station_name,
-        property_id: row.property_id,
-        property_name: row.property_name,
-        unit: row.unit,
-        standard_name: row.standard_name,
-        run_id: row.run_id,
-        scenario_code: row.scenario_code,
-        scenario_name: row.scenario_name,
-        source_type: row.source_type,
-        time_step: row.time_step,
-        ts_created_at: row.created_at || new Date().toISOString(),
-        n_points: row.n_measures,
-        start_date: row.dt_min,
-        end_date: row.dt_max,
-      }))
+      .map((row) => this.toCatalogRow(row, runId))
       .sort((a, b) => a.property_id - b.property_id);
   }
 
   async getDateRange(stationId: number, runId: number, propertyId: number): Promise<ErosionDateRangeRow> {
-    const rows = await this.getAvailability({ stationId, propertyId });
-    const row = rows.find((item) => item.run_id === runId);
+    const rows = await this.getAvailabilityRowsForRun(runId, {
+      stationId,
+      propertyId,
+    });
+    const row = rows[0];
     if (!row) {
       const subbasinId = await this.resolveMappedSubbasinId(stationId);
       if (subbasinId === null) {
@@ -1159,9 +1371,10 @@ export class ErosionSwatSeriesService {
       }
 
       const suffix = String(subbasinId);
-      const fallbackRow = (await this.getAvailability({ propertyId })).find(
+      const fallbackRow = (await this.getAvailabilityRowsForRun(runId, {
+        propertyId,
+      })).find(
         (item) =>
-          item.run_id === runId &&
           (item.station_code === `swat_sub_${suffix}` || item.station_code === `swat_rch_${suffix}`)
       );
 
@@ -1427,37 +1640,140 @@ export class ErosionSwatSeriesService {
   }
 
   async getSubbasinAvailability(subbasinStationId?: number): Promise<ErosionSubbasinAvailabilityRow[]> {
-    const sources: ErosionSubbasinAvailabilityRow[][] = [];
-
     try {
-      const accessRows = await this.getSubbasinAvailabilityFromAccessModelRuns(subbasinStationId);
-      if (accessRows.length) sources.push(accessRows);
-    } catch (error) {
-      console.error("[erosion] subbasin availability from access.sub_results failed", error);
-    }
-
-    if (await this.db.relationExists("public.v_ts_catalog_enriched")) {
-      try {
-        const catalogRows = await this.getSubbasinAvailabilityFromCatalog(subbasinStationId);
-        if (catalogRows.length) sources.push(catalogRows);
-      } catch (error) {
-        console.error("[erosion] subbasin availability from catalog failed", error);
+      const accessScenarioRows = await this.getSubbasinAvailabilityFromAccessScenarioSummary(
+        subbasinStationId
+      );
+      if (accessScenarioRows.length) {
+        return accessScenarioRows;
       }
+    } catch (error) {
+      console.error("[erosion] subbasin availability scenario summary failed", error);
     }
 
     if (await this.db.relationExists("api.mv_hydro_station_stats")) {
       try {
         const matRows = await this.getSubbasinAvailabilityFromMatView(subbasinStationId);
-        if (matRows.length) sources.push(matRows);
+        if (matRows.length) return matRows;
       } catch (error) {
         console.error("[erosion] subbasin availability from matview failed", error);
       }
     }
 
-    const merged = mergeSubbasinAvailabilityRows(...sources);
-    if (merged.length) return merged;
+    if (await this.db.relationExists("public.v_ts_catalog_enriched")) {
+      try {
+        const catalogRows = await this.getSubbasinAvailabilityFromCatalog(subbasinStationId);
+        if (catalogRows.length) return catalogRows;
+      } catch (error) {
+        console.error("[erosion] subbasin availability from catalog failed", error);
+      }
+    }
+
+    try {
+      const accessRows = await this.getSubbasinAvailabilityFromAccessModelRuns(subbasinStationId);
+      if (accessRows.length) return accessRows;
+    } catch (error) {
+      console.error("[erosion] subbasin availability from access.sub_results failed", error);
+    }
 
     return this.getSubbasinAvailabilityFromAccessVirtual(subbasinStationId);
+  }
+
+  private async getSubbasinAvailabilityFromAccessScenarioSummary(
+    subbasinStationId?: number
+  ): Promise<ErosionSubbasinAvailabilityRow[]> {
+    const params: unknown[] = [EROSION_SCENARIO_CODES];
+    const stationFilter =
+      subbasinStationId == null
+        ? ""
+        : (() => {
+            params.push(subbasinStationId);
+            return `AND st.station_id = $${params.length}`;
+          })();
+
+    const rows = await this.query<{
+      subbasin_station_id: number;
+      subbasin_id: number;
+      station_code: string;
+      subbasin_name: string;
+      run_id: number | null;
+      scenario_code: string;
+      points_count: string | number;
+      min_date: string | null;
+      max_date: string | null;
+    }>(
+      `
+      WITH run_map AS (
+        SELECT DISTINCT ON (mr.scenario_code)
+          mr.scenario_code,
+          mr.run_id
+        FROM core.model_runs mr
+        WHERE mr.scenario_code = ANY($1::text[])
+        ORDER BY mr.scenario_code, mr.run_id
+      ),
+      availability AS (
+        SELECT
+          st.station_id AS subbasin_station_id,
+          s.sub_code::int AS subbasin_id,
+          st.station_code,
+          st.name AS subbasin_name,
+          s.scenario_code,
+          COUNT(*)::bigint AS points_count,
+          MIN(s.period_date)::date::text AS min_date,
+          MAX(s.period_date)::date::text AS max_date
+        FROM access.sub_results s
+        JOIN core.stations st
+          ON st.station_code = ('swat_sub_' || s.sub_code::text)
+        WHERE s.scenario_code = ANY($1::text[])
+          AND s.syld_t_ha IS NOT NULL
+          ${stationFilter}
+        GROUP BY
+          st.station_id,
+          s.sub_code,
+          st.station_code,
+          st.name,
+          s.scenario_code
+      )
+      SELECT
+        a.subbasin_station_id,
+        a.subbasin_id,
+        a.station_code,
+        a.subbasin_name,
+        rm.run_id,
+        a.scenario_code,
+        a.points_count,
+        a.min_date,
+        a.max_date
+      FROM availability a
+      LEFT JOIN run_map rm
+        ON rm.scenario_code = a.scenario_code
+      ORDER BY a.subbasin_id, a.scenario_code
+      `,
+      params
+    );
+
+    return rows
+      .filter((row) => Number.isFinite(Number(row.run_id)))
+      .map((row) => ({
+        subbasin_station_id: Number(row.subbasin_station_id),
+        subbasin_id: Number(row.subbasin_id),
+        station_code: String(row.station_code),
+        subbasin_name: String(row.subbasin_name),
+        run_id: Number(row.run_id),
+        scenario_code: String(row.scenario_code),
+        scenario_name:
+          EROSION_SCENARIO_NAME_BY_CODE[row.scenario_code as ErosionScenarioCode] ||
+          String(row.scenario_code),
+        source_type: "simulated",
+        time_step: "daily",
+        property_id: 33,
+        property_name: "SWAT Dégradation spécifique (t/ha)",
+        standard_name: "SWAT_SYLDT_HA",
+        unit: "t/ha",
+        points_count: Number(row.points_count || 0),
+        min_date: row.min_date,
+        max_date: row.max_date,
+      }));
   }
 
   private async getSubbasinAvailabilityFromAccessVirtual(
@@ -1704,6 +2020,153 @@ export class ErosionSwatSeriesService {
       where.push(`v.station_id = $${params.length}`);
     }
 
+    const fastCatalogRows = await this.query<{
+      ts_id: number;
+      subbasin_station_id: number;
+      subbasin_id: number | null;
+      station_code: string;
+      subbasin_name: string;
+      run_id: number;
+      scenario_code: string;
+      scenario_name: string;
+      source_type: string;
+      time_step: string;
+      property_id: number;
+      property_name: string;
+      standard_name: string;
+      unit: string | null;
+    }>(
+      `
+      SELECT
+        ts_id,
+        subbasin_station_id,
+        subbasin_id,
+        station_code,
+        subbasin_name,
+        run_id,
+        scenario_code,
+        scenario_name,
+        source_type,
+        time_step,
+        property_id,
+        property_name,
+        standard_name,
+        unit
+      FROM (
+        SELECT
+          v.ts_id,
+          v.station_id AS subbasin_station_id,
+          NULLIF(replace(v.station_code, 'swat_sub_', ''), '')::int AS subbasin_id,
+          v.station_code,
+          v.station_name AS subbasin_name,
+          v.run_id,
+          v.scenario_code,
+          v.scenario_name,
+          v.source_type,
+          v.time_step,
+          v.property_id,
+          v.property_name,
+          v.standard_name,
+          v.unit,
+          ROW_NUMBER() OVER (
+            PARTITION BY v.station_id, v.run_id, v.scenario_code, v.property_id
+            ORDER BY CASE v.time_step
+              WHEN 'daily' THEN 1
+              WHEN 'monthly' THEN 2
+              WHEN 'annual' THEN 3
+              ELSE 99
+            END,
+            v.ts_id
+          ) AS rn
+        FROM public.v_ts_catalog_enriched v
+        WHERE ${where.join(" AND ")}
+          AND v.station_code ~ '^swat_sub_[0-9]+$'
+      ) ranked
+      WHERE rn = 1
+      ORDER BY subbasin_id, run_id
+      `,
+      params
+    );
+
+    const fastFilteredRows = fastCatalogRows.filter(
+      (row): row is typeof row & { subbasin_id: number } => Number.isFinite(Number(row.subbasin_id))
+    );
+    if (!fastFilteredRows.length) {
+      return [];
+    }
+
+    const fastValidSubbasinIds = new Set(
+      (
+        await this.query<{ subbasin_id: number }>(
+          `
+          SELECT subbasin_id
+          FROM gis.subbasin_shapes
+          WHERE subbasin_id = ANY($1::int[])
+          `,
+          [[...new Set(fastFilteredRows.map((row) => Number(row.subbasin_id)))]]
+        )
+      ).map((row) => Number(row.subbasin_id))
+    );
+
+    const fastRankedRows = fastFilteredRows.filter((row) =>
+      fastValidSubbasinIds.has(Number(row.subbasin_id))
+    );
+    if (!fastRankedRows.length) {
+      return [];
+    }
+
+    const fastMeasurementStats = await this.query<{
+      ts_id: number;
+      points_count: string | number;
+      min_date: string | null;
+      max_date: string | null;
+    }>(
+      `
+      SELECT
+        m.ts_id,
+        COUNT(*)::bigint AS points_count,
+        MIN(m.datetime)::date::text AS min_date,
+        MAX(m.datetime)::date::text AS max_date
+      FROM core.measurements m
+      WHERE m.ts_id = ANY($1::int[])
+      GROUP BY m.ts_id
+      `,
+      [[...new Set(fastRankedRows.map((row) => Number(row.ts_id)))]]
+    );
+
+    const fastStatsByTsId = new Map(
+      fastMeasurementStats.map((row) => [
+        Number(row.ts_id),
+        {
+          points_count: Number(row.points_count || 0),
+          min_date: row.min_date,
+          max_date: row.max_date,
+        },
+      ])
+    );
+
+    return fastRankedRows.map((row) => {
+      const stats = fastStatsByTsId.get(Number(row.ts_id));
+      return {
+        subbasin_station_id: Number(row.subbasin_station_id),
+        subbasin_id: Number(row.subbasin_id),
+        station_code: String(row.station_code),
+        subbasin_name: String(row.subbasin_name),
+        run_id: Number(row.run_id),
+        scenario_code: String(row.scenario_code),
+        scenario_name: String(row.scenario_name),
+        source_type: String(row.source_type),
+        time_step: String(row.time_step) as ErosionTimeStep,
+        property_id: Number(row.property_id),
+        property_name: String(row.property_name),
+        standard_name: String(row.standard_name),
+        unit: row.unit ?? null,
+        points_count: stats?.points_count ?? 0,
+        min_date: stats?.min_date ?? null,
+        max_date: stats?.max_date ?? null,
+      };
+    });
+
     const rows = await this.query<{
       subbasin_station_id: number;
       subbasin_id: number;
@@ -1751,7 +2214,7 @@ export class ErosionSwatSeriesService {
               ELSE 99
             END
           ) AS rn
-        FROM public.v_ts_catalog_enriched v
+        FROM public.v_ts_catalog v
         WHERE ${where.join(" AND ")}
           AND v.station_code ~ '^swat_sub_[0-9]+$'
           AND EXISTS (

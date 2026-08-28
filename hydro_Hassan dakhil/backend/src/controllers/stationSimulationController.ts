@@ -22,6 +22,7 @@ export class StationSimulationController {
       const scenarioCode = qString(req.query.scenarioCode).trim() || undefined;
       const startDate = qString(req.query.startDate).trim() || undefined;
       const endDate = qString(req.query.endDate).trim() || undefined;
+      const view = qString(req.query.view).trim().toLowerCase() === "paired" ? "paired" : "full";
 
       if (!stationId) {
         return res.status(400).json({ success: false, error: "Invalid stationId" });
@@ -33,6 +34,7 @@ export class StationSimulationController {
         scenarioCode,
         startDate,
         endDate,
+        view,
       });
 
       res.json({ success: true, data });

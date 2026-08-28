@@ -13,7 +13,10 @@ ENV VITE_API_URL=$VITE_API_URL
 COPY package.json package-lock.json ./
 RUN npm ci
 
-COPY . .
+COPY index.html nginx.conf vite.config.ts postcss.config.js tailwind.config.ts tsconfig.json tsconfig.app.json tsconfig.node.json ./
+COPY scripts/check-utf8.mjs ./scripts/check-utf8.mjs
+COPY public ./public
+COPY src ./src
 
 RUN npm run build
 

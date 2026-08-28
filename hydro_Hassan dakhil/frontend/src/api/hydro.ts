@@ -223,13 +223,20 @@ export const hydroApi = {
 
   getStationSimulations: (
     stationId: number,
-    options?: { runId?: number; scenarioCode?: string; startDate?: string; endDate?: string }
+    options?: {
+      runId?: number;
+      scenarioCode?: string;
+      startDate?: string;
+      endDate?: string;
+      view?: "full" | "paired";
+    }
   ) => {
     const query = qs({
       runId: options?.runId,
       scenarioCode: options?.scenarioCode,
       startDate: options?.startDate,
       endDate: options?.endDate,
+      view: options?.view,
     });
     return apiGet<StationSimulationResponse>(`/stations/${stationId}/simulations${query}`);
   },

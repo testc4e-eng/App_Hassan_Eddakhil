@@ -133,6 +133,7 @@ type GetStationSimulationParams = {
   scenarioCode?: string;
   startDate?: string;
   endDate?: string;
+  view?: "full" | "paired";
 };
 
 function formatScenarioNoDataLabel(requestedScenarioCode: string, scenarioLabel: string): string {
@@ -771,15 +772,19 @@ export class StationSimulationService {
       NORMALIZED_SWAT_SCENARIO_BY_CODE.get(requestedScenarioCode)?.scenario_name ||
       scenario.scenario_name ||
       requestedScenarioCode;
+    const responseView = params.view === "paired" ? "paired" : "full";
+    const includeRawSeries = responseView === "full";
 
     const [observed, subbasin, simulated] = await Promise.all([
       this.loadObservedStreamflow(params.stationId, params.startDate, params.endDate),
-      this.loadSubbasinResults(
-        mapping.subbasin_id,
-        requestedScenarioCode,
-        params.startDate,
-        params.endDate
-      ),
+      includeRawSeries
+        ? this.loadSubbasinResults(
+            mapping.subbasin_id,
+            requestedScenarioCode,
+            params.startDate,
+            params.endDate
+          )
+        : Promise.resolve([] as SubbasinSeriesPoint[]),
       this.loadSimulatedFlow(
         params.stationId,
         mapping.subbasin_id,
@@ -792,6 +797,9 @@ export class StationSimulationService {
 
     const paired = this.buildPairedSeries(observed.points, simulated);
     const metrics = computeMetrics(paired);
+    const observedSummary = summarizeDates(observed.points);
+    const subbasinSummary = summarizeDates(subbasin);
+    const simulatedSummary = summarizeDates(simulated);
 
     if (!observed.points.length) {
       warnings.push(`Aucune série observée de débit trouvée pour cette station.`);
@@ -824,16 +832,16 @@ export class StationSimulationService {
       },
       observed: {
         tsId: observed.tsId,
-        ...summarizeDates(observed.points),
-        points: observed.points,
+        ...observedSummary,
+        points: includeRawSeries ? observed.points : [],
       },
       subbasin: {
-        ...summarizeDates(subbasin),
-        points: subbasin,
+        ...subbasinSummary,
+        points: includeRawSeries ? subbasin : [],
       },
       simulated: {
-        ...summarizeDates(simulated),
-        points: simulated,
+        ...simulatedSummary,
+        points: includeRawSeries ? simulated : [],
       },
       paired,
       metrics,

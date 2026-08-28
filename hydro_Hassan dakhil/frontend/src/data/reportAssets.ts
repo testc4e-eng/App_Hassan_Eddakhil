@@ -5,6 +5,7 @@ export type MissionReport = {
   fileName: string;
   type: MissionReportType;
   url: string;
+  category?: string;
 };
 
 export type ThematicMap = {
@@ -30,6 +31,10 @@ function reportUrl(fileName: string): string {
   return `${REPORTS_BASE}/${encodeURIComponent(fileName)}`;
 }
 
+function absoluteReportUrl(path: string): string {
+  return encodeURI(path);
+}
+
 function resolveReportType(fileName: string): MissionReportType {
   const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
   if (ext === "pdf") return "PDF";
@@ -49,6 +54,21 @@ export const missionReports: MissionReport[] = [
     fileName: "Mission II 19052026_VDf_vcremarques.pdf",
     type: "PDF",
     url: reportUrl("Mission II 19052026_VDf_vcremarques.pdf"),
+  },
+  {
+    title: "Rapport Mission III",
+    fileName: "20260703_Mission III_Vdefinitive_remani\u00E9eV3.pdf",
+    type: "PDF",
+    url: reportUrl("20260703_Mission III_Vdefinitive_remani\u00E9eV3.pdf"),
+  },
+  {
+    title: "Programme d'intervention prioritaire",
+    fileName: "programme d'intervention prioritaire.pdf",
+    type: "PDF",
+    category: "Rapport métier",
+    url: absoluteReportUrl(
+      "/data/hassan/Classification des zones prioritaires et Programme des  interventions anti-érosives/programme d'intervention prioritaire.pdf"
+    ),
   },
 ];
 

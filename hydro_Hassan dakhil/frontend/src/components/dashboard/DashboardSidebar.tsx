@@ -9,6 +9,7 @@ import {
   Mountain,
   MapPin,
   FileText,
+  Target,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -21,7 +22,8 @@ export type DashboardSection =
   | "maps"
   | "simulatedData"
   | "dataScan"
-  | "reports";
+  | "reports"
+  | "interventionProgram";
 
 interface DashboardSidebarProps {
   activeSection: DashboardSection;
@@ -61,6 +63,12 @@ const SIDEBAR_SECTIONS: SidebarGroup[] = [
         label: "Sédiments",
         icon: Mountain,
         color: "text-amber-600",
+      },
+      {
+        id: "interventionProgram",
+        label: "Programme d'intervention",
+        icon: Target,
+        color: "text-teal-500",
       },
     ],
   },

@@ -5,12 +5,53 @@ import { PoolClient } from "pg";
 export class DatabaseService {
   private pool = db.getPool();
   private relationExistsCache = new Map<string, Promise<boolean>>();
+  private slowQueryThresholdMs = Number(
+    process.env.SLOW_QUERY_LOG_MS ??
+      (process.env.NODE_ENV === "production" ? "0" : "1000")
+  );
+
+  private queryPreview(text: string): string {
+    return text.replace(/\s+/g, " ").trim().slice(0, 220);
+  }
+
+  private logSlowQuery(args: {
+    text: string;
+    durationMs: number;
+    rowCount?: number;
+    error?: Error;
+  }) {
+    if (
+      !Number.isFinite(this.slowQueryThresholdMs) ||
+      this.slowQueryThresholdMs <= 0 ||
+      args.durationMs < this.slowQueryThresholdMs
+    ) {
+      return;
+    }
+
+    console.warn("[db][slow-query]", {
+      durationMs: args.durationMs,
+      rowCount: args.rowCount ?? null,
+      sql: this.queryPreview(args.text),
+      error: args.error?.message ?? null,
+    });
+  }
 
   async query<T = any>(text: string, params?: any[]): Promise<T[]> {
+    const startedAt = Date.now();
     try {
       const result = await this.pool.query(text, params);
+      this.logSlowQuery({
+        text,
+        durationMs: Date.now() - startedAt,
+        rowCount: result.rowCount ?? result.rows.length,
+      });
       return result.rows;
     } catch (error) {
+      this.logSlowQuery({
+        text,
+        durationMs: Date.now() - startedAt,
+        error: error instanceof Error ? error : undefined,
+      });
       console.error("Database query error:", error);
 
       // Gestion type-safe de l'erreur

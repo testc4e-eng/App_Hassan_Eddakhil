@@ -3,6 +3,7 @@
 **/.env
 **/.env.*
 !**/.env.example
+**/.env.local
 **/*.tsbuildinfo
 **/__pycache__/
 **/*.pyc
@@ -24,6 +25,7 @@ home_page.png
 hydraulic_page.png
 lot*_*.png
 *.log
+*.dump
 hydro_Hassan dakhil/hassan dakhil/
 hydro_Hassan dakhil/archive/deprecated/06_1_Database synthese/backup/
 .codex-artifacts/
@@ -32,5 +34,8 @@ Donnée-etat actuel/
 Données_Hydro/
 Scenarios/
 hassan dakhil/
-hydro_hd_1714.sql
 *.backup
+tmp/
+
+# Dumps locaux PostgreSQL - ne pas pousser
+/hydro_hd_2808.sql

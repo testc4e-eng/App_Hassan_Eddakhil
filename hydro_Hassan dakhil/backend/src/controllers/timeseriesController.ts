@@ -4,6 +4,14 @@ import { timeseriesService } from "../services/timeseries.service";
 
 type AggInterval = "day" | "month" | "year";
 
+function parseIntList(value: unknown): number[] {
+  const raw = Array.isArray(value) ? value.join(",") : String(value || "");
+  return raw
+    .split(",")
+    .map((item) => Number(item.trim()))
+    .filter((item) => Number.isFinite(item));
+}
+
 export class TimeseriesController {
   async health(req: Request, res: Response, next: NextFunction) {
     try {
@@ -107,6 +115,10 @@ export class TimeseriesController {
         ? String(req.query.startDate)
         : undefined;
       const endDate = req.query.endDate ? String(req.query.endDate) : undefined;
+      const propertyIds = parseIntList(req.query.propertyIds);
+      const maxPoints = req.query.maxPoints
+        ? Number(req.query.maxPoints)
+        : undefined;
 
       if (!stationId || !runId || !moduleCode) {
         return res.status(400).json({
@@ -119,7 +131,10 @@ export class TimeseriesController {
         stationId,
         runId,
         moduleCode,
-      }, agg ?? "day", startDate, endDate);
+      }, agg ?? "day", startDate, endDate, {
+        propertyIds,
+        maxPoints,
+      });
       console.debug("[timeseries/bundle] params", {
         stationId,
         runId,
@@ -127,6 +142,8 @@ export class TimeseriesController {
         agg: agg ?? null,
         startDate: startDate ?? null,
         endDate: endDate ?? null,
+        propertyIds,
+        maxPoints: maxPoints ?? null,
         catalogCount: bundle.catalog.length,
       });
 
@@ -149,6 +166,78 @@ export class TimeseriesController {
           aggregated: bundle.aggregated,
         },
       });
+    } catch (e) {
+      next(e);
+    }
+  }
+
+  async getStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      const stationId = req.query.stationId ? Number(req.query.stationId) : undefined;
+      const runId = req.query.runId ? Number(req.query.runId) : undefined;
+      const moduleCode = req.query.module ? String(req.query.module) : undefined;
+      const agg = req.query.agg ? (String(req.query.agg) as AggInterval) : "day";
+      const startDate = req.query.startDate ? String(req.query.startDate) : undefined;
+      const endDate = req.query.endDate ? String(req.query.endDate) : undefined;
+      const propertyIds = parseIntList(req.query.propertyIds);
+
+      if (!stationId || !runId || !moduleCode) {
+        return res.status(400).json({
+          success: false,
+          error: "stationId, runId, module sont requis",
+        });
+      }
+
+      const data = await timeseriesService.getStats({
+        filter: { stationId, runId, moduleCode },
+        agg,
+        startDate,
+        endDate,
+        propertyIds,
+      });
+
+      return res.json({ success: true, data });
+    } catch (e) {
+      next(e);
+    }
+  }
+
+  async getTable(req: Request, res: Response, next: NextFunction) {
+    try {
+      const stationId = req.query.stationId ? Number(req.query.stationId) : undefined;
+      const runId = req.query.runId ? Number(req.query.runId) : undefined;
+      const moduleCode = req.query.module ? String(req.query.module) : undefined;
+      const agg = req.query.agg ? (String(req.query.agg) as AggInterval) : "day";
+      const startDate = req.query.startDate ? String(req.query.startDate) : undefined;
+      const endDate = req.query.endDate ? String(req.query.endDate) : undefined;
+      const propertyIds = parseIntList(req.query.propertyIds);
+      const page = req.query.page ? Number(req.query.page) : 1;
+      const pageSize = req.query.page_size ? Number(req.query.page_size) : 25;
+      const search = req.query.search ? String(req.query.search) : undefined;
+      const sortColumn = req.query.sortColumn ? String(req.query.sortColumn) : undefined;
+      const sortDirection = req.query.sortDirection === "asc" ? "asc" : "desc";
+
+      if (!stationId || !runId || !moduleCode) {
+        return res.status(400).json({
+          success: false,
+          error: "stationId, runId, module sont requis",
+        });
+      }
+
+      const data = await timeseriesService.getTablePage({
+        filter: { stationId, runId, moduleCode },
+        agg,
+        startDate,
+        endDate,
+        propertyIds,
+        page,
+        pageSize,
+        search,
+        sortColumn,
+        sortDirection,
+      });
+
+      return res.json({ success: true, data });
     } catch (e) {
       next(e);
     }

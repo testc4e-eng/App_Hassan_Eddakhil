@@ -1,5 +1,5 @@
 // frontend/src/components/map/ThematicLegend.tsx
-import { valueToColor, formatValue } from "@/lib/thematicColors";
+import { formatValue } from "@/lib/thematicColors";
 
 type Props = {
   title: string;

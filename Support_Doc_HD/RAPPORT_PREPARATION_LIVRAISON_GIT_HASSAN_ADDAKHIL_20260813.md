@@ -93,27 +93,31 @@ Emails de seed dans `.env.example` = nominatifs, pas des mots de passe.
 
 ---
 
-## Commit prêt
+## Commit créé
 
-**OUI** — pour la liste ciblée seulement, **après validation utilisateur**.  
-**NON** — pour un commit de tout le working tree.
+**OUI**
 
-`git diff --cached` non disponible : staging volontairement non préparé.
+Hash : `ef62eae98af1c9991ee2287b969cf53f2051db88` (`ef62eae`)
 
----
+Message : `chore: finalise stabilisation et sécurisation Hassan Addakhil`
 
-## Message proposé
+Fichiers commités : **38** (+7967 / −334)
 
-```
-chore: finalise stabilisation et sécurisation Hassan Addakhil
-```
+- sécurité : `adminDbConfig.routes.ts`, `errorHandler.ts`, `app.ts`, `adminDbConfig.ts`
+- qualité : tests backend/frontend, vitest, eslint, check-utf8, `package.json` + `package-lock.json` (Vitest / ESLint / Supertest / Testing Library)
+- rapports : 5 fichiers `Support_Doc_HD` + rapport final racine
 
-Alternative acceptable : `fix: finalise nettoyage sécurité et stabilisation Hassan Addakhil`
+Backend check : **OK** (31 tests)  
+Frontend check : **OK** (16 tests, 34 warnings)  
+Health 5007 / 8090 : **200**
+
+Push : **NON**
+
+Working tree restant : **203** lignes porcelain (suppressions `AUDIT_GOUVERNANCE_DONNEES/`, diffs métier, `archive/`, reste `Support_Doc_HD/`, etc.) — volontairement hors commit.
 
 ---
 
 ## Point d’arrêt
 
 Aucun `git add .`  
-Aucun `git commit`  
 Aucun `git push`

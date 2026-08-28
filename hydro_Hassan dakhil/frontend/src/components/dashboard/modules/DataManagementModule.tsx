@@ -11,7 +11,7 @@ import { useSwatDataManagement } from "./data-management/useSwatDataManagement";
 
 export type DataManagementView = "hub" | "sentinel" | "observed" | "swat";
 
-export function resolveDataManagementView(pathname: string): DataManagementView {
+function resolveDataManagementView(pathname: string): DataManagementView {
   if (pathname.includes("/dashboard/data/ingestion-sentinel")) return "sentinel";
   if (pathname.includes("/dashboard/data/ingestion-observee")) return "observed";
   if (pathname.includes("/dashboard/data/ingestion-swat")) return "swat";

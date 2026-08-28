@@ -1,29 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import { Loader2 } from "lucide-react";
 import type { FilterState } from "@/types/hydro";
 import { Card } from "@/components/ui/card";
 import { timeseriesApi } from "@/api/timeseries";
-import { Loader2 } from "lucide-react";
+import { formatNullableNumber } from "@/lib/display";
 import { cn } from "@/lib/utils";
 
 type ModuleCode = "climat" | "hydro" | "erosion";
-
-type BundleCatalogItem = {
-  ts_id: number;
-  property_id: number;
-};
-
-type AggRow = {
-  period: string;
-  avg_value?: number;
-  value_avg?: number;
-  value?: number;
-};
-
-type BundleResponse = {
-  catalog: BundleCatalogItem[];
-  aggregated?: Record<string, AggRow[]>;
-  error?: string;
-};
 
 type Stats = {
   count: number;
@@ -50,21 +33,8 @@ function resolutionToAgg(resolution: FilterState["resolution"]) {
   return "day";
 }
 
-function toNumber(row: AggRow): number | null {
-  const raw =
-    typeof row.avg_value === "number"
-      ? row.avg_value
-      : typeof row.value_avg === "number"
-      ? row.value_avg
-      : typeof row.value === "number"
-      ? row.value
-      : null;
-  return Number.isFinite(raw as number) ? (raw as number) : null;
-}
-
-function fmt(v: number | null) {
-  if (v === null || Number.isNaN(v)) return "—";
-  return Number(v).toFixed(2);
+function fmt(value: number | null) {
+  return formatNullableNumber(value, (currentValue) => currentValue.toFixed(2));
 }
 
 export function AnalyticsStatsRow({
@@ -99,51 +69,18 @@ export function AnalyticsStatsRow({
 
       try {
         setLoading(true);
-        const json = (await timeseriesApi.bundle({
+        const nextStats = await timeseriesApi.stats({
           stationId,
           runId,
           module: moduleCode,
           agg,
           startDate: filters.startDate || undefined,
           endDate: filters.endDate || undefined,
-        })) as BundleResponse;
-
-        const selectedCatalog = (json.catalog || []).filter((c) =>
-          selectedVarIds.includes(c.property_id)
-        );
-
-        const values: number[] = [];
-        let missing = 0;
-        const aggregated = json.aggregated || {};
-
-        for (const c of selectedCatalog) {
-          const rows = aggregated[String(c.ts_id)] || [];
-          for (const row of rows) {
-            const value = toNumber(row);
-            if (value === null) missing += 1;
-            else values.push(value);
-          }
-        }
+          propertyIds: selectedVarIds,
+        });
 
         if (!alive) return;
-        if (!values.length) {
-          setStats({ ...EMPTY_STATS, missing });
-          return;
-        }
-
-        const sum = values.reduce((acc, v) => acc + v, 0);
-        const min = Math.min(...values);
-        const max = Math.max(...values);
-        const count = values.length;
-
-        setStats({
-          count,
-          min,
-          max,
-          sum,
-          mean: count ? sum / count : null,
-          missing,
-        });
+        setStats(nextStats);
       } catch {
         if (!alive) return;
         setStats(EMPTY_STATS);
@@ -180,7 +117,7 @@ export function AnalyticsStatsRow({
           Statistiques sur la période sélectionnée
         </h3>
       ) : null}
-      {loading && (
+      {loading ? (
         <div
           className={cn(
             "flex items-center gap-2 text-xs text-muted-foreground",
@@ -190,7 +127,7 @@ export function AnalyticsStatsRow({
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
           Chargement des statistiques...
         </div>
-      )}
+      ) : null}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
         {items.map((item) => (
           <Card

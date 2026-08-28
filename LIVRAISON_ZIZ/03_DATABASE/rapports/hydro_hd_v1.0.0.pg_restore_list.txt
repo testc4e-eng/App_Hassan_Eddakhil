@@ -1,0 +1,551 @@
+;
+; Archive created at 2026-08-27 17:10:58 UTC
+;     dbname: hydro_hd
+;     TOC Entries: 542
+;     Compression: gzip
+;     Dump Version: 1.16-0
+;     Format: CUSTOM
+;     Integer: 4 bytes
+;     Offset: 8 bytes
+;     Dumped from database version: 17.8
+;     Dumped by pg_dump version: 17.5 (Debian 17.5-1.pgdg110+1)
+;
+;
+; Selected TOC Entries:
+;
+32; 2615 1095563 SCHEMA - access postgres
+7133; 0 0 COMMENT - SCHEMA access postgres
+7134; 0 0 ACL - SCHEMA access postgres
+31; 2615 1095564 SCHEMA - api postgres
+7135; 0 0 ACL - SCHEMA api postgres
+8; 2615 1095565 SCHEMA - audit postgres
+9; 2615 1095566 SCHEMA - auth postgres
+27; 2615 1095567 SCHEMA - core postgres
+7136; 0 0 ACL - SCHEMA core postgres
+10; 2615 1095568 SCHEMA - geo postgres
+29; 2615 1095569 SCHEMA - gis postgres
+7137; 0 0 ACL - SCHEMA gis postgres
+28; 2615 1095570 SCHEMA - hydro postgres
+7138; 0 0 ACL - SCHEMA hydro postgres
+11; 2615 1095571 SCHEMA - old_hd postgres
+30; 2615 1095572 SCHEMA - ref postgres
+7139; 0 0 ACL - SCHEMA ref postgres
+12; 2615 1095573 SCHEMA - staging postgres
+7140; 0 0 COMMENT - SCHEMA staging postgres
+13; 2615 1095574 SCHEMA - swat_setup postgres
+7141; 0 0 COMMENT - SCHEMA swat_setup postgres
+2; 3079 1095575 EXTENSION - pgcrypto 
+7142; 0 0 COMMENT - EXTENSION pgcrypto 
+3; 3079 1095612 EXTENSION - postgis 
+7143; 0 0 COMMENT - EXTENSION postgis 
+4; 3079 1096694 EXTENSION - postgres_fdw 
+7144; 0 0 COMMENT - EXTENSION postgres_fdw 
+1943; 1247 1096702 TYPE public time_step postgres
+1298; 1255 1096713 FUNCTION hydro set_updated_at() postgres
+1299; 1255 1096714 FUNCTION public api_get_ts_agg(integer, integer, text, text) postgres
+1300; 1255 1096715 FUNCTION public api_get_ts_catalog(integer, integer, text) postgres
+1301; 1255 1096716 FUNCTION public to_numeric_clean(text) postgres
+3825; 1417 1096717 SERVER - old_hd_srv postgres
+7145; 0 0 USER MAPPING - USER MAPPING postgres SERVER old_hd_srv postgres
+249; 1259 1096719 TABLE access hru_results postgres
+250; 1259 1096730 SEQUENCE access hru_results_id_seq postgres
+7146; 0 0 SEQUENCE OWNED BY access hru_results_id_seq postgres
+251; 1259 1096731 TABLE access import_runs postgres
+252; 1259 1096741 SEQUENCE access import_runs_import_id_seq postgres
+7147; 0 0 SEQUENCE OWNED BY access import_runs_import_id_seq postgres
+253; 1259 1096742 TABLE access rch_results postgres
+7148; 0 0 ACL access TABLE rch_results postgres
+254; 1259 1096750 TABLE access scenario_metadata postgres
+255; 1259 1096762 SEQUENCE access scenario_metadata_id_seq postgres
+7149; 0 0 SEQUENCE OWNED BY access scenario_metadata_id_seq postgres
+256; 1259 1096763 TABLE access sub_results postgres
+257; 1259 1096771 TABLE access variable_dictionary postgres
+258; 1259 1096780 TABLE access weather_inputs postgres
+259; 1259 1096791 SEQUENCE access weather_inputs_id_seq postgres
+7150; 0 0 SEQUENCE OWNED BY access weather_inputs_id_seq postgres
+270; 1259 1096858 TABLE core model_runs postgres
+7151; 0 0 ACL core TABLE model_runs postgres
+271; 1259 1096865 MATERIALIZED VIEW api mv_scenario_catalog postgres
+7152; 0 0 ACL api TABLE mv_scenario_catalog postgres
+272; 1259 1096872 TABLE ref observed_properties postgres
+7153; 0 0 ACL ref TABLE observed_properties postgres
+273; 1259 1096877 TABLE ref property_domain_membership postgres
+7154; 0 0 ACL ref TABLE property_domain_membership postgres
+274; 1259 1096888 VIEW api v_catalog_properties postgres
+7155; 0 0 ACL api TABLE v_catalog_properties postgres
+264; 1259 1096812 TABLE core stations postgres
+7156; 0 0 ACL core TABLE stations postgres
+266; 1259 1096823 TABLE core timeseries postgres
+7157; 0 0 ACL core TABLE timeseries postgres
+275; 1259 1096893 VIEW api v_timeseries_enriched postgres
+7158; 0 0 ACL api TABLE v_timeseries_enriched postgres
+276; 1259 1096908 VIEW api v_catalog_stations postgres
+7159; 0 0 ACL api TABLE v_catalog_stations postgres
+260; 1259 1096792 TABLE core catchments postgres
+7160; 0 0 ACL core TABLE catchments postgres
+261; 1259 1096797 TABLE core measurements postgres
+7161; 0 0 ACL core TABLE measurements postgres
+262; 1259 1096800 TABLE core reaches postgres
+7162; 0 0 ACL core TABLE reaches postgres
+263; 1259 1096806 TABLE core reservoirs postgres
+7163; 0 0 ACL core TABLE reservoirs postgres
+265; 1259 1096817 TABLE core subbasins postgres
+7164; 0 0 ACL core TABLE subbasins postgres
+267; 1259 1096830 VIEW api v_dashboard_catchment_counts postgres
+7165; 0 0 ACL api TABLE v_dashboard_catchment_counts postgres
+268; 1259 1096841 TABLE core reservoir_bathymetry postgres
+7166; 0 0 ACL core TABLE reservoir_bathymetry postgres
+269; 1259 1096847 VIEW api v_dashboard_reservoir_counts postgres
+7167; 0 0 ACL api TABLE v_dashboard_reservoir_counts postgres
+280; 1259 1096944 VIEW api v_measurements_annual postgres
+7168; 0 0 ACL api TABLE v_measurements_annual postgres
+281; 1259 1096953 VIEW api v_measurements_latest postgres
+7169; 0 0 ACL api TABLE v_measurements_latest postgres
+277; 1259 1096913 VIEW api v_measurements_monthly postgres
+7170; 0 0 ACL api TABLE v_measurements_monthly postgres
+282; 1259 1097038 TABLE audit swat_output_archive_rch postgres
+283; 1259 1097046 TABLE audit swat_output_archive_sub postgres
+284; 1259 1097054 VIEW audit v_qc_measurements_duplicates postgres
+285; 1259 1097058 VIEW audit v_qc_measurements_orphans postgres
+286; 1259 1097063 TABLE geo landcover postgres
+287; 1259 1097068 TABLE ref communes postgres
+7171; 0 0 ACL ref TABLE communes postgres
+288; 1259 1097074 VIEW audit v_qc_null_geometry postgres
+289; 1259 1097079 VIEW audit v_qc_timeseries_duplicates postgres
+290; 1259 1097083 VIEW audit v_qc_timeseries_without_measurements postgres
+291; 1259 1097087 TABLE auth audit_log postgres
+292; 1259 1097094 SEQUENCE auth audit_log_audit_id_seq postgres
+7172; 0 0 SEQUENCE OWNED BY auth audit_log_audit_id_seq postgres
+293; 1259 1097095 TABLE auth permissions postgres
+294; 1259 1097100 SEQUENCE auth permissions_permission_id_seq postgres
+7173; 0 0 SEQUENCE OWNED BY auth permissions_permission_id_seq postgres
+295; 1259 1097101 TABLE auth role_permissions postgres
+296; 1259 1097104 TABLE auth roles postgres
+297; 1259 1097109 SEQUENCE auth roles_role_id_seq postgres
+7174; 0 0 SEQUENCE OWNED BY auth roles_role_id_seq postgres
+298; 1259 1097110 TABLE auth user_roles postgres
+299; 1259 1097113 TABLE auth users postgres
+300; 1259 1097120 SEQUENCE auth users_user_id_seq postgres
+7175; 0 0 SEQUENCE OWNED BY auth users_user_id_seq postgres
+301; 1259 1097121 SEQUENCE core catchments_catchment_id_seq postgres
+302; 1259 1097122 SEQUENCE core catchments_catchment_id_seq1 postgres
+303; 1259 1097123 TABLE core data_batches postgres
+7176; 0 0 ACL core TABLE data_batches postgres
+304; 1259 1097131 TABLE core measurement_batches postgres
+7177; 0 0 ACL core TABLE measurement_batches postgres
+305; 1259 1097137 SEQUENCE core model_runs_run_id_seq postgres
+306; 1259 1097138 SEQUENCE core model_runs_run_id_seq1 postgres
+307; 1259 1097139 SEQUENCE core reaches_reach_id_seq postgres
+308; 1259 1097140 SEQUENCE core reaches_reach_id_seq1 postgres
+309; 1259 1097141 SEQUENCE core reservoir_bathymetry_bathy_id_seq postgres
+7178; 0 0 SEQUENCE OWNED BY core reservoir_bathymetry_bathy_id_seq postgres
+310; 1259 1097142 SEQUENCE core reservoirs_reservoir_id_seq postgres
+311; 1259 1097143 SEQUENCE core reservoirs_reservoir_id_seq1 postgres
+278; 1259 1096922 TABLE core rivers postgres
+7179; 0 0 ACL core TABLE rivers postgres
+312; 1259 1097144 SEQUENCE core rivers_river_id_seq postgres
+313; 1259 1097145 SEQUENCE core rivers_river_id_seq1 postgres
+314; 1259 1097146 TABLE core station_reach_map postgres
+7180; 0 0 ACL core TABLE station_reach_map postgres
+315; 1259 1097156 SEQUENCE core station_reach_map_id_seq postgres
+7181; 0 0 SEQUENCE OWNED BY core station_reach_map_id_seq postgres
+316; 1259 1097157 TABLE core station_subbasin_map postgres
+7182; 0 0 ACL core TABLE station_subbasin_map postgres
+317; 1259 1097169 SEQUENCE core station_subbasin_map_id_seq postgres
+7183; 0 0 SEQUENCE OWNED BY core station_subbasin_map_id_seq postgres
+318; 1259 1097170 SEQUENCE core stations_station_id_seq postgres
+319; 1259 1097171 SEQUENCE core stations_station_id_seq1 postgres
+279; 1259 1096932 TABLE core subbasin_metrics_annual postgres
+7184; 0 0 ACL core TABLE subbasin_metrics_annual postgres
+320; 1259 1097172 SEQUENCE core subbasins_subbasin_id_seq postgres
+321; 1259 1097173 SEQUENCE core subbasins_subbasin_id_seq1 postgres
+322; 1259 1097174 TABLE core swat_entity_map postgres
+7185; 0 0 ACL core TABLE swat_entity_map postgres
+323; 1259 1097185 SEQUENCE core timeseries_ts_id_seq postgres
+324; 1259 1097186 SEQUENCE core timeseries_ts_id_seq1 postgres
+325; 1259 1097187 SEQUENCE geo landcover_lc_id_seq postgres
+326; 1259 1097188 SEQUENCE geo landcover_lc_id_seq1 postgres
+327; 1259 1097189 TABLE gis meteo_stations postgres
+7186; 0 0 ACL gis TABLE meteo_stations postgres
+328; 1259 1097196 TABLE gis reach_shapes postgres
+7187; 0 0 ACL gis TABLE reach_shapes postgres
+329; 1259 1097208 TABLE gis subbasin_shapes postgres
+7188; 0 0 ACL gis TABLE subbasin_shapes postgres
+330; 1259 1097215 TABLE hydro bathymetry_campaigns postgres
+7189; 0 0 ACL hydro TABLE bathymetry_campaigns postgres
+331; 1259 1097223 SEQUENCE hydro bathymetry_campaigns_campaign_id_seq postgres
+7190; 0 0 SEQUENCE OWNED BY hydro bathymetry_campaigns_campaign_id_seq postgres
+332; 1259 1097224 TABLE hydro siltation_evolution postgres
+7191; 0 0 ACL hydro TABLE siltation_evolution postgres
+333; 1259 1097232 SEQUENCE hydro siltation_evolution_evolution_id_seq postgres
+7192; 0 0 SEQUENCE OWNED BY hydro siltation_evolution_evolution_id_seq postgres
+334; 1259 1097233 TABLE hydro siltation_hsv postgres
+7193; 0 0 ACL hydro TABLE siltation_hsv postgres
+335; 1259 1097241 SEQUENCE hydro siltation_hsv_hsv_id_seq postgres
+7194; 0 0 SEQUENCE OWNED BY hydro siltation_hsv_hsv_id_seq postgres
+336; 1259 1097242 TABLE hydro siltation_indicators postgres
+7195; 0 0 ACL hydro TABLE siltation_indicators postgres
+337; 1259 1097250 SEQUENCE hydro siltation_indicators_indicator_id_seq postgres
+7196; 0 0 SEQUENCE OWNED BY hydro siltation_indicators_indicator_id_seq postgres
+338; 1259 1097251 FOREIGN TABLE old_hd adm_communes_abhgzr postgres
+339; 1259 1097254 FOREIGN TABLE old_hd barrages_abhgzr postgres
+340; 1259 1097257 FOREIGN TABLE old_hd bassin_abhgzr postgres
+341; 1259 1097260 FOREIGN TABLE old_hd bathymetries_barrages_abhgzr postgres
+342; 1259 1097263 FOREIGN TABLE old_hd mesures_debits_jr postgres
+343; 1259 1097266 FOREIGN TABLE old_hd mesures_evaporation_m postgres
+344; 1259 1097269 FOREIGN TABLE old_hd mesures_humidite_relative_m postgres
+345; 1259 1097272 FOREIGN TABLE old_hd mesures_lachers_barrages postgres
+346; 1259 1097275 FOREIGN TABLE old_hd mesures_precipitations_jr postgres
+347; 1259 1097278 FOREIGN TABLE old_hd mesures_temperature_jr_pn postgres
+348; 1259 1097281 FOREIGN TABLE old_hd mesures_temperature_m postgres
+349; 1259 1097284 FOREIGN TABLE old_hd mesures_vitesse_vent_m postgres
+350; 1259 1097287 FOREIGN TABLE old_hd stations_abhgzr postgres
+351; 1259 1097290 VIEW public catchments postgres
+352; 1259 1097294 VIEW public communes postgres
+353; 1259 1097298 VIEW public landcover postgres
+354; 1259 1097302 TABLE ref landcover_classes postgres
+7197; 0 0 ACL ref TABLE landcover_classes postgres
+355; 1259 1097307 VIEW public landcover_classes postgres
+356; 1259 1097311 TABLE ref landcover_periods postgres
+7198; 0 0 ACL ref TABLE landcover_periods postgres
+357; 1259 1097316 VIEW public landcover_periods postgres
+358; 1259 1097320 VIEW public measurements postgres
+359; 1259 1097324 VIEW public model_runs postgres
+360; 1259 1097328 TABLE public module_properties postgres
+361; 1259 1097336 VIEW public observed_properties postgres
+362; 1259 1097340 TABLE public property_module_override postgres
+363; 1259 1097346 VIEW public reaches postgres
+364; 1259 1097350 VIEW public reservoir_bathymetry postgres
+365; 1259 1097354 VIEW public reservoirs postgres
+366; 1259 1097358 VIEW public rivers postgres
+367; 1259 1097362 VIEW public stations postgres
+368; 1259 1097366 VIEW public subbasins postgres
+369; 1259 1097370 VIEW public timeseries postgres
+370; 1259 1097374 TABLE public users postgres
+371; 1259 1097385 VIEW public v_catchments_geo postgres
+372; 1259 1097389 VIEW public v_map_station postgres
+373; 1259 1097393 VIEW public v_ts_catalog postgres
+374; 1259 1097398 VIEW public v_measurements_full postgres
+375; 1259 1097403 VIEW public v_property_module postgres
+376; 1259 1097408 VIEW public v_property_agg_rule postgres
+377; 1259 1097413 VIEW public v_property_catalog postgres
+378; 1259 1097418 VIEW public v_property_catalog_final postgres
+379; 1259 1097423 VIEW public v_reaches_geo postgres
+380; 1259 1097428 VIEW public v_reservoirs_geo postgres
+381; 1259 1097433 VIEW public v_stations_geo postgres
+382; 1259 1097438 VIEW public v_stats_bathymetry postgres
+383; 1259 1097443 VIEW public v_stats_bathymetry_global postgres
+384; 1259 1097447 VIEW public v_stats_property_station_timestep postgres
+385; 1259 1097452 VIEW public v_stats_evaporation postgres
+386; 1259 1097456 VIEW public v_stats_property_timestep postgres
+387; 1259 1097461 VIEW public v_stats_evaporation_global postgres
+388; 1259 1097465 VIEW public v_stats_humidity postgres
+389; 1259 1097469 VIEW public v_stats_humidity_global postgres
+390; 1259 1097473 VIEW public v_stats_lachers postgres
+391; 1259 1097477 VIEW public v_stats_lachers_global postgres
+392; 1259 1097481 VIEW public v_stats_precipitation postgres
+393; 1259 1097485 VIEW public v_stats_precipitation_global postgres
+394; 1259 1097489 VIEW public v_stats_sediment_load postgres
+395; 1259 1097493 VIEW public v_stats_sediment_load_global postgres
+396; 1259 1097497 VIEW public v_stats_streamflow postgres
+397; 1259 1097501 VIEW public v_stats_streamflow_global postgres
+398; 1259 1097505 VIEW public v_stats_temperature_all postgres
+399; 1259 1097509 VIEW public v_stats_temperature_all_global postgres
+400; 1259 1097513 VIEW public v_stats_temperature_max postgres
+401; 1259 1097517 VIEW public v_stats_temperature_max_global postgres
+402; 1259 1097521 VIEW public v_stats_temperature_mean postgres
+403; 1259 1097525 VIEW public v_stats_temperature_mean_global postgres
+404; 1259 1097529 VIEW public v_stats_temperature_min postgres
+405; 1259 1097533 VIEW public v_stats_temperature_min_global postgres
+406; 1259 1097537 VIEW public v_stats_wind_speed postgres
+407; 1259 1097541 VIEW public v_stats_wind_speed_global postgres
+408; 1259 1097545 VIEW public v_subbasins_geo postgres
+409; 1259 1097550 VIEW public v_ts_catalog_enriched postgres
+410; 1259 1097555 VIEW public v_values_measurements postgres
+411; 1259 1097560 VIEW public v_values_annual postgres
+412; 1259 1097565 VIEW public v_values_bathymetry postgres
+413; 1259 1097570 VIEW public v_values_evaporation_annual postgres
+414; 1259 1097575 VIEW public v_values_monthly postgres
+415; 1259 1097580 VIEW public v_values_evaporation_monthly postgres
+416; 1259 1097585 VIEW public v_values_evaporation_obs postgres
+417; 1259 1097590 VIEW public v_values_humidity_annual postgres
+418; 1259 1097595 VIEW public v_values_humidity_monthly postgres
+419; 1259 1097600 VIEW public v_values_humidity_obs postgres
+420; 1259 1097605 VIEW public v_values_lachers_annual postgres
+421; 1259 1097610 VIEW public v_values_lachers_monthly postgres
+422; 1259 1097615 VIEW public v_values_lachers_obs postgres
+423; 1259 1097620 VIEW public v_values_precipitation_annual postgres
+424; 1259 1097625 VIEW public v_values_precipitation_monthly postgres
+425; 1259 1097630 VIEW public v_values_precipitation_obs postgres
+426; 1259 1097635 VIEW public v_values_sediment_load_annual postgres
+427; 1259 1097640 VIEW public v_values_sediment_load_monthly postgres
+428; 1259 1097645 VIEW public v_values_sediment_load_obs postgres
+429; 1259 1097650 VIEW public v_values_streamflow_annual postgres
+430; 1259 1097655 VIEW public v_values_streamflow_monthly postgres
+431; 1259 1097660 VIEW public v_values_streamflow_obs postgres
+432; 1259 1097665 VIEW public v_values_temperature_all_obs postgres
+433; 1259 1097670 VIEW public v_values_temperature_max_annual postgres
+434; 1259 1097675 VIEW public v_values_temperature_max_monthly postgres
+435; 1259 1097680 VIEW public v_values_temperature_max_obs postgres
+436; 1259 1097685 VIEW public v_values_temperature_mean_annual postgres
+437; 1259 1097690 VIEW public v_values_temperature_mean_monthly postgres
+438; 1259 1097695 VIEW public v_values_temperature_mean_obs postgres
+439; 1259 1097700 VIEW public v_values_temperature_min_annual postgres
+440; 1259 1097705 VIEW public v_values_temperature_min_monthly postgres
+441; 1259 1097710 VIEW public v_values_temperature_min_obs postgres
+442; 1259 1097715 VIEW public v_values_wind_speed_annual postgres
+443; 1259 1097720 VIEW public v_values_wind_speed_monthly postgres
+444; 1259 1097725 VIEW public v_values_wind_speed_obs postgres
+445; 1259 1097730 SEQUENCE ref landcover_classes_class_id_seq postgres
+446; 1259 1097731 SEQUENCE ref landcover_classes_class_id_seq1 postgres
+447; 1259 1097732 SEQUENCE ref landcover_periods_lc_period_id_seq postgres
+448; 1259 1097733 SEQUENCE ref landcover_periods_lc_period_id_seq1 postgres
+449; 1259 1097734 SEQUENCE ref observed_properties_property_id_seq postgres
+450; 1259 1097735 SEQUENCE ref observed_properties_property_id_seq1 postgres
+451; 1259 1097736 TABLE ref property_domains postgres
+7199; 0 0 ACL ref TABLE property_domains postgres
+452; 1259 1097741 TABLE staging limite_raw postgres
+453; 1259 1097746 SEQUENCE staging limite_raw_gid_seq postgres
+7200; 0 0 SEQUENCE OWNED BY staging limite_raw_gid_seq postgres
+454; 1259 1097747 TABLE staging migration_batches postgres
+455; 1259 1097754 TABLE staging migration_events postgres
+456; 1259 1097760 SEQUENCE staging migration_events_event_id_seq postgres
+7201; 0 0 SEQUENCE OWNED BY staging migration_events_event_id_seq postgres
+457; 1259 1097761 TABLE staging norm_catchments postgres
+458; 1259 1097767 TABLE staging norm_communes postgres
+459; 1259 1097773 TABLE staging norm_measurements postgres
+460; 1259 1097779 TABLE staging norm_reservoir_bathymetry postgres
+461; 1259 1097785 TABLE staging norm_reservoirs postgres
+462; 1259 1097791 TABLE staging norm_stations postgres
+463; 1259 1097797 TABLE staging raw_adm_communes_abhgzr postgres
+464; 1259 1097804 TABLE staging raw_barrages_abhgzr postgres
+465; 1259 1097811 TABLE staging raw_bassin_abhgzr postgres
+466; 1259 1097818 TABLE staging raw_bathymetries_barrages_abhgzr postgres
+467; 1259 1097825 TABLE staging raw_mesures_debits_jr postgres
+468; 1259 1097832 TABLE staging raw_mesures_evaporation_m postgres
+469; 1259 1097839 TABLE staging raw_mesures_humidite_relative_m postgres
+470; 1259 1097846 TABLE staging raw_mesures_lachers_barrages postgres
+471; 1259 1097853 TABLE staging raw_mesures_precipitations_jr postgres
+472; 1259 1097860 TABLE staging raw_mesures_temperature_jr_pn postgres
+473; 1259 1097867 TABLE staging raw_mesures_temperature_m postgres
+474; 1259 1097874 TABLE staging raw_mesures_vitesse_vent_m postgres
+475; 1259 1097881 TABLE staging raw_stations_abhgzr postgres
+476; 1259 1097888 TABLE staging reseau_hydro_import_raw postgres
+477; 1259 1097893 SEQUENCE staging reseau_hydro_import_raw_gid_seq postgres
+7202; 0 0 SEQUENCE OWNED BY staging reseau_hydro_import_raw_gid_seq postgres
+478; 1259 1097894 TABLE staging reseau_hydrologie_raw postgres
+479; 1259 1097899 SEQUENCE staging reseau_hydrologie_raw_gid_seq postgres
+7203; 0 0 SEQUENCE OWNED BY staging reseau_hydrologie_raw_gid_seq postgres
+480; 1259 1097900 TABLE staging station_meteo_raw postgres
+481; 1259 1097905 SEQUENCE staging station_meteo_raw_gid_seq postgres
+7204; 0 0 SEQUENCE OWNED BY staging station_meteo_raw_gid_seq postgres
+482; 1259 1097906 TABLE staging swat_mdb_imports postgres
+483; 1259 1097923 SEQUENCE staging swat_mdb_imports_id_seq postgres
+7205; 0 0 SEQUENCE OWNED BY staging swat_mdb_imports_id_seq postgres
+484; 1259 1097924 SEQUENCE staging swat_mdb_imports_import_batch_id_seq postgres
+7206; 0 0 SEQUENCE OWNED BY staging swat_mdb_imports_import_batch_id_seq postgres
+485; 1259 1097925 TABLE staging swat_rch_norm postgres
+486; 1259 1097931 SEQUENCE staging swat_rch_norm_norm_id_seq postgres
+7207; 0 0 SEQUENCE OWNED BY staging swat_rch_norm_norm_id_seq postgres
+487; 1259 1097932 TABLE staging swat_rch_raw postgres
+488; 1259 1097938 SEQUENCE staging swat_rch_raw_raw_id_seq postgres
+7208; 0 0 SEQUENCE OWNED BY staging swat_rch_raw_raw_id_seq postgres
+489; 1259 1097939 TABLE staging swat_sub_norm postgres
+490; 1259 1097945 SEQUENCE staging swat_sub_norm_norm_id_seq postgres
+7209; 0 0 SEQUENCE OWNED BY staging swat_sub_norm_norm_id_seq postgres
+491; 1259 1097946 TABLE staging swat_sub_raw postgres
+492; 1259 1097952 SEQUENCE staging swat_sub_raw_raw_id_seq postgres
+7210; 0 0 SEQUENCE OWNED BY staging swat_sub_raw_raw_id_seq postgres
+6505; 2604 1097953 DEFAULT access hru_results id postgres
+6510; 2604 1097954 DEFAULT access import_runs import_id postgres
+6519; 2604 1097955 DEFAULT access scenario_metadata id postgres
+6532; 2604 1097956 DEFAULT access weather_inputs id postgres
+6559; 2604 1097961 DEFAULT auth audit_log audit_id postgres
+6562; 2604 1097962 DEFAULT auth permissions permission_id postgres
+6563; 2604 1097963 DEFAULT auth roles role_id postgres
+6564; 2604 1097964 DEFAULT auth users user_id postgres
+6542; 2604 1097965 DEFAULT core reservoir_bathymetry bathy_id postgres
+6571; 2604 1097966 DEFAULT core station_reach_map id postgres
+6576; 2604 1097967 DEFAULT core station_subbasin_map id postgres
+6595; 2604 1097968 DEFAULT hydro bathymetry_campaigns campaign_id postgres
+6599; 2604 1097969 DEFAULT hydro siltation_evolution evolution_id postgres
+6603; 2604 1097970 DEFAULT hydro siltation_hsv hsv_id postgres
+6607; 2604 1097971 DEFAULT hydro siltation_indicators indicator_id postgres
+6618; 2604 1097972 DEFAULT staging limite_raw gid postgres
+6621; 2604 1097973 DEFAULT staging migration_events event_id postgres
+6655; 2604 1097974 DEFAULT staging reseau_hydro_import_raw gid postgres
+6656; 2604 1097975 DEFAULT staging reseau_hydrologie_raw gid postgres
+6657; 2604 1097976 DEFAULT staging station_meteo_raw gid postgres
+6658; 2604 1097977 DEFAULT staging swat_mdb_imports id postgres
+6659; 2604 1097978 DEFAULT staging swat_mdb_imports import_batch_id postgres
+6666; 2604 1097979 DEFAULT staging swat_rch_norm norm_id postgres
+6668; 2604 1097980 DEFAULT staging swat_rch_raw raw_id postgres
+6670; 2604 1097981 DEFAULT staging swat_sub_norm norm_id postgres
+6672; 2604 1097982 DEFAULT staging swat_sub_raw raw_id postgres
+6996; 0 1096719 TABLE DATA access hru_results postgres
+6998; 0 1096731 TABLE DATA access import_runs postgres
+7000; 0 1096742 TABLE DATA access rch_results postgres
+7001; 0 1096750 TABLE DATA access scenario_metadata postgres
+7003; 0 1096763 TABLE DATA access sub_results postgres
+7004; 0 1096771 TABLE DATA access variable_dictionary postgres
+7005; 0 1096780 TABLE DATA access weather_inputs postgres
+7021; 0 1097038 TABLE DATA audit swat_output_archive_rch postgres
+7022; 0 1097046 TABLE DATA audit swat_output_archive_sub postgres
+7025; 0 1097087 TABLE DATA auth audit_log postgres
+7027; 0 1097095 TABLE DATA auth permissions postgres
+7029; 0 1097101 TABLE DATA auth role_permissions postgres
+7030; 0 1097104 TABLE DATA auth roles postgres
+7032; 0 1097110 TABLE DATA auth user_roles postgres
+7033; 0 1097113 TABLE DATA auth users postgres
+7007; 0 1096792 TABLE DATA core catchments postgres
+7037; 0 1097123 TABLE DATA core data_batches postgres
+7038; 0 1097131 TABLE DATA core measurement_batches postgres
+7008; 0 1096797 TABLE DATA core measurements postgres
+7015; 0 1096858 TABLE DATA core model_runs postgres
+7009; 0 1096800 TABLE DATA core reaches postgres
+7014; 0 1096841 TABLE DATA core reservoir_bathymetry postgres
+7010; 0 1096806 TABLE DATA core reservoirs postgres
+7019; 0 1096922 TABLE DATA core rivers postgres
+7048; 0 1097146 TABLE DATA core station_reach_map postgres
+7050; 0 1097157 TABLE DATA core station_subbasin_map postgres
+7011; 0 1096812 TABLE DATA core stations postgres
+7020; 0 1096932 TABLE DATA core subbasin_metrics_annual postgres
+7012; 0 1096817 TABLE DATA core subbasins postgres
+7056; 0 1097174 TABLE DATA core swat_entity_map postgres
+7013; 0 1096823 TABLE DATA core timeseries postgres
+7023; 0 1097063 TABLE DATA geo landcover postgres
+7061; 0 1097189 TABLE DATA gis meteo_stations postgres
+7062; 0 1097196 TABLE DATA gis reach_shapes postgres
+7063; 0 1097208 TABLE DATA gis subbasin_shapes postgres
+7064; 0 1097215 TABLE DATA hydro bathymetry_campaigns postgres
+7066; 0 1097224 TABLE DATA hydro siltation_evolution postgres
+7068; 0 1097233 TABLE DATA hydro siltation_hsv postgres
+7070; 0 1097242 TABLE DATA hydro siltation_indicators postgres
+7074; 0 1097328 TABLE DATA public module_properties postgres
+7075; 0 1097340 TABLE DATA public property_module_override postgres
+6504; 0 1095934 TABLE DATA public spatial_ref_sys postgres
+7076; 0 1097374 TABLE DATA public users postgres
+7024; 0 1097068 TABLE DATA ref communes postgres
+7072; 0 1097302 TABLE DATA ref landcover_classes postgres
+7073; 0 1097311 TABLE DATA ref landcover_periods postgres
+7017; 0 1096872 TABLE DATA ref observed_properties postgres
+7018; 0 1096877 TABLE DATA ref property_domain_membership postgres
+7083; 0 1097736 TABLE DATA ref property_domains postgres
+7084; 0 1097741 TABLE DATA staging limite_raw postgres
+7086; 0 1097747 TABLE DATA staging migration_batches postgres
+7087; 0 1097754 TABLE DATA staging migration_events postgres
+7089; 0 1097761 TABLE DATA staging norm_catchments postgres
+7090; 0 1097767 TABLE DATA staging norm_communes postgres
+7091; 0 1097773 TABLE DATA staging norm_measurements postgres
+7092; 0 1097779 TABLE DATA staging norm_reservoir_bathymetry postgres
+7093; 0 1097785 TABLE DATA staging norm_reservoirs postgres
+7094; 0 1097791 TABLE DATA staging norm_stations postgres
+7095; 0 1097797 TABLE DATA staging raw_adm_communes_abhgzr postgres
+7096; 0 1097804 TABLE DATA staging raw_barrages_abhgzr postgres
+7097; 0 1097811 TABLE DATA staging raw_bassin_abhgzr postgres
+7098; 0 1097818 TABLE DATA staging raw_bathymetries_barrages_abhgzr postgres
+7099; 0 1097825 TABLE DATA staging raw_mesures_debits_jr postgres
+7100; 0 1097832 TABLE DATA staging raw_mesures_evaporation_m postgres
+7101; 0 1097839 TABLE DATA staging raw_mesures_humidite_relative_m postgres
+7102; 0 1097846 TABLE DATA staging raw_mesures_lachers_barrages postgres
+7103; 0 1097853 TABLE DATA staging raw_mesures_precipitations_jr postgres
+7104; 0 1097860 TABLE DATA staging raw_mesures_temperature_jr_pn postgres
+7105; 0 1097867 TABLE DATA staging raw_mesures_temperature_m postgres
+7106; 0 1097874 TABLE DATA staging raw_mesures_vitesse_vent_m postgres
+7107; 0 1097881 TABLE DATA staging raw_stations_abhgzr postgres
+7108; 0 1097888 TABLE DATA staging reseau_hydro_import_raw postgres
+7110; 0 1097894 TABLE DATA staging reseau_hydrologie_raw postgres
+7112; 0 1097900 TABLE DATA staging station_meteo_raw postgres
+7114; 0 1097906 TABLE DATA staging swat_mdb_imports postgres
+7117; 0 1097925 TABLE DATA staging swat_rch_norm postgres
+7119; 0 1097932 TABLE DATA staging swat_rch_raw postgres
+7121; 0 1097939 TABLE DATA staging swat_sub_norm postgres
+7123; 0 1097946 TABLE DATA staging swat_sub_raw postgres
+7211; 0 0 SEQUENCE SET access hru_results_id_seq postgres
+7212; 0 0 SEQUENCE SET access import_runs_import_id_seq postgres
+7213; 0 0 SEQUENCE SET access scenario_metadata_id_seq postgres
+7214; 0 0 SEQUENCE SET access weather_inputs_id_seq postgres
+7215; 0 0 SEQUENCE SET auth audit_log_audit_id_seq postgres
+7216; 0 0 SEQUENCE SET auth permissions_permission_id_seq postgres
+7217; 0 0 SEQUENCE SET auth roles_role_id_seq postgres
+7218; 0 0 SEQUENCE SET auth users_user_id_seq postgres
+7219; 0 0 SEQUENCE SET core catchments_catchment_id_seq postgres
+7220; 0 0 SEQUENCE SET core catchments_catchment_id_seq1 postgres
+7221; 0 0 SEQUENCE SET core model_runs_run_id_seq postgres
+7222; 0 0 SEQUENCE SET core model_runs_run_id_seq1 postgres
+7223; 0 0 SEQUENCE SET core reaches_reach_id_seq postgres
+7224; 0 0 SEQUENCE SET core reaches_reach_id_seq1 postgres
+7225; 0 0 SEQUENCE SET core reservoir_bathymetry_bathy_id_seq postgres
+7226; 0 0 SEQUENCE SET core reservoirs_reservoir_id_seq postgres
+7227; 0 0 SEQUENCE SET core reservoirs_reservoir_id_seq1 postgres
+7228; 0 0 SEQUENCE SET core rivers_river_id_seq postgres
+7229; 0 0 SEQUENCE SET core rivers_river_id_seq1 postgres
+7230; 0 0 SEQUENCE SET core station_reach_map_id_seq postgres
+7231; 0 0 SEQUENCE SET core station_subbasin_map_id_seq postgres
+7232; 0 0 SEQUENCE SET core stations_station_id_seq postgres
+7233; 0 0 SEQUENCE SET core stations_station_id_seq1 postgres
+7234; 0 0 SEQUENCE SET core subbasins_subbasin_id_seq postgres
+7235; 0 0 SEQUENCE SET core subbasins_subbasin_id_seq1 postgres
+7236; 0 0 SEQUENCE SET core timeseries_ts_id_seq postgres
+7237; 0 0 SEQUENCE SET core timeseries_ts_id_seq1 postgres
+7238; 0 0 SEQUENCE SET geo landcover_lc_id_seq postgres
+7239; 0 0 SEQUENCE SET geo landcover_lc_id_seq1 postgres
+7240; 0 0 SEQUENCE SET hydro bathymetry_campaigns_campaign_id_seq postgres
+7241; 0 0 SEQUENCE SET hydro siltation_evolution_evolution_id_seq postgres
+7242; 0 0 SEQUENCE SET hydro siltation_hsv_hsv_id_seq postgres
+7243; 0 0 SEQUENCE SET hydro siltation_indicators_indicator_id_seq postgres
+7244; 0 0 SEQUENCE SET ref landcover_classes_class_id_seq postgres
+7245; 0 0 SEQUENCE SET ref landcover_classes_class_id_seq1 postgres
+7246; 0 0 SEQUENCE SET ref landcover_periods_lc_period_id_seq postgres
+7247; 0 0 SEQUENCE SET ref landcover_periods_lc_period_id_seq1 postgres
+7248; 0 0 SEQUENCE SET ref observed_properties_property_id_seq postgres
+7249; 0 0 SEQUENCE SET ref observed_properties_property_id_seq1 postgres
+7250; 0 0 SEQUENCE SET staging limite_raw_gid_seq postgres
+7251; 0 0 SEQUENCE SET staging migration_events_event_id_seq postgres
+7252; 0 0 SEQUENCE SET staging reseau_hydro_import_raw_gid_seq postgres
+7253; 0 0 SEQUENCE SET staging reseau_hydrologie_raw_gid_seq postgres
+7254; 0 0 SEQUENCE SET staging station_meteo_raw_gid_seq postgres
+7255; 0 0 SEQUENCE SET staging swat_mdb_imports_id_seq postgres
+7256; 0 0 SEQUENCE SET staging swat_mdb_imports_import_batch_id_seq postgres
+7257; 0 0 SEQUENCE SET staging swat_rch_norm_norm_id_seq postgres
+7258; 0 0 SEQUENCE SET staging swat_rch_raw_raw_id_seq postgres
+7259; 0 0 SEQUENCE SET staging swat_sub_norm_norm_id_seq postgres
+7260; 0 0 SEQUENCE SET staging swat_sub_raw_raw_id_seq postgres
+6703; 2606 1099176 CONSTRAINT core data_batches pk_data_batches postgres
+6712; 2606 1099180 CONSTRAINT core swat_entity_map pk_swat_entity_map postgres
+6716; 2606 1099184 CONSTRAINT hydro bathymetry_campaigns bathymetry_campaigns_pkey postgres
+6722; 2606 1099186 CONSTRAINT hydro siltation_evolution siltation_evolution_pkey postgres
+6727; 2606 1099188 CONSTRAINT hydro siltation_hsv siltation_hsv_pkey postgres
+6732; 2606 1099190 CONSTRAINT hydro siltation_indicators siltation_indicators_pkey postgres
+6719; 2606 1099192 CONSTRAINT hydro bathymetry_campaigns uq_bathymetry_campaigns postgres
+6724; 2606 1099194 CONSTRAINT hydro siltation_evolution uq_siltation_evolution postgres
+6729; 2606 1099196 CONSTRAINT hydro siltation_hsv uq_siltation_hsv postgres
+6734; 2606 1099198 CONSTRAINT hydro siltation_indicators uq_siltation_indicators postgres
+6697; 1259 1099250 INDEX access idx_access_sub_results_sub_code_scenario_period_syld_not_null postgres
+6696; 1259 1099199 INDEX access idx_hru_results_scenario_sub_code_period postgres
+6698; 1259 1099249 INDEX core idx_core_measurements_ts_id_datetime postgres
+6704; 1259 1099248 INDEX core idx_measurement_batches_batch postgres
+6705; 1259 1099209 INDEX core idx_station_reach_map_reach_active postgres
+6706; 1259 1099210 INDEX core idx_station_subbasin_map_active postgres
+6707; 1259 1099211 INDEX core idx_station_subbasin_map_station_id postgres
+6708; 1259 1099212 INDEX core idx_station_subbasin_map_subbasin_active postgres
+6709; 1259 1099213 INDEX core idx_station_subbasin_map_subbasin_id postgres
+6699; 1259 1099214 INDEX core idx_stations_code postgres
+6710; 1259 1099215 INDEX core idx_swat_entity_map_lookup postgres
+6700; 1259 1099216 INDEX core idx_timeseries_lookup postgres
+6701; 1259 1099217 INDEX core idx_timeseries_run postgres
+6713; 1259 1099218 INDEX gis idx_reach_shapes_reach_id postgres
+6714; 1259 1099219 INDEX gis idx_subbasin_shapes_subbasin_id postgres
+6717; 1259 1099220 INDEX hydro idx_bathymetry_campaigns_dam_campaign postgres
+6720; 1259 1099221 INDEX hydro idx_siltation_evolution_dam_year postgres
+6725; 1259 1099222 INDEX hydro idx_siltation_hsv_dam_campaign postgres
+6730; 1259 1099223 INDEX hydro idx_siltation_indicators_dam_code postgres
+6735; 1259 1099247 INDEX staging idx_swat_rch_norm_batch postgres
+6736; 1259 1099225 INDEX staging idx_swat_rch_raw_batch postgres
+6737; 1259 1099226 INDEX staging idx_swat_sub_norm_batch postgres
+6738; 1259 1099227 INDEX staging idx_swat_sub_raw_batch postgres
+6739; 2620 1099228 TRIGGER hydro bathymetry_campaigns trg_bathymetry_campaigns_updated_at postgres
+6740; 2620 1099229 TRIGGER hydro siltation_evolution trg_siltation_evolution_updated_at postgres
+6741; 2620 1099230 TRIGGER hydro siltation_hsv trg_siltation_hsv_updated_at postgres
+6742; 2620 1099231 TRIGGER hydro siltation_indicators trg_siltation_indicators_updated_at postgres
+7016; 0 1096865 MATERIALIZED VIEW DATA api mv_scenario_catalog postgres

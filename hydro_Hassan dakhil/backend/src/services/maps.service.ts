@@ -8,8 +8,8 @@ type StationValueRow = {
 export class MapsService {
   async getStationsValues(
     variable: string,
-    scenario: string,
-    date: string
+    _scenario: string,
+    _date: string
   ): Promise<StationValueRow[]> {
     // TODO: brancher la DB (timeseries/measurements) quand tu me donnes tes tables
     // Pour l’instant: mock => ton front marche et la carte + légende s’affichent.

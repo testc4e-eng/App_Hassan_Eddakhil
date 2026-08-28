@@ -1,14 +1,22 @@
-import dotenv from "dotenv";
 import { erosionSwatSeriesService } from "./src/services/erosionSwatSeries.service";
 import { resolveHassanDataRoot } from "./src/config/hassanDataRoot";
 import { stationSimulationService } from "./src/services/stationSimulation.service";
-dotenv.config();
+import { solidYieldService } from "./src/services/solidYield.service";
+import { loadBackendEnv } from "./src/config/loadEnv";
+import { getEnvOrDefaultBoolean, getEnvOrDefaultNumber, warnIfWeakSecret } from "./src/config/env";
+
+loadBackendEnv();
 
 import app from "./src/app";
 
 const PORT = Number(process.env.PORT || 5000);
+const ENABLE_STATION_MAPPING_INIT = getEnvOrDefaultBoolean("ENABLE_STATION_MAPPING_INIT", true);
+const ENABLE_STARTUP_WARMUPS = getEnvOrDefaultBoolean("ENABLE_STARTUP_WARMUPS", true);
+const STARTUP_WARMUP_DELAY_MS = getEnvOrDefaultNumber("STARTUP_WARMUP_DELAY_MS", 250);
+const STARTUP_WARMUP_TIMEOUT_MS = getEnvOrDefaultNumber("STARTUP_WARMUP_TIMEOUT_MS", 15000);
 const dataRootInfo = resolveHassanDataRoot();
-console.log("[HASSAN_DATA_ROOT]", dataRootInfo.resolved);
+console.log("[HASSAN_DATA_ROOT]", dataRootInfo.exists ? "configured" : "missing");
+warnIfWeakSecret("JWT_SECRET");
 
 process.on("SIGTERM", () => {
   console.log("SIGTERM received. Shutting down gracefully...");
@@ -20,45 +28,129 @@ process.on("SIGINT", () => {
   process.exit(0);
 });
 
+function withTimeout<T>(name: string, promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`${name} timed out after ${timeoutMs} ms`));
+    }, timeoutMs);
+
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+}
+
+async function warmHttpEndpoint(name: string, url: string): Promise<void> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`${name} failed: HTTP ${response.status}`);
+  }
+  await response.text();
+}
+
+async function measureTask(name: string, task: () => Promise<unknown>) {
+  const startedAt = Date.now();
+  try {
+    await withTimeout(name, task(), STARTUP_WARMUP_TIMEOUT_MS);
+    return {
+      name,
+      status: "fulfilled" as const,
+      durationMs: Date.now() - startedAt,
+    };
+  } catch (error) {
+    return {
+      name,
+      status: "rejected" as const,
+      durationMs: Date.now() - startedAt,
+      reason: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 async function warmPerformanceCaches(baseUrl: string): Promise<void> {
-  const warmups: Array<Promise<unknown>> = [
-    erosionSwatSeriesService.getAvailability(),
-    fetch(`${baseUrl}/api/v1/hydro/swat/availability`).then(async (response) => {
-      if (!response.ok) {
-        throw new Error(`Warmup failed for /api/v1/hydro/swat/availability: ${response.status}`);
-      }
-      await response.text();
-    }),
-    fetch(`${baseUrl}/api/v1/hydro/swat/summary`).then(async (response) => {
-      if (!response.ok) {
-        throw new Error(`Warmup failed for /api/v1/hydro/swat/summary: ${response.status}`);
-      }
-      await response.text();
-    }),
-    fetch(`${baseUrl}/api/v1/solid-yield/availability`).then(async (response) => {
-      if (!response.ok) {
-        throw new Error(`Warmup failed for /api/v1/solid-yield/availability: ${response.status}`);
-      }
-      await response.text();
-    }),
-    fetch(`${baseUrl}/api/v1/data-scan/periods/global`).then(async (response) => {
-      if (!response.ok) {
-        throw new Error(`Warmup failed for /api/v1/data-scan/periods/global: ${response.status}`);
-      }
-      await response.text();
-    }),
+  const startedAt = Date.now();
+  const tasks = [
+    () => measureTask("catalog.erosion.availability", () => erosionSwatSeriesService.getAvailability()),
+    () => measureTask("solid-yield.availability", () => solidYieldService.getAvailability()),
+    () =>
+      measureTask("hydro.swat.availability", () =>
+        warmHttpEndpoint("hydro.swat.availability", `${baseUrl}/api/v1/hydro/swat/availability`)
+      ),
+    () =>
+      measureTask("hydro.swat.summary", () =>
+        warmHttpEndpoint("hydro.swat.summary", `${baseUrl}/api/v1/hydro/swat/summary`)
+      ),
+    () =>
+      measureTask("data-scan.periods.global", () =>
+        warmHttpEndpoint("data-scan.periods.global", `${baseUrl}/api/v1/data-scan/periods/global`)
+      ),
   ];
 
-  const results = await Promise.allSettled(warmups);
-  const failures = results.filter((result) => result.status === "rejected") as PromiseRejectedResult[];
+  const results = await Promise.all(tasks.map((task) => task()));
+  const failures = results.filter(
+    (result): result is Extract<(typeof results)[number], { status: "rejected" }> =>
+      result.status === "rejected"
+  );
+
+  console.log("[warmup] completed", {
+    totalDurationMs: Date.now() - startedAt,
+    tasks: results.map((result) => ({
+      name: result.name,
+      status: result.status,
+      durationMs: result.durationMs,
+    })),
+  });
+
   if (failures.length > 0) {
-    console.warn(`[warmup] ${failures.length} cache warmup(s) failed`);
-    for (const failure of failures.slice(0, 3)) {
-      console.warn("[warmup] detail:", failure.reason);
+    for (const failure of failures.slice(0, 5)) {
+      console.warn("[warmup] detail:", {
+        name: failure.name,
+        durationMs: failure.durationMs,
+        reason: failure.reason,
+      });
     }
-  } else {
-    console.log("[warmup] performance caches warmed");
   }
+}
+
+async function initializeStationMappings(): Promise<void> {
+  if (!ENABLE_STATION_MAPPING_INIT) {
+    console.log("[station-mapping] startup initialization disabled by env");
+    return;
+  }
+
+  try {
+    const warnings = await stationSimulationService.initializeMappings();
+    if (warnings.length > 0) {
+      console.warn("[station-mapping] initialized with warnings");
+      for (const warning of warnings.slice(0, 5)) {
+        console.warn("[station-mapping]", warning);
+      }
+    } else {
+      console.log("[station-mapping] initialized");
+    }
+  } catch (error) {
+    console.warn("[station-mapping] initialization failed", error);
+  }
+}
+
+function scheduleStartupWarmups(baseUrl: string): void {
+  if (!ENABLE_STARTUP_WARMUPS) {
+    console.log("[warmup] startup warmups disabled by env");
+    return;
+  }
+
+  setTimeout(() => {
+    void warmPerformanceCaches(baseUrl).catch((error) => {
+      console.warn("[warmup] startup warmups failed", error);
+    });
+  }, STARTUP_WARMUP_DELAY_MS);
 }
 
 app.listen(PORT, () => {
@@ -66,21 +158,6 @@ app.listen(PORT, () => {
   console.log(`🌐 http://localhost:${PORT}/api/v1/hydro/health`);
   console.log(`🌐 http://localhost:${PORT}/api/v1/timeseries/health`);
   console.log(`🌐 http://localhost:${PORT}/api/v1/catalog/runs`);
-  void (async () => {
-    try {
-      const warnings = await stationSimulationService.initializeMappings();
-      if (warnings.length > 0) {
-        console.warn("[station-mapping] initialized with warnings");
-        for (const warning of warnings.slice(0, 5)) {
-          console.warn("[station-mapping]", warning);
-        }
-      } else {
-        console.log("[station-mapping] initialized");
-      }
-    } catch (error) {
-      console.warn("[station-mapping] initialization failed", error);
-    }
-
-    await warmPerformanceCaches(`http://127.0.0.1:${PORT}`);
-  })();
+  void initializeStationMappings();
+  scheduleStartupWarmups(`http://127.0.0.1:${PORT}`);
 });

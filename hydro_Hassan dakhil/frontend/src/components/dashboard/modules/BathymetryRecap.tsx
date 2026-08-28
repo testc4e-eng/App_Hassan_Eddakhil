@@ -42,6 +42,7 @@ import {
   RECHARTS_X_AXIS_BOTTOM,
   rechartsXAxisBottomLabel,
 } from "@/lib/chartLayout";
+import { EMPTY_VALUE_PLACEHOLDER } from "@/lib/display";
 
 type ReservoirOption = {
   key: string;
@@ -79,7 +80,7 @@ function reservoirKey(row: ReservoirBathymetryPoint): string {
 
 function formatNumber(value: unknown, maximumFractionDigits = 2): string {
   const n = toFiniteNumber(value);
-  if (n === null) return "-";
+  if (n === null) return EMPTY_VALUE_PLACEHOLDER;
   return new Intl.NumberFormat("fr-FR", {
     maximumFractionDigits,
   }).format(n);

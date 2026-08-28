@@ -311,6 +311,8 @@ function TimeSeriesChart(
           agg,
           startDate: filters.startDate || undefined,
           endDate: filters.endDate || undefined,
+          propertyIds: selectedVarIds,
+          maxPoints: 1200,
         });
         if (!alive) return;
         setBundle(bundleResponse as BundleResponse);

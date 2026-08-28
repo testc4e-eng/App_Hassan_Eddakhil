@@ -1,0 +1,22 @@
+# Checklist de livraison
+
+- [ ] Audit du projet
+- [ ] Audit Docker
+- [ ] Audit de configuration
+- [ ] Audit de portabilité
+- [ ] Audit base de données
+- [ ] Préparation du backup `hydro_hd`
+- [ ] Construction des images Docker
+- [ ] Tests Docker
+- [ ] Tests fonctionnels
+- [ ] Export des images
+- [ ] Préparation `.env.example`
+- [ ] Scripts d'installation
+- [ ] Documentation d'installation
+- [ ] Documentation d'exploitation
+- [ ] Sauvegarde / restauration
+- [ ] Test sur environnement propre
+- [ ] Contrôle sécurité
+- [ ] Génération checksum
+- [ ] Constitution du package final
+- [ ] Validation finale

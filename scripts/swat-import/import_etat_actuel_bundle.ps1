@@ -2,15 +2,31 @@ param(
   [string]$BaseDir = "",
   [string]$PgHost = "127.0.0.1",
   [int]$PgPort = 5435,
-  [string]$PgDatabase = "hydro_hd_1714",
+  [string]$PgDatabase = "",
   [string]$PgUser = "postgres",
-  [string]$PgPassword = "c4e@test@2025",
+  [string]$PgPassword = "",
   [string]$ApiBase = "http://127.0.0.1:5006/api/v1",
   [switch]$SkipCoreSync
 )
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
+
+if (-not $PgDatabase) {
+  if ($env:HDI_DB_NAME) { $PgDatabase = $env:HDI_DB_NAME }
+  elseif ($env:DB_NAME) { $PgDatabase = $env:DB_NAME }
+  else { $PgDatabase = "hydro_hd" }
+}
+
+if (-not $PgPassword) {
+  if ($env:PGPASSWORD) { $PgPassword = $env:PGPASSWORD }
+  elseif ($env:DB_PASSWORD) { $PgPassword = $env:DB_PASSWORD }
+  elseif ($env:POSTGRES_PASSWORD) { $PgPassword = $env:POSTGRES_PASSWORD }
+}
+
+if (-not $PgPassword) {
+  throw "Parametre PgPassword manquant. Definir PGPASSWORD, DB_PASSWORD ou POSTGRES_PASSWORD."
+}
 
 $scriptDir = Split-Path -Parent $PSCommandPath
 $reportsDir = Join-Path $scriptDir "reports"

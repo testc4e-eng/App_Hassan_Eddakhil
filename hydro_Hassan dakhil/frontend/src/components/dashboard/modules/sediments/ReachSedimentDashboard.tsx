@@ -299,6 +299,15 @@ type ScenarioSeriesLoadResult = {
   periodBounds: ReachPeriodBounds | null;
 };
 
+type AppliedReachRequest = {
+  reachId: number;
+  scenarioCode: string;
+  interval: Interval;
+  startDate: string;
+  endDate: string;
+  reachLabel: string;
+};
+
 export function ReachSedimentDashboard() {
   const [reaches, setReaches] = useState<ReachFeature[]>([]);
   const [reachId, setReachId] = useState<number | undefined>();
@@ -316,6 +325,7 @@ export function ReachSedimentDashboard() {
   const [chartOpen, setChartOpen] = useState(false);
   const [staticMapOpen, setStaticMapOpen] = useState(false);
   const [tablePage, setTablePage] = useState(1);
+  const [appliedRequest, setAppliedRequest] = useState<AppliedReachRequest | null>(null);
   const periodSyncKeyRef = useRef("");
 
   const hasReachData = useMemo(
@@ -346,7 +356,7 @@ export function ReachSedimentDashboard() {
 
   useEffect(() => {
     let alive = true;
-    fetchReaches({ catchmentId: 1 })
+    fetchReaches({ catchmentId: 1, includeSummary: false })
       .then((fc: FeatureCollection<ReachProps>) => {
         if (!alive) return;
         const next = fc.features ?? [];
@@ -369,19 +379,23 @@ export function ReachSedimentDashboard() {
     ? `Reach ${selectedReach.properties.id} / Subbasin ${selectedReach.properties.subbasin_id ?? "-"}`
     : "Reach";
 
-  const periodSyncKey = `${reachId ?? ""}|${scenarioCode}|${interval}`;
-
   useEffect(() => {
     periodSyncKeyRef.current = "";
+    setAppliedRequest(null);
     setStartDate(EMPTY_DATE);
     setEndDate(EMPTY_DATE);
     setPeriodAvailability(null);
     setSeriesFetchAttempted(false);
+    setScenarioSeries([]);
   }, [reachId, scenarioCode, interval]);
 
   const loadScenarioSeries = useCallback(
-  async (codes: string[], periodSourceCode: string): Promise<ScenarioSeriesLoadResult> => {
-    if (!reachId || !codes.length) {
+  async (
+    request: AppliedReachRequest,
+    codes: string[],
+    periodSourceCode: string
+  ): Promise<ScenarioSeriesLoadResult> => {
+    if (!request.reachId || !codes.length) {
       return { rows: [], periodBounds: null };
     }
 
@@ -390,11 +404,11 @@ export function ReachSedimentDashboard() {
     const rows = await Promise.all(
       codes.map(async (code) => {
         const label = SCENARIOS.find((s) => s.code === code)?.label ?? code;
-        const res = await fetchReachTimeseries(reachId, {
+        const res = await fetchReachTimeseries(request.reachId, {
           scenarioCode: code,
-          interval,
-          startDate: startDate || undefined,
-          endDate: endDate || undefined,
+          interval: request.interval,
+          startDate: request.startDate || undefined,
+          endDate: request.endDate || undefined,
         });
         if (code === periodSourceCode) {
           periodBounds = deriveReachPeriodBounds(res);
@@ -403,8 +417,8 @@ export function ReachSedimentDashboard() {
           scenarioCode: code,
           label,
           points: res.series.map((row) => ({
-            period: normalizePeriodKey(row.period ?? String(row.year ?? ""), interval),
-            reach: selectedReachLabel,
+            period: normalizePeriodKey(row.period ?? String(row.year ?? ""), request.interval),
+            reach: request.reachLabel,
             value: row.sed_out_tons,
             scenario: label,
             scenarioCode: code,
@@ -416,22 +430,30 @@ export function ReachSedimentDashboard() {
 
     return { rows, periodBounds };
   },
-  [endDate, interval, reachId, selectedReachLabel, startDate]
+  []
 );
 
   useEffect(() => {
     let alive = true;
-    if (!reachId) {
+    if (!appliedRequest) {
       setScenarioSeries([]);
+      setSeriesLoading(false);
       return;
     }
 
+    const periodSyncKey = `${appliedRequest.reachId}|${appliedRequest.scenarioCode}|${appliedRequest.interval}`;
     const shouldSyncPeriod =
-      !startDate || !endDate || periodSyncKeyRef.current !== periodSyncKey;
+      !appliedRequest.startDate ||
+      !appliedRequest.endDate ||
+      periodSyncKeyRef.current !== periodSyncKey;
 
     setSeriesLoading(true);
 
-    loadScenarioSeries([scenarioCode], scenarioCode)
+    loadScenarioSeries(
+      appliedRequest,
+      [appliedRequest.scenarioCode],
+      appliedRequest.scenarioCode
+    )
       .then(({ rows, periodBounds }) => {
         if (!alive) return;
 
@@ -461,13 +483,8 @@ export function ReachSedimentDashboard() {
       alive = false;
     };
   }, [
-    endDate,
-    interval,
+    appliedRequest,
     loadScenarioSeries,
-    periodSyncKey,
-    reachId,
-    scenarioCode,
-    startDate,
   ]);
 
   const activeSeries = useMemo(
@@ -531,13 +548,23 @@ export function ReachSedimentDashboard() {
     setReachId(reaches[0]?.properties?.id);
     setScenarioCode("etat_actuel");
     setInterval("year");
+    setAppliedRequest(null);
     setStartDate(EMPTY_DATE);
     setEndDate(EMPTY_DATE);
     setTablePage(1);
   };
 
   const applyFilters = () => {
+    if (!reachId) return;
     setTablePage(1);
+    setAppliedRequest({
+      reachId,
+      scenarioCode,
+      interval,
+      startDate,
+      endDate,
+      reachLabel: selectedReachLabel,
+    });
   };
 
   const totalTableRows = exportablePoints.length;

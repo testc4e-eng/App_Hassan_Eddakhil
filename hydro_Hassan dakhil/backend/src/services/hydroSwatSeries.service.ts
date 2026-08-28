@@ -5,13 +5,16 @@ import {
 } from "../utils/aggregationAvailability";
 import {
   NORMALIZED_SWAT_SCENARIOS,
-  NORMALIZED_SWAT_SCENARIO_CODES,
   NORMALIZED_SWAT_SCENARIO_BY_CODE,
   NORMALIZED_SWAT_SCENARIO_BY_RUN_ID,
   type NormalizedSwatScenarioCode,
 } from "../constants/swatScenarios";
+import {
+  SWAT_HYDRO_PROPERTY_DEFS,
+  VISIBLE_SWAT_SCENARIO_CODES,
+} from "../constants/swatDataSources";
 
-const CANONICAL_SCENARIOS = NORMALIZED_SWAT_SCENARIO_CODES;
+const CANONICAL_SCENARIOS = VISIBLE_SWAT_SCENARIO_CODES;
 
 type CanonicalScenarioCode = NormalizedSwatScenarioCode;
 type AggInterval = "day" | "month" | "year";
@@ -139,25 +142,29 @@ type RawSeriesRow = {
   value: number | string | null;
 };
 
-function aggToHydroTimeStep(agg: AggInterval): HydroTimeStep {
-  if (agg === "year") return "annual";
-  if (agg === "month") return "monthly";
-  return "daily";
-}
-
-const BASE_VARIABLE_DEFS: HydroVariableDef[] = [
-  {
-    property_id: 31,
-    standard_name: "SWAT_FLOW_M3S",
-    name: "Débit simulé",
-    unit: "m3/s",
-    description: "SWAT simulated Débits m³/s at reach outlet.",
-    source_table: "access.rch_results",
-    source_column: "flow_out_cms",
-    entity_type: "rch",
-    sort_order: 1001,
-  },
-];
+const BASE_VARIABLE_DEFS: HydroVariableDef[] = SWAT_HYDRO_PROPERTY_DEFS.map(
+  ({
+    property_id,
+    standard_name,
+    name,
+    unit,
+    description,
+    source_table,
+    source_column,
+    entity_type,
+    sort_order,
+  }) => ({
+    property_id,
+    standard_name,
+    name,
+    unit,
+    description,
+    source_table,
+    source_column,
+    entity_type,
+    sort_order,
+  })
+);
 
 function toNumber(value: number | string | null | undefined): number | null {
   if (value === null || value === undefined) return null;
@@ -839,6 +846,50 @@ export class HydroSwatSeriesService {
     });
   }
 
+  private async getAvailabilityRowsForRun(
+    runId: number,
+    filters?: {
+      stationId?: number;
+      propertyId?: number;
+    }
+  ): Promise<HydroAvailabilityRow[]> {
+    const scenario = await this.resolveScenario(runId);
+    const rows = await this.getAvailability({
+      stationId: filters?.stationId,
+      propertyId: filters?.propertyId,
+      scenarioCode: scenario?.scenario_code,
+    });
+    const exact = rows.filter((row) => row.run_id === runId);
+
+    if (exact.length || !scenario) {
+      return exact;
+    }
+
+    return rows.filter((row) => row.scenario_code === scenario.scenario_code);
+  }
+
+  private toCatalogRow(row: HydroAvailabilityRow, requestedRunId: number): HydroCatalogRow {
+    return {
+      ts_id: row.ts_id,
+      station_id: row.station_id,
+      station_code: row.station_code,
+      station_name: row.station_name,
+      property_id: row.property_id,
+      property_name: row.property_name,
+      unit: row.unit,
+      standard_name: row.standard_name,
+      run_id: requestedRunId,
+      scenario_code: row.scenario_code,
+      scenario_name: row.scenario_name,
+      source_type: row.source_type,
+      time_step: row.time_step,
+      ts_created_at: row.created_at || new Date().toISOString(),
+      n_points: row.n_measures,
+      start_date: row.dt_min,
+      end_date: row.dt_max,
+    };
+  }
+
   async getStationsForRun(runId: number): Promise<
     Array<{
       station_id: number;
@@ -846,8 +897,7 @@ export class HydroSwatSeriesService {
       station_name: string;
     }>
   > {
-    const rows = await this.getAvailability({ scenarioCode: undefined });
-    const filtered = rows.filter((row) => row.run_id === runId);
+    const filtered = await this.getAvailabilityRowsForRun(runId);
     const map = new Map<number, { station_id: number; station_code: string; station_name: string }>();
     for (const row of filtered) {
       if (!map.has(row.station_id)) {
@@ -862,34 +912,18 @@ export class HydroSwatSeriesService {
   }
 
   async getCatalog(stationId: number, runId: number): Promise<HydroCatalogRow[]> {
-    const rows = await this.getAvailability({ stationId });
+    const rows = await this.getAvailabilityRowsForRun(runId, { stationId });
     return rows
-      .filter((row) => row.run_id === runId)
-      .map((row) => ({
-        ts_id: row.ts_id,
-        station_id: row.station_id,
-        station_code: row.station_code,
-        station_name: row.station_name,
-        property_id: row.property_id,
-        property_name: row.property_name,
-        unit: row.unit,
-        standard_name: row.standard_name,
-        run_id: row.run_id,
-        scenario_code: row.scenario_code,
-        scenario_name: row.scenario_name,
-        source_type: row.source_type,
-        time_step: row.time_step,
-        ts_created_at: row.created_at || new Date().toISOString(),
-        n_points: row.n_measures,
-        start_date: row.dt_min,
-        end_date: row.dt_max,
-      }))
+      .map((row) => this.toCatalogRow(row, runId))
       .sort((a, b) => a.property_id - b.property_id);
   }
 
   async getDateRange(stationId: number, runId: number, propertyId: number): Promise<HydroDateRangeRow> {
-    const rows = await this.getAvailability({ stationId, propertyId });
-    const row = rows.find((item) => item.run_id === runId);
+    const rows = await this.getAvailabilityRowsForRun(runId, {
+      stationId,
+      propertyId,
+    });
+    const row = rows[0];
     if (!row) {
       return { min_date: null, max_date: null, n_points: 0 };
     }

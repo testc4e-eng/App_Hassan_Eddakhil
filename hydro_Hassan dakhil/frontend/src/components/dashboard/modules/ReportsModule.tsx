@@ -76,6 +76,12 @@ const MissionReportCard = memo(function MissionReportCard({
           {report.type}
         </Badge>
 
+        {report.category ? (
+          <Badge variant="secondary" className="w-fit rounded-full px-2.5 py-0.5 text-[11px] font-medium">
+            {report.category}
+          </Badge>
+        ) : null}
+
         <div className="mt-auto flex flex-wrap gap-2 pt-1">
           <Button
             size="sm"

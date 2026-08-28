@@ -130,10 +130,15 @@ export function fetchSubBasins(params?: { catchmentId?: number; barrageId?: numb
   return cacheRequest(url, () => getJSON<FeatureCollection>(url));
 }
 
-export function fetchReaches(params?: { subbasinId?: number; catchmentId?: number }) {
+export function fetchReaches(params?: {
+  subbasinId?: number;
+  catchmentId?: number;
+  includeSummary?: boolean;
+}) {
   const search = new URLSearchParams();
   if (params?.subbasinId != null) search.set("subbasinId", String(params.subbasinId));
   if (params?.catchmentId != null) search.set("catchmentId", String(params.catchmentId));
+  if (params?.includeSummary === false) search.set("summary", "false");
   const qs = search.toString() ? `?${search.toString()}` : "";
   const url = `${API_BASE}/spatial/reaches${qs}`;
   return cacheRequest(url, () => getJSON<FeatureCollection>(url));

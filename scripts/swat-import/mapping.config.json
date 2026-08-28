@@ -1,5 +1,5 @@
 {
-  "sourceFile": "C:\\dev\\Projects\\hydro_HD\\Données_Bge_Hassan_Addakhil\\Access\\SWATOutput.mdb",
+  "sourceFile": "SWATOutput.mdb",
   "scenarioCode": "SWAT_OUTPUT",
   "targetSchema": "access",
   "tables": [

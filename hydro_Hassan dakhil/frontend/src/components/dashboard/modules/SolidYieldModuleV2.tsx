@@ -45,7 +45,7 @@ import {
   extractSelectNumericPart,
 } from "@/lib/selectOptions";
 import { useHydroData } from "@/contexts/HydroDataContext";
-import { Calendar, ChevronLeft, ChevronRight, Download, Maximize2, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Maximize2, RefreshCw } from "lucide-react";
 import { ChartExportMenu } from "@/components/charts/ChartExportMenu";
 import { ExpandableDialog } from "@/components/dashboard/analytics/ExpandableDialog";
 import { buildChartImageFileName, downloadChartAsImage } from "@/lib/chartExport";
@@ -113,6 +113,28 @@ function fmtNum(v?: number | null, digits = 2) {
   return Number(v).toFixed(digits);
 }
 
+function computeSeriesStats(series: SolidYieldPoint[]): SolidYieldStats | null {
+  if (!series.length) return null;
+
+  const values = series
+    .map((point) => point.value)
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+
+  const periods = series
+    .map((point) => point.period)
+    .filter((period): period is string => typeof period === "string" && period.length > 0);
+
+  return {
+    min_value: values.length ? Math.min(...values) : null,
+    max_value: values.length ? Math.max(...values) : null,
+    avg_value: values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null,
+    sum_value: values.length ? values.reduce((sum, value) => sum + value, 0) : null,
+    n_points: series.reduce((sum, point) => sum + Number(point.n || 0), 0),
+    min_date: periods.length ? periods[0] : null,
+    max_date: periods.length ? periods[periods.length - 1] : null,
+  };
+}
+
 function hasAvailabilityData(
   row?: Pick<SolidYieldAvailability, "points_count" | "min_date" | "max_date"> | null
 ) {
@@ -166,6 +188,38 @@ function SolidYieldChartPanel({
   series,
   singleChartTransformed,
 }: SolidYieldChartPanelProps) {
+  const yAxisDomain = useMemo<[number, number] | ["auto", "auto"]>(() => {
+    if (usesLogarithmicYAxis(chartDisplayMode)) return ["auto", "auto"];
+
+    const values = [
+      ...activeChartState.rawRows.flatMap((row) =>
+        activeChartState.valueKeys
+          .map((key) => row[key])
+          .filter((value): value is number => typeof value === "number" && Number.isFinite(value))
+      ),
+      ...activeChartState.data.data.flatMap((row) =>
+        activeChartState.valueKeys
+          .map((key) => row[key])
+          .filter((value): value is number => typeof value === "number" && Number.isFinite(value))
+      ),
+    ];
+
+    if (!values.length) return ["auto", "auto"];
+
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+
+    if (minValue === maxValue) {
+      if (maxValue === 0) return [0, 1];
+      const margin = Math.abs(maxValue) * 0.1;
+      return [Math.min(0, minValue - margin), maxValue + margin];
+    }
+
+    const upper = maxValue >= 0 ? Math.ceil(maxValue * 1.1) : Math.ceil(maxValue * 0.9);
+    const lower = minValue >= 0 ? 0 : Math.floor(minValue * 1.1);
+    return [lower, upper];
+  }, [activeChartState, chartDisplayMode]);
+
   return (
     <div ref={chartRef} className={heightClassName}>
       {usesLogarithmicYAxis(chartDisplayMode) && activeChartState.data.excludedForLog > 0 ? (
@@ -205,7 +259,7 @@ function SolidYieldChartPanel({
               <YAxis
                 tick={{ fontSize: 11 }}
                 scale={usesLogarithmicYAxis(chartDisplayMode) ? "log" : "auto"}
-                domain={["auto", "auto"]}
+                domain={yAxisDomain}
               />
               <Tooltip
                 labelFormatter={(value) =>
@@ -254,7 +308,7 @@ function SolidYieldChartPanel({
               <YAxis
                 tick={{ fontSize: 11 }}
                 scale={usesLogarithmicYAxis(chartDisplayMode) ? "log" : "auto"}
-                domain={["auto", "auto"]}
+                domain={yAxisDomain}
               />
               <Tooltip
                 labelFormatter={(value) =>
@@ -309,7 +363,7 @@ function SolidYieldChartPanel({
             <YAxis
               tick={{ fontSize: 11 }}
               scale={usesLogarithmicYAxis(chartDisplayMode) ? "log" : "auto"}
-              domain={["auto", "auto"]}
+              domain={yAxisDomain}
             />
             <Tooltip
               labelFormatter={(value) =>
@@ -341,6 +395,7 @@ export function SolidYieldModuleV2() {
   const [chartDisplayMode, setChartDisplayMode] = useState<ChartDisplayMode>("normal");
   const [chartOpen, setChartOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [subbasins, setSubbasins] = useState<SolidYieldSubbasin[]>([]);
@@ -359,6 +414,7 @@ export function SolidYieldModuleV2() {
   const [compareRunIds, setCompareRunIds] = useState<number[]>([]);
   const [tablePage, setTablePage] = useState(1);
   const chartRef = useRef<HTMLDivElement>(null);
+  const availabilityCacheRef = useRef(new Map<number, SolidYieldAvailability[]>());
 
   useEffect(() => {
     if (!(import.meta as any).env?.DEV) return;
@@ -387,10 +443,7 @@ export function SolidYieldModuleV2() {
       try {
         setLoading(true);
         setError(null);
-        const subsPromise = solidYieldService.subbasins();
-        const avPromise = solidYieldService.availability();
-
-        const subs = await subsPromise;
+        const subs = await solidYieldService.subbasins();
         if (!alive) return;
 
         const dedupedSubs = deduplicateSelectOptions(
@@ -406,21 +459,6 @@ export function SolidYieldModuleV2() {
           setEndDate(toDateOnly(dedupedSubs[0].max_date) || EMPTY_DATE);
         }
         setLoading(false);
-
-        void avPromise
-          .then((av) => {
-            if (!alive) return;
-            setAvailability(
-              deduplicateSelectOptions(
-                av,
-                (row) => `${row.subbasin_station_id}:${row.run_id}:${row.property_id}`
-              )
-            );
-          })
-          .catch((e: any) => {
-            if (!alive) return;
-            setError(String(e?.message || e));
-          });
       } catch (e: any) {
         if (!alive) return;
         setError(String(e?.message || e));
@@ -431,6 +469,55 @@ export function SolidYieldModuleV2() {
       alive = false;
     };
   }, []);
+
+  useEffect(() => {
+    let alive = true;
+
+    if (!subbasinStationId) {
+      setAvailability([]);
+      setAvailabilityLoading(false);
+      return () => {
+        alive = false;
+      };
+    }
+
+    const cached = availabilityCacheRef.current.get(subbasinStationId);
+    if (cached) {
+      setAvailability(cached);
+      setAvailabilityLoading(false);
+      return () => {
+        alive = false;
+      };
+    }
+
+    setAvailability([]);
+    setAvailabilityLoading(true);
+    setError(null);
+
+    void solidYieldService
+      .availability(subbasinStationId)
+      .then((rows) => {
+        if (!alive) return;
+        const deduped = deduplicateSelectOptions(
+          rows,
+          (row) => `${row.subbasin_station_id}:${row.scenario_code}:${row.property_id}`
+        );
+        availabilityCacheRef.current.set(subbasinStationId, deduped);
+        setAvailability(deduped);
+      })
+      .catch((e: any) => {
+        if (!alive) return;
+        setAvailability([]);
+        setError(String(e?.message || e));
+      })
+      .finally(() => {
+        if (alive) setAvailabilityLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [subbasinStationId]);
 
   const subbasinMap = useMemo(
     () =>
@@ -488,21 +575,8 @@ export function SolidYieldModuleV2() {
 
   const availableSubbasins = useMemo(() => {
     if (!subbasins.length) return [];
-    if (!availability.length || !runId) return subbasins;
-
-    const rows = availability.filter((r) => r.run_id === runId);
-    if (!rows.length) return subbasins;
-
-    const ids = new Set<number>();
-    for (const row of rows) {
-      ids.add(row.subbasin_station_id);
-    }
-    const filtered = subbasins.filter((subbasin) =>
-      ids.has(subbasin.subbasin_station_id)
-    );
-    const source = filtered.length ? filtered : subbasins;
-    return deduplicateSelectOptions(source, (subbasin) => subbasin.subbasin_station_id);
-  }, [availability, runId, subbasins]);
+    return deduplicateSelectOptions(subbasins, (subbasin) => subbasin.subbasin_station_id);
+  }, [subbasins]);
 
   const subbasinSelectOptions = useMemo<SubbasinSelectOption[]>(() => {
     return availableSubbasins.map((subbasin) => {
@@ -548,8 +622,6 @@ export function SolidYieldModuleV2() {
 
   const selectedSubbasinValue = selectedSubbasinOption?.value ?? "";
   const selectedRunValue = selectedRunOption?.value ?? "";
-  const selectedSubbasinNumericId = selectedSubbasinOption?.subbasin_id ?? null;
-
   const activeAvailability = useMemo(() => {
     if (!subbasinStationId || !runId) return null;
     const selectedRun = runOptions.find((run) => run.run_id === runId);
@@ -597,7 +669,17 @@ export function SolidYieldModuleV2() {
     return map;
   }, [availability, subbasinStationId, runOptions, availabilityByScenarioCode]);
 
-  const selectedRunHasData = hasAvailabilityData(activeAvailability);
+  const availabilityResolved = Boolean(subbasinStationId) && !availabilityLoading;
+
+  const resolveRunAvailabilityState = (targetRunId: number) => {
+    if (!availabilityResolved) return "checking" as const;
+    return hasAvailabilityData(availabilityByRunId.get(targetRunId))
+      ? ("available" as const)
+      : ("unavailable" as const);
+  };
+  const selectedRunAvailabilityState =
+    runId == null ? ("checking" as const) : resolveRunAvailabilityState(runId);
+  const selectedRunHasData = selectedRunAvailabilityState === "available";
 
   const intervalAvailability = useMemo(
     () =>
@@ -636,6 +718,7 @@ export function SolidYieldModuleV2() {
   const effectiveRunId = activeAvailability?.run_id ?? runId;
 
   useEffect(() => {
+    if (!availabilityResolved) return;
     if (!subbasinStationId) return;
 
     const rows = availability.filter((row) => row.subbasin_station_id === subbasinStationId);
@@ -650,37 +733,40 @@ export function SolidYieldModuleV2() {
         preferred?.run_id ?? (rows.find(hasAvailabilityData) ?? rows[0]).run_id
       );
     }
-  }, [availability, availabilityByScenarioCode, subbasinStationId, runId, runOptions]);
+  }, [availability, availabilityByScenarioCode, availabilityResolved, subbasinStationId, runId, runOptions]);
 
   useEffect(() => {
+    if (!availabilityResolved) return;
     if (!runId && runOptions.length) {
       const firstWithData = runOptions.find((run) =>
         hasAvailabilityData(availabilityByRunId.get(run.run_id))
       );
       setRunId((firstWithData ?? runOptions[0]).run_id);
     }
-  }, [availabilityByRunId, runOptions, runId]);
+  }, [availabilityByRunId, availabilityResolved, runOptions, runId]);
 
   useEffect(() => {
-    if (!runId) return;
     setCompareRunIds((prev) => {
       const allowed = new Set(
         runOptions
           .filter((run) => hasAvailabilityData(availabilityByRunId.get(run.run_id)))
           .map((run) => run.run_id)
       );
-      const next = prev.filter((id) => allowed.has(id));
-      if (allowed.has(runId) && !next.includes(runId)) next.push(runId);
-      return runOptions.map((run) => run.run_id).filter((id) => next.includes(id));
+      const next = runOptions
+        .map((run) => run.run_id)
+        .filter((id) => prev.includes(id) && allowed.has(id));
+      return next.length === prev.length && next.every((id, index) => id === prev[index])
+        ? prev
+        : next;
     });
-  }, [availabilityByRunId, runId, runOptions]);
+  }, [availabilityByRunId, runOptions]);
 
   useEffect(() => {
     const source = activeAvailability || subbasins.find(
       (subbasin) => subbasin.subbasin_station_id === subbasinStationId
     );
     if (!source) return;
-    if (activeAvailability && !hasAvailabilityData(activeAvailability)) {
+    if (availabilityResolved && runId && selectedRunAvailabilityState === "unavailable") {
       setStartDate(EMPTY_DATE);
       setEndDate(EMPTY_DATE);
       return;
@@ -690,6 +776,9 @@ export function SolidYieldModuleV2() {
   }, [
     activeAvailability?.subbasin_station_id,
     activeAvailability?.run_id,
+    availabilityResolved,
+    selectedRunAvailabilityState,
+    runId,
     subbasinStationId,
     subbasins,
   ]);
@@ -714,12 +803,12 @@ export function SolidYieldModuleV2() {
     let alive = true;
     (async () => {
       try {
-        if (!subbasinStationId || !effectiveRunId) {
+        if (!subbasinStationId || !effectiveRunId || !availabilityResolved) {
           setSeries([]);
           setStats(null);
           return;
         }
-        if (activeAvailability && !hasAvailabilityData(activeAvailability)) {
+        if (availabilityResolved && selectedRunAvailabilityState === "unavailable") {
           setSeries([]);
           setStats(null);
           return;
@@ -750,7 +839,16 @@ export function SolidYieldModuleV2() {
     return () => {
       alive = false;
     };
-  }, [activeAvailability, effectiveRunId, subbasinStationId, interval, startDate, endDate]);
+  }, [
+    activeAvailability,
+    availabilityResolved,
+    effectiveRunId,
+    selectedRunAvailabilityState,
+    subbasinStationId,
+    interval,
+    startDate,
+    endDate,
+  ]);
 
   useEffect(() => {
     let alive = true;
@@ -973,6 +1071,8 @@ export function SolidYieldModuleV2() {
         ? scenarioCompareData.length > 0
         : series.length > 0;
 
+  const displayedStats = useMemo(() => computeSeriesStats(series), [series]);
+
   const toggleCompareSubbasin = (id: number) => {
     setCompareSubbasins((prev) =>
       prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]
@@ -1130,9 +1230,6 @@ export function SolidYieldModuleV2() {
               onValueChange={(v) => {
                 const next = extractSelectNumericPart(v, 2);
                 setRunId(next);
-                if (next) {
-                  setCompareRunIds((prev) => (prev.includes(next) ? prev : [...prev, next]));
-                }
               }}
             >
               <SelectTrigger className="h-9">
@@ -1140,11 +1237,17 @@ export function SolidYieldModuleV2() {
               </SelectTrigger>
               <SelectContent>
                 {runSelectOptions.map((r) => {
-                  const disabled =
-                    availability.length > 0 && !hasAvailabilityData(availabilityByRunId.get(r.run_id));
+                  const availabilityState = resolveRunAvailabilityState(r.run_id);
+                  const disabled = availabilityState === "unavailable";
+                  const label =
+                    availabilityState === "checking"
+                      ? `${r.scenario_name} - Vérification de la disponibilité...`
+                      : disabled
+                        ? `${r.scenario_name} - indisponible`
+                        : r.scenario_name;
                   return (
                     <SelectItem key={r.key} value={r.value} disabled={disabled}>
-                      {disabled ? `${r.scenario_name} - indisponible` : r.scenario_name}
+                      {label}
                     </SelectItem>
                   );
                 })}
@@ -1206,10 +1309,11 @@ export function SolidYieldModuleV2() {
               <CompareScenariosMultiSelect
                 options={runOptions.map((run) => ({
                   run_id: run.run_id,
-                  scenario_name: run.scenario_name,
-                  disabled:
-                    availability.length > 0 &&
-                    !hasAvailabilityData(availabilityByRunId.get(run.run_id)),
+                  scenario_name:
+                    resolveRunAvailabilityState(run.run_id) === "checking"
+                      ? `${run.scenario_name} - Vérification de la disponibilité...`
+                      : run.scenario_name,
+                  disabled: resolveRunAvailabilityState(run.run_id) === "unavailable",
                 }))}
                 selectedIds={compareRunIds}
                 onToggle={toggleCompareRun}
@@ -1246,18 +1350,19 @@ export function SolidYieldModuleV2() {
             <CardHeader className="space-y-3 pb-2 pt-4">
               <CardTitle className="text-base">Statistiques</CardTitle>
               <div className="flex flex-wrap items-stretch gap-2">
-                <StatCard compact micro label="Min" value={fmtNum(stats?.min_value)} />
-                <StatCard compact micro label="Max" value={fmtNum(stats?.max_value)} />
-                <StatCard compact micro label="Moyenne" value={fmtNum(stats?.avg_value)} />
-                <StatCard compact micro label="Somme" value={fmtNum(stats?.sum_value)} />
-                <StatCard compact micro label="Points" value={String(stats?.n_points ?? 0)} />
+                <StatCard compact micro label="Min" value={fmtNum(displayedStats?.min_value ?? stats?.min_value)} />
+                <StatCard compact micro label="Max" value={fmtNum(displayedStats?.max_value ?? stats?.max_value)} />
+                <StatCard compact micro label="Moyenne" value={fmtNum(displayedStats?.avg_value ?? stats?.avg_value)} />
+                <StatCard compact micro label="Somme" value={fmtNum(displayedStats?.sum_value ?? stats?.sum_value)} />
+                <StatCard compact micro label="Points" value={String(displayedStats?.n_points ?? stats?.n_points ?? 0)} />
                 <StatCard
                   compact
                   wide
                   label="Période"
                   value={
-                    stats?.min_date && stats?.max_date
-                      ? `${toDateOnly(stats.min_date)} → ${toDateOnly(stats.max_date)}`
+                    (displayedStats?.min_date ?? stats?.min_date) &&
+                    (displayedStats?.max_date ?? stats?.max_date)
+                      ? `${toDateOnly(displayedStats?.min_date ?? stats?.min_date)} → ${toDateOnly(displayedStats?.max_date ?? stats?.max_date)}`
                       : "—"
                   }
                 />

@@ -34,10 +34,10 @@ export class AdvancedSpatialService {
 
   private getDataRoot(): string {
     const info = resolveHassanDataRoot();
-    console.log("[HASSAN_DATA_ROOT]", info.resolved);
+    console.log("[HASSAN_DATA_ROOT]", info.exists ? "configured" : "missing");
 
     if (!info.exists) {
-      throw new AppError(`SWAT advanced data root not found: ${info.resolved}`, 404);
+      throw new AppError("SWAT advanced data root not found.", 404);
     }
 
     return info.resolved;
@@ -71,7 +71,7 @@ export class AdvancedSpatialService {
 
   private ensureDirectoryExists(dirPath: string, label: string) {
     if (!fs.existsSync(dirPath)) {
-      throw new AppError(`${label} not found: ${dirPath}`, 404);
+      throw new AppError(`${label} not found.`, 404);
     }
   }
 
@@ -96,7 +96,7 @@ export class AdvancedSpatialService {
 
     const found = walk(rootDir);
     if (!found) {
-      throw new AppError(`Could not find ${fileName} under ${rootDir}`, 404);
+      throw new AppError(`Could not find ${fileName} in advanced spatial source.`, 404);
     }
     return found;
   }
@@ -114,7 +114,7 @@ export class AdvancedSpatialService {
     ];
 
     if (!fs.existsSync(currentRoot)) {
-      throw new AppError(`Current advanced spatial root not found: ${currentRoot}`, 404);
+      throw new AppError("Current advanced spatial root not found.", 404);
     }
 
     if (fs.existsSync(attenuationRoot)) {
@@ -137,7 +137,7 @@ export class AdvancedSpatialService {
         });
       }
     } else {
-      console.warn(`${this.loggerPrefix} attenuation root not found: ${attenuationRoot}`);
+      console.warn(`${this.loggerPrefix} attenuation root not found`);
     }
 
     return scenarios;
@@ -150,7 +150,7 @@ export class AdvancedSpatialService {
       label_en,
     }));
     console.info(
-      `${this.loggerPrefix} scenarios=${scenarios.map((s) => s.key).join(", ")} root=${this.getDataRoot()}`
+      `${this.loggerPrefix} scenarios=${scenarios.map((s) => s.key).join(", ")}`
     );
     return scenarios;
   }
@@ -158,7 +158,7 @@ export class AdvancedSpatialService {
   private getScenarioRoot(scenarioKey: string): ScenarioSources {
     const scenario = this.getScenarioSources().find((item) => item.key === scenarioKey);
     if (!scenario) {
-      throw new AppError(`Unknown advanced spatial scenario: ${scenarioKey}`, 404);
+      throw new AppError("Unknown advanced spatial scenario.", 404);
     }
     return scenario;
   }
@@ -223,7 +223,7 @@ export class AdvancedSpatialService {
     const firstProps = payload.features[0]?.properties ?? {};
     const sampleKeys = Object.keys(firstProps).slice(0, 12).join(", ");
     console.info(
-      `${this.loggerPrefix} scenario=${scenarioKey} layer=${layer} source=${source} count=${payload.features.length} sampleKeys=[${sampleKeys}]`
+      `${this.loggerPrefix} scenario=${scenarioKey} layer=${layer} count=${payload.features.length} sampleKeys=[${sampleKeys}]`
     );
   }
 
@@ -292,7 +292,7 @@ export class AdvancedSpatialService {
       if (scenarioKey === "current") {
         const summaryPath = this.getPublicHruSummaryPath();
         if (summaryPath) {
-          console.info(`${this.loggerPrefix} reading HRU summary for scenario=${scenarioKey} layer=${layer} file=${summaryPath}`);
+          console.info(`${this.loggerPrefix} reading HRU summary for scenario=${scenarioKey} layer=${layer}`);
           return this.readPublicGeoJson(summaryPath);
         }
       }
@@ -303,7 +303,7 @@ export class AdvancedSpatialService {
     const publicGeoJsonPath = this.getPublicGeoJsonPath(scenarioKey, layer);
     if (publicGeoJsonPath) {
       console.info(
-        `${this.loggerPrefix} reading public GeoJSON scenario=${scenarioKey} layer=${layer} file=${publicGeoJsonPath}`
+        `${this.loggerPrefix} reading public GeoJSON scenario=${scenarioKey} layer=${layer}`
       );
       const payload = this.readPublicGeoJson(publicGeoJsonPath);
       const filtered = this.filterGeoJson(payload, layer, subbasinId);
@@ -315,7 +315,7 @@ export class AdvancedSpatialService {
     const where = canonicalLayer === "hrus" && Number.isFinite(subbasinId) ? `Subbasin = ${Number(subbasinId)}` : undefined;
 
     console.info(
-      `${this.loggerPrefix} reading shapefile scenario=${scenarioKey} layer=${layer} canonical=${canonicalLayer} source=${sourcePath}${where ? ` where=${where}` : ""}`
+      `${this.loggerPrefix} reading shapefile scenario=${scenarioKey} layer=${layer} canonical=${canonicalLayer}${where ? " filtered" : ""}`
     );
     const payload = this.ogr2geojson(sourcePath, where);
     this.logLayerPayload(scenarioKey, layer, sourcePath, payload);

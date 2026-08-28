@@ -13,6 +13,7 @@ import { MapsModule } from "@/components/dashboard/modules/MapsModule";
 import { ReportsModule } from "@/components/dashboard/modules/ReportsModule";
 import { DataManagementModule } from "@/components/dashboard/modules/DataManagementModule";
 import ScanDeDonneesPage from "@/pages/ScanDeDonneesPage";
+import { InterventionProgramDashboard } from "@/features/intervention-program/pages/InterventionProgramDashboard";
 
 import { useHydroData } from "@/contexts/HydroDataContext";
 import { Loader2 } from "lucide-react";
@@ -28,6 +29,7 @@ const MODULE_COMPONENTS: Record<DashboardSection, React.ComponentType> = {
   simulatedData: DataManagementModule,
   dataScan: ScanDeDonneesPage,
   reports: ReportsModule,
+  interventionProgram: InterventionProgramDashboard,
 };
 
 export default function Dashboard() {
@@ -53,6 +55,7 @@ export default function Dashboard() {
         simulatedData: t("dashboard.simulatedData"),
         dataScan: t("dashboard.scan"),
         reports: t("dashboard.reports"),
+        interventionProgram: t("dashboard.interventionProgram"),
       } as Record<DashboardSection, string>),
     [t]
   );
@@ -68,6 +71,11 @@ export default function Dashboard() {
       return;
     }
 
+    if (location.pathname.startsWith("/dashboard/intervention-program")) {
+      setActiveSection("interventionProgram");
+      return;
+    }
+
     const params = new URLSearchParams(location.search);
     const section = params.get("section");
     const validSections: DashboardSection[] = [
@@ -79,6 +87,7 @@ export default function Dashboard() {
       "simulatedData",
       "dataScan",
       "reports",
+      "interventionProgram",
     ];
     if (section && validSections.includes(section as DashboardSection)) {
       setActiveSection(section as DashboardSection);
@@ -90,6 +99,10 @@ export default function Dashboard() {
 
   const handleSectionChange = (section: DashboardSection) => {
     setActiveSection(section);
+    if (section === "interventionProgram") {
+      navigate("/dashboard/intervention-program");
+      return;
+    }
     navigate(`/dashboard?section=${section}`);
   };
 

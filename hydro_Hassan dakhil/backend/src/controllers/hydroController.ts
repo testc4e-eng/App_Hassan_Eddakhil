@@ -67,9 +67,7 @@ export class HydroController {
         service: "Hydro API",
         version: "1.0.0",
         database: health.connected ? "connected" : "disconnected",
-        tables: health.tables,
         uptime: process.uptime(),
-        ...(health.connected && { structures: health.structures }),
       });
     } catch (error) {
       next(error);

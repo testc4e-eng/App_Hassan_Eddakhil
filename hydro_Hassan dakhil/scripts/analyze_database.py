@@ -49,11 +49,19 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 LOGGER = logging.getLogger("hydro-db-analyzer")
 
 
+def env_first(*names: str, default: str) -> str:
+    for name in names:
+        value = os.getenv(name)
+        if value:
+            return value
+    return default
+
+
 @dataclass(frozen=True)
 class DbConfig:
     host: str = "localhost"
     port: int = 5432
-    dbname: str = "hydro_hd_1714"
+    dbname: str = "hydro_hd"
     user: str = "postgres"
     password: str = ""
     ssl: bool = False
@@ -75,7 +83,7 @@ def get_db_config(env_file: Path = BACKEND_ENV) -> DbConfig:
     return DbConfig(
         host=os.getenv("DB_HOST", "localhost"),
         port=int(os.getenv("DB_PORT", "5432")),
-        dbname=os.getenv("DB_NAME", "hydro_hd_1714"),
+        dbname=env_first("HDI_DB_NAME", "DB_NAME", default="hydro_hd"),
         user=os.getenv("DB_USER", "postgres"),
         password=os.getenv("DB_PASSWORD", ""),
         ssl=str(os.getenv("DB_SSL", "false")).lower() in {"1", "true", "yes", "on"},

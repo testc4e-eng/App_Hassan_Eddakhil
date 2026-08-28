@@ -298,7 +298,7 @@ export class HydroService {
       `;
       return this.db.query<Reservoir>(query, []);
     }
-    // adapte le FROM si ton nom rÃ©el diffÃ¨re (ex: public.reservoirs, public.lakes, etc.)
+    // adapte le FROM si ton nom réel diffère (ex: public.reservoirs, public.lakes, etc.)
     const query = `
       SELECT
         reservoir_id,
@@ -477,7 +477,7 @@ export class HydroService {
     periodId?: number,
     catchmentId?: number
   ): Promise<Landcover[]> {
-    // adapte selon ton schÃ©ma rÃ©el
+    // adapte selon ton schéma réel
     let query = `
       SELECT
         lc_id,
@@ -508,7 +508,7 @@ export class HydroService {
     return this.db.query<Landcover>(query, params);
   }
 
-  // Placeholders si le controller les appelle (Ã©vite crash)
+  // Placeholders si le controller les appelle (évite crash)
   async getLandcoverSummary(
     _catchmentId: number,
     _periodId?: number
@@ -531,7 +531,7 @@ export class HydroService {
     };
   }
 
-  // IMPORTANT: ton controller appelle aussi Ã§a
+  // IMPORTANT: ton controller appelle aussi ça
   async getTimeseriesCatalogByModule(
     stationId: number,
     runId: number,
@@ -624,9 +624,9 @@ export class HydroService {
 
 
   async getStationsValuesByVariable(
-    variable: string,
-    scenario: string,
-    date: string
+    _variable: string,
+    _scenario: string,
+    _date: string
   ) {
     // MOCK TEMPORAIRE
     return [
@@ -643,15 +643,15 @@ export class HydroService {
     startDate: string,
     endDate: string
   ) {
-    // On rÃ©utilise la mÃ©thode existante
+    // On réutilise la méthode existante
     const measurements = await this.getMeasurements(tsId, {
       startDate,
       endDate,
-      // on met une limite trÃ¨s grande (ou null si ton code supporte)
+      // on met une limite très grande (ou null si ton code supporte)
       limit: 1000000,
     });
 
-    // IMPORTANT: adapte le champ value si diffÃ©rent (ex: m.value, m.val, m.measurement_value)
+    // IMPORTANT: adapte le champ value si différent (ex: m.value, m.val, m.measurement_value)
     const values = (measurements ?? [])
       .map((m: any) => Number(m.value))
       .filter((v: number) => Number.isFinite(v));

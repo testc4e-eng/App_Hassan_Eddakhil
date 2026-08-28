@@ -1,0 +1,488 @@
+;
+; Archive created at 2026-08-28 10:52:27 UTC
+;     dbname: hydro_hd
+;     TOC Entries: 477
+;     Compression: gzip
+;     Dump Version: 1.16-0
+;     Format: CUSTOM
+;     Integer: 4 bytes
+;     Offset: 8 bytes
+;     Dumped from database version: 17.5 (Debian 17.5-1.pgdg110+1)
+;     Dumped by pg_dump version: 17.5 (Debian 17.5-1.pgdg110+1)
+;
+;
+; Selected TOC Entries:
+;
+8; 2615 19738 SCHEMA - access r3fix_sanitize
+5550; 0 0 COMMENT - SCHEMA access r3fix_sanitize
+9; 2615 19739 SCHEMA - api r3fix_sanitize
+10; 2615 19740 SCHEMA - audit r3fix_sanitize
+11; 2615 19741 SCHEMA - auth r3fix_sanitize
+12; 2615 19742 SCHEMA - core r3fix_sanitize
+13; 2615 19743 SCHEMA - geo r3fix_sanitize
+14; 2615 19744 SCHEMA - gis r3fix_sanitize
+15; 2615 19745 SCHEMA - hydro r3fix_sanitize
+16; 2615 19746 SCHEMA - ref r3fix_sanitize
+17; 2615 19747 SCHEMA - staging r3fix_sanitize
+5551; 0 0 COMMENT - SCHEMA staging r3fix_sanitize
+18; 2615 19748 SCHEMA - swat_setup r3fix_sanitize
+5552; 0 0 COMMENT - SCHEMA swat_setup r3fix_sanitize
+2; 3079 19749 EXTENSION - pgcrypto 
+5553; 0 0 COMMENT - EXTENSION pgcrypto 
+3; 3079 19786 EXTENSION - postgis 
+5554; 0 0 COMMENT - EXTENSION postgis 
+1912; 1247 20869 TYPE public time_step r3fix_sanitize
+664; 1255 20879 FUNCTION hydro set_updated_at() r3fix_sanitize
+588; 1255 20880 FUNCTION public api_get_ts_agg(integer, integer, text, text) r3fix_sanitize
+1102; 1255 20881 FUNCTION public api_get_ts_catalog(integer, integer, text) r3fix_sanitize
+600; 1255 20882 FUNCTION public to_numeric_clean(text) r3fix_sanitize
+235; 1259 20883 TABLE access hru_results r3fix_sanitize
+236; 1259 20894 SEQUENCE access hru_results_id_seq r3fix_sanitize
+5555; 0 0 SEQUENCE OWNED BY access hru_results_id_seq r3fix_sanitize
+237; 1259 20895 TABLE access import_runs r3fix_sanitize
+238; 1259 20905 SEQUENCE access import_runs_import_id_seq r3fix_sanitize
+5556; 0 0 SEQUENCE OWNED BY access import_runs_import_id_seq r3fix_sanitize
+239; 1259 20906 TABLE access rch_results r3fix_sanitize
+240; 1259 20914 TABLE access scenario_metadata r3fix_sanitize
+241; 1259 20926 SEQUENCE access scenario_metadata_id_seq r3fix_sanitize
+5557; 0 0 SEQUENCE OWNED BY access scenario_metadata_id_seq r3fix_sanitize
+242; 1259 20927 TABLE access sub_results r3fix_sanitize
+243; 1259 20935 TABLE access variable_dictionary r3fix_sanitize
+244; 1259 20944 TABLE access weather_inputs r3fix_sanitize
+245; 1259 20955 SEQUENCE access weather_inputs_id_seq r3fix_sanitize
+5558; 0 0 SEQUENCE OWNED BY access weather_inputs_id_seq r3fix_sanitize
+246; 1259 20956 TABLE core model_runs r3fix_sanitize
+247; 1259 20963 MATERIALIZED VIEW api mv_scenario_catalog r3fix_sanitize
+248; 1259 20970 TABLE ref observed_properties r3fix_sanitize
+249; 1259 20975 TABLE ref property_domain_membership r3fix_sanitize
+250; 1259 20986 VIEW api v_catalog_properties r3fix_sanitize
+251; 1259 20990 TABLE core stations r3fix_sanitize
+252; 1259 20995 TABLE core timeseries r3fix_sanitize
+253; 1259 21002 VIEW api v_timeseries_enriched r3fix_sanitize
+254; 1259 21007 VIEW api v_catalog_stations r3fix_sanitize
+255; 1259 21012 TABLE core catchments r3fix_sanitize
+256; 1259 21017 TABLE core measurements r3fix_sanitize
+257; 1259 21020 TABLE core reaches r3fix_sanitize
+258; 1259 21026 TABLE core reservoirs r3fix_sanitize
+259; 1259 21032 TABLE core subbasins r3fix_sanitize
+260; 1259 21038 VIEW api v_dashboard_catchment_counts r3fix_sanitize
+261; 1259 21043 TABLE core reservoir_bathymetry r3fix_sanitize
+262; 1259 21049 VIEW api v_dashboard_reservoir_counts r3fix_sanitize
+263; 1259 21054 VIEW api v_measurements_annual r3fix_sanitize
+264; 1259 21058 VIEW api v_measurements_latest r3fix_sanitize
+265; 1259 21062 VIEW api v_measurements_monthly r3fix_sanitize
+266; 1259 21066 TABLE audit swat_output_archive_rch r3fix_sanitize
+267; 1259 21074 TABLE audit swat_output_archive_sub r3fix_sanitize
+268; 1259 21082 VIEW audit v_qc_measurements_duplicates r3fix_sanitize
+269; 1259 21086 VIEW audit v_qc_measurements_orphans r3fix_sanitize
+270; 1259 21090 TABLE geo landcover r3fix_sanitize
+271; 1259 21095 TABLE ref communes r3fix_sanitize
+272; 1259 21101 VIEW audit v_qc_null_geometry r3fix_sanitize
+273; 1259 21106 VIEW audit v_qc_timeseries_duplicates r3fix_sanitize
+274; 1259 21110 VIEW audit v_qc_timeseries_without_measurements r3fix_sanitize
+275; 1259 21114 TABLE auth audit_log r3fix_sanitize
+276; 1259 21121 SEQUENCE auth audit_log_audit_id_seq r3fix_sanitize
+5559; 0 0 SEQUENCE OWNED BY auth audit_log_audit_id_seq r3fix_sanitize
+277; 1259 21122 TABLE auth permissions r3fix_sanitize
+278; 1259 21127 SEQUENCE auth permissions_permission_id_seq r3fix_sanitize
+5560; 0 0 SEQUENCE OWNED BY auth permissions_permission_id_seq r3fix_sanitize
+279; 1259 21128 TABLE auth role_permissions r3fix_sanitize
+280; 1259 21131 TABLE auth roles r3fix_sanitize
+281; 1259 21136 SEQUENCE auth roles_role_id_seq r3fix_sanitize
+5561; 0 0 SEQUENCE OWNED BY auth roles_role_id_seq r3fix_sanitize
+282; 1259 21137 TABLE auth user_roles r3fix_sanitize
+283; 1259 21140 TABLE auth users r3fix_sanitize
+284; 1259 21147 SEQUENCE auth users_user_id_seq r3fix_sanitize
+5562; 0 0 SEQUENCE OWNED BY auth users_user_id_seq r3fix_sanitize
+285; 1259 21148 SEQUENCE core catchments_catchment_id_seq r3fix_sanitize
+286; 1259 21149 SEQUENCE core catchments_catchment_id_seq1 r3fix_sanitize
+287; 1259 21150 TABLE core data_batches r3fix_sanitize
+288; 1259 21158 TABLE core measurement_batches r3fix_sanitize
+289; 1259 21164 SEQUENCE core model_runs_run_id_seq r3fix_sanitize
+290; 1259 21165 SEQUENCE core model_runs_run_id_seq1 r3fix_sanitize
+291; 1259 21166 SEQUENCE core reaches_reach_id_seq r3fix_sanitize
+292; 1259 21167 SEQUENCE core reaches_reach_id_seq1 r3fix_sanitize
+293; 1259 21168 SEQUENCE core reservoir_bathymetry_bathy_id_seq r3fix_sanitize
+5563; 0 0 SEQUENCE OWNED BY core reservoir_bathymetry_bathy_id_seq r3fix_sanitize
+294; 1259 21169 SEQUENCE core reservoirs_reservoir_id_seq r3fix_sanitize
+295; 1259 21170 SEQUENCE core reservoirs_reservoir_id_seq1 r3fix_sanitize
+296; 1259 21171 TABLE core rivers r3fix_sanitize
+297; 1259 21176 SEQUENCE core rivers_river_id_seq r3fix_sanitize
+298; 1259 21177 SEQUENCE core rivers_river_id_seq1 r3fix_sanitize
+299; 1259 21178 TABLE core station_reach_map r3fix_sanitize
+300; 1259 21188 SEQUENCE core station_reach_map_id_seq r3fix_sanitize
+5564; 0 0 SEQUENCE OWNED BY core station_reach_map_id_seq r3fix_sanitize
+301; 1259 21189 TABLE core station_subbasin_map r3fix_sanitize
+302; 1259 21201 SEQUENCE core station_subbasin_map_id_seq r3fix_sanitize
+5565; 0 0 SEQUENCE OWNED BY core station_subbasin_map_id_seq r3fix_sanitize
+303; 1259 21202 SEQUENCE core stations_station_id_seq r3fix_sanitize
+304; 1259 21203 SEQUENCE core stations_station_id_seq1 r3fix_sanitize
+305; 1259 21204 TABLE core subbasin_metrics_annual r3fix_sanitize
+306; 1259 21211 SEQUENCE core subbasins_subbasin_id_seq r3fix_sanitize
+307; 1259 21212 SEQUENCE core subbasins_subbasin_id_seq1 r3fix_sanitize
+308; 1259 21213 TABLE core swat_entity_map r3fix_sanitize
+309; 1259 21224 SEQUENCE core timeseries_ts_id_seq r3fix_sanitize
+310; 1259 21225 SEQUENCE core timeseries_ts_id_seq1 r3fix_sanitize
+311; 1259 21226 SEQUENCE geo landcover_lc_id_seq r3fix_sanitize
+312; 1259 21227 SEQUENCE geo landcover_lc_id_seq1 r3fix_sanitize
+313; 1259 21228 TABLE gis meteo_stations r3fix_sanitize
+314; 1259 21235 TABLE gis reach_shapes r3fix_sanitize
+315; 1259 21242 TABLE gis subbasin_shapes r3fix_sanitize
+316; 1259 21249 TABLE hydro bathymetry_campaigns r3fix_sanitize
+317; 1259 21257 SEQUENCE hydro bathymetry_campaigns_campaign_id_seq r3fix_sanitize
+5566; 0 0 SEQUENCE OWNED BY hydro bathymetry_campaigns_campaign_id_seq r3fix_sanitize
+318; 1259 21258 TABLE hydro siltation_evolution r3fix_sanitize
+319; 1259 21266 SEQUENCE hydro siltation_evolution_evolution_id_seq r3fix_sanitize
+5567; 0 0 SEQUENCE OWNED BY hydro siltation_evolution_evolution_id_seq r3fix_sanitize
+320; 1259 21267 TABLE hydro siltation_hsv r3fix_sanitize
+321; 1259 21275 SEQUENCE hydro siltation_hsv_hsv_id_seq r3fix_sanitize
+5568; 0 0 SEQUENCE OWNED BY hydro siltation_hsv_hsv_id_seq r3fix_sanitize
+322; 1259 21276 TABLE hydro siltation_indicators r3fix_sanitize
+323; 1259 21284 SEQUENCE hydro siltation_indicators_indicator_id_seq r3fix_sanitize
+5569; 0 0 SEQUENCE OWNED BY hydro siltation_indicators_indicator_id_seq r3fix_sanitize
+324; 1259 21285 VIEW public catchments r3fix_sanitize
+325; 1259 21289 VIEW public communes r3fix_sanitize
+326; 1259 21293 VIEW public landcover r3fix_sanitize
+327; 1259 21297 TABLE ref landcover_classes r3fix_sanitize
+328; 1259 21302 VIEW public landcover_classes r3fix_sanitize
+329; 1259 21306 TABLE ref landcover_periods r3fix_sanitize
+330; 1259 21311 VIEW public landcover_periods r3fix_sanitize
+331; 1259 21315 VIEW public measurements r3fix_sanitize
+332; 1259 21319 VIEW public model_runs r3fix_sanitize
+333; 1259 21323 TABLE public module_properties r3fix_sanitize
+334; 1259 21331 VIEW public observed_properties r3fix_sanitize
+335; 1259 21335 TABLE public property_module_override r3fix_sanitize
+336; 1259 21341 VIEW public reaches r3fix_sanitize
+337; 1259 21345 VIEW public reservoir_bathymetry r3fix_sanitize
+338; 1259 21349 VIEW public reservoirs r3fix_sanitize
+339; 1259 21353 VIEW public rivers r3fix_sanitize
+340; 1259 21357 VIEW public stations r3fix_sanitize
+341; 1259 21361 VIEW public subbasins r3fix_sanitize
+342; 1259 21365 VIEW public timeseries r3fix_sanitize
+343; 1259 21369 TABLE public users r3fix_sanitize
+344; 1259 21380 VIEW public v_catchments_geo r3fix_sanitize
+345; 1259 21384 VIEW public v_map_station r3fix_sanitize
+346; 1259 21388 VIEW public v_ts_catalog r3fix_sanitize
+347; 1259 21393 VIEW public v_measurements_full r3fix_sanitize
+348; 1259 21398 VIEW public v_property_module r3fix_sanitize
+349; 1259 21403 VIEW public v_property_agg_rule r3fix_sanitize
+350; 1259 21407 VIEW public v_property_catalog r3fix_sanitize
+351; 1259 21412 VIEW public v_property_catalog_final r3fix_sanitize
+352; 1259 21416 VIEW public v_reaches_geo r3fix_sanitize
+353; 1259 21421 VIEW public v_reservoirs_geo r3fix_sanitize
+354; 1259 21426 VIEW public v_stations_geo r3fix_sanitize
+355; 1259 21431 VIEW public v_stats_bathymetry r3fix_sanitize
+356; 1259 21436 VIEW public v_stats_bathymetry_global r3fix_sanitize
+357; 1259 21440 VIEW public v_stats_property_station_timestep r3fix_sanitize
+358; 1259 21445 VIEW public v_stats_evaporation r3fix_sanitize
+359; 1259 21449 VIEW public v_stats_property_timestep r3fix_sanitize
+360; 1259 21454 VIEW public v_stats_evaporation_global r3fix_sanitize
+361; 1259 21458 VIEW public v_stats_humidity r3fix_sanitize
+362; 1259 21462 VIEW public v_stats_humidity_global r3fix_sanitize
+363; 1259 21466 VIEW public v_stats_lachers r3fix_sanitize
+364; 1259 21470 VIEW public v_stats_lachers_global r3fix_sanitize
+365; 1259 21474 VIEW public v_stats_precipitation r3fix_sanitize
+366; 1259 21478 VIEW public v_stats_precipitation_global r3fix_sanitize
+367; 1259 21482 VIEW public v_stats_sediment_load r3fix_sanitize
+368; 1259 21486 VIEW public v_stats_sediment_load_global r3fix_sanitize
+369; 1259 21490 VIEW public v_stats_streamflow r3fix_sanitize
+370; 1259 21494 VIEW public v_stats_streamflow_global r3fix_sanitize
+371; 1259 21498 VIEW public v_stats_temperature_all r3fix_sanitize
+372; 1259 21502 VIEW public v_stats_temperature_all_global r3fix_sanitize
+373; 1259 21506 VIEW public v_stats_temperature_max r3fix_sanitize
+374; 1259 21510 VIEW public v_stats_temperature_max_global r3fix_sanitize
+375; 1259 21514 VIEW public v_stats_temperature_mean r3fix_sanitize
+376; 1259 21518 VIEW public v_stats_temperature_mean_global r3fix_sanitize
+377; 1259 21522 VIEW public v_stats_temperature_min r3fix_sanitize
+378; 1259 21526 VIEW public v_stats_temperature_min_global r3fix_sanitize
+379; 1259 21530 VIEW public v_stats_wind_speed r3fix_sanitize
+380; 1259 21534 VIEW public v_stats_wind_speed_global r3fix_sanitize
+381; 1259 21538 VIEW public v_subbasins_geo r3fix_sanitize
+382; 1259 21543 VIEW public v_ts_catalog_enriched r3fix_sanitize
+383; 1259 21548 VIEW public v_values_measurements r3fix_sanitize
+384; 1259 21553 VIEW public v_values_annual r3fix_sanitize
+385; 1259 21558 VIEW public v_values_bathymetry r3fix_sanitize
+386; 1259 21563 VIEW public v_values_evaporation_annual r3fix_sanitize
+387; 1259 21568 VIEW public v_values_monthly r3fix_sanitize
+388; 1259 21573 VIEW public v_values_evaporation_monthly r3fix_sanitize
+389; 1259 21578 VIEW public v_values_evaporation_obs r3fix_sanitize
+390; 1259 21583 VIEW public v_values_humidity_annual r3fix_sanitize
+391; 1259 21588 VIEW public v_values_humidity_monthly r3fix_sanitize
+392; 1259 21593 VIEW public v_values_humidity_obs r3fix_sanitize
+393; 1259 21598 VIEW public v_values_lachers_annual r3fix_sanitize
+394; 1259 21603 VIEW public v_values_lachers_monthly r3fix_sanitize
+395; 1259 21608 VIEW public v_values_lachers_obs r3fix_sanitize
+396; 1259 21613 VIEW public v_values_precipitation_annual r3fix_sanitize
+397; 1259 21618 VIEW public v_values_precipitation_monthly r3fix_sanitize
+398; 1259 21623 VIEW public v_values_precipitation_obs r3fix_sanitize
+399; 1259 21628 VIEW public v_values_sediment_load_annual r3fix_sanitize
+400; 1259 21633 VIEW public v_values_sediment_load_monthly r3fix_sanitize
+401; 1259 21638 VIEW public v_values_sediment_load_obs r3fix_sanitize
+402; 1259 21643 VIEW public v_values_streamflow_annual r3fix_sanitize
+403; 1259 21648 VIEW public v_values_streamflow_monthly r3fix_sanitize
+404; 1259 21653 VIEW public v_values_streamflow_obs r3fix_sanitize
+405; 1259 21658 VIEW public v_values_temperature_all_obs r3fix_sanitize
+406; 1259 21663 VIEW public v_values_temperature_max_annual r3fix_sanitize
+407; 1259 21668 VIEW public v_values_temperature_max_monthly r3fix_sanitize
+408; 1259 21673 VIEW public v_values_temperature_max_obs r3fix_sanitize
+409; 1259 21678 VIEW public v_values_temperature_mean_annual r3fix_sanitize
+410; 1259 21683 VIEW public v_values_temperature_mean_monthly r3fix_sanitize
+411; 1259 21688 VIEW public v_values_temperature_mean_obs r3fix_sanitize
+412; 1259 21693 VIEW public v_values_temperature_min_annual r3fix_sanitize
+413; 1259 21698 VIEW public v_values_temperature_min_monthly r3fix_sanitize
+414; 1259 21703 VIEW public v_values_temperature_min_obs r3fix_sanitize
+415; 1259 21708 VIEW public v_values_wind_speed_annual r3fix_sanitize
+416; 1259 21713 VIEW public v_values_wind_speed_monthly r3fix_sanitize
+417; 1259 21718 VIEW public v_values_wind_speed_obs r3fix_sanitize
+418; 1259 21723 SEQUENCE ref landcover_classes_class_id_seq r3fix_sanitize
+419; 1259 21724 SEQUENCE ref landcover_classes_class_id_seq1 r3fix_sanitize
+420; 1259 21725 SEQUENCE ref landcover_periods_lc_period_id_seq r3fix_sanitize
+421; 1259 21726 SEQUENCE ref landcover_periods_lc_period_id_seq1 r3fix_sanitize
+422; 1259 21727 SEQUENCE ref observed_properties_property_id_seq r3fix_sanitize
+423; 1259 21728 SEQUENCE ref observed_properties_property_id_seq1 r3fix_sanitize
+424; 1259 21729 TABLE ref property_domains r3fix_sanitize
+425; 1259 21734 TABLE staging limite_raw r3fix_sanitize
+426; 1259 21739 SEQUENCE staging limite_raw_gid_seq r3fix_sanitize
+5570; 0 0 SEQUENCE OWNED BY staging limite_raw_gid_seq r3fix_sanitize
+427; 1259 21740 TABLE staging migration_batches r3fix_sanitize
+428; 1259 21747 TABLE staging migration_events r3fix_sanitize
+429; 1259 21753 SEQUENCE staging migration_events_event_id_seq r3fix_sanitize
+5571; 0 0 SEQUENCE OWNED BY staging migration_events_event_id_seq r3fix_sanitize
+430; 1259 21754 TABLE staging norm_catchments r3fix_sanitize
+431; 1259 21760 TABLE staging norm_communes r3fix_sanitize
+432; 1259 21766 TABLE staging norm_measurements r3fix_sanitize
+433; 1259 21772 TABLE staging norm_reservoir_bathymetry r3fix_sanitize
+434; 1259 21778 TABLE staging norm_reservoirs r3fix_sanitize
+435; 1259 21784 TABLE staging norm_stations r3fix_sanitize
+436; 1259 21790 TABLE staging raw_adm_communes_abhgzr r3fix_sanitize
+437; 1259 21797 TABLE staging raw_barrages_abhgzr r3fix_sanitize
+438; 1259 21804 TABLE staging raw_bassin_abhgzr r3fix_sanitize
+439; 1259 21811 TABLE staging raw_bathymetries_barrages_abhgzr r3fix_sanitize
+440; 1259 21818 TABLE staging raw_mesures_debits_jr r3fix_sanitize
+441; 1259 21825 TABLE staging raw_mesures_evaporation_m r3fix_sanitize
+442; 1259 21832 TABLE staging raw_mesures_humidite_relative_m r3fix_sanitize
+443; 1259 21839 TABLE staging raw_mesures_lachers_barrages r3fix_sanitize
+444; 1259 21846 TABLE staging raw_mesures_precipitations_jr r3fix_sanitize
+445; 1259 21853 TABLE staging raw_mesures_temperature_jr_pn r3fix_sanitize
+446; 1259 21860 TABLE staging raw_mesures_temperature_m r3fix_sanitize
+447; 1259 21867 TABLE staging raw_mesures_vitesse_vent_m r3fix_sanitize
+448; 1259 21874 TABLE staging raw_stations_abhgzr r3fix_sanitize
+449; 1259 21881 TABLE staging reseau_hydro_import_raw r3fix_sanitize
+450; 1259 21886 SEQUENCE staging reseau_hydro_import_raw_gid_seq r3fix_sanitize
+5572; 0 0 SEQUENCE OWNED BY staging reseau_hydro_import_raw_gid_seq r3fix_sanitize
+451; 1259 21887 TABLE staging reseau_hydrologie_raw r3fix_sanitize
+452; 1259 21892 SEQUENCE staging reseau_hydrologie_raw_gid_seq r3fix_sanitize
+5573; 0 0 SEQUENCE OWNED BY staging reseau_hydrologie_raw_gid_seq r3fix_sanitize
+453; 1259 21893 TABLE staging station_meteo_raw r3fix_sanitize
+454; 1259 21898 SEQUENCE staging station_meteo_raw_gid_seq r3fix_sanitize
+5574; 0 0 SEQUENCE OWNED BY staging station_meteo_raw_gid_seq r3fix_sanitize
+455; 1259 21899 TABLE staging swat_mdb_imports r3fix_sanitize
+456; 1259 21916 SEQUENCE staging swat_mdb_imports_id_seq r3fix_sanitize
+5575; 0 0 SEQUENCE OWNED BY staging swat_mdb_imports_id_seq r3fix_sanitize
+457; 1259 21917 SEQUENCE staging swat_mdb_imports_import_batch_id_seq r3fix_sanitize
+5576; 0 0 SEQUENCE OWNED BY staging swat_mdb_imports_import_batch_id_seq r3fix_sanitize
+458; 1259 21918 TABLE staging swat_rch_norm r3fix_sanitize
+459; 1259 21924 SEQUENCE staging swat_rch_norm_norm_id_seq r3fix_sanitize
+5577; 0 0 SEQUENCE OWNED BY staging swat_rch_norm_norm_id_seq r3fix_sanitize
+460; 1259 21925 TABLE staging swat_rch_raw r3fix_sanitize
+461; 1259 21931 SEQUENCE staging swat_rch_raw_raw_id_seq r3fix_sanitize
+5578; 0 0 SEQUENCE OWNED BY staging swat_rch_raw_raw_id_seq r3fix_sanitize
+462; 1259 21932 TABLE staging swat_sub_norm r3fix_sanitize
+463; 1259 21938 SEQUENCE staging swat_sub_norm_norm_id_seq r3fix_sanitize
+5579; 0 0 SEQUENCE OWNED BY staging swat_sub_norm_norm_id_seq r3fix_sanitize
+464; 1259 21939 TABLE staging swat_sub_raw r3fix_sanitize
+465; 1259 21945 SEQUENCE staging swat_sub_raw_raw_id_seq r3fix_sanitize
+5580; 0 0 SEQUENCE OWNED BY staging swat_sub_raw_raw_id_seq r3fix_sanitize
+4924; 2604 21946 DEFAULT access hru_results id r3fix_sanitize
+4929; 2604 21947 DEFAULT access import_runs import_id r3fix_sanitize
+4938; 2604 21948 DEFAULT access scenario_metadata id r3fix_sanitize
+4951; 2604 21949 DEFAULT access weather_inputs id r3fix_sanitize
+4977; 2604 21950 DEFAULT auth audit_log audit_id r3fix_sanitize
+4980; 2604 21951 DEFAULT auth permissions permission_id r3fix_sanitize
+4981; 2604 21952 DEFAULT auth roles role_id r3fix_sanitize
+4982; 2604 21953 DEFAULT auth users user_id r3fix_sanitize
+4968; 2604 21954 DEFAULT core reservoir_bathymetry bathy_id r3fix_sanitize
+4989; 2604 21955 DEFAULT core station_reach_map id r3fix_sanitize
+4994; 2604 21956 DEFAULT core station_subbasin_map id r3fix_sanitize
+5014; 2604 21957 DEFAULT hydro bathymetry_campaigns campaign_id r3fix_sanitize
+5018; 2604 21958 DEFAULT hydro siltation_evolution evolution_id r3fix_sanitize
+5022; 2604 21959 DEFAULT hydro siltation_hsv hsv_id r3fix_sanitize
+5026; 2604 21960 DEFAULT hydro siltation_indicators indicator_id r3fix_sanitize
+5037; 2604 21961 DEFAULT staging limite_raw gid r3fix_sanitize
+5040; 2604 21962 DEFAULT staging migration_events event_id r3fix_sanitize
+5074; 2604 21963 DEFAULT staging reseau_hydro_import_raw gid r3fix_sanitize
+5075; 2604 21964 DEFAULT staging reseau_hydrologie_raw gid r3fix_sanitize
+5076; 2604 21965 DEFAULT staging station_meteo_raw gid r3fix_sanitize
+5077; 2604 21966 DEFAULT staging swat_mdb_imports id r3fix_sanitize
+5078; 2604 21967 DEFAULT staging swat_mdb_imports import_batch_id r3fix_sanitize
+5085; 2604 21968 DEFAULT staging swat_rch_norm norm_id r3fix_sanitize
+5087; 2604 21969 DEFAULT staging swat_rch_raw raw_id r3fix_sanitize
+5089; 2604 21970 DEFAULT staging swat_sub_norm norm_id r3fix_sanitize
+5091; 2604 21971 DEFAULT staging swat_sub_raw raw_id r3fix_sanitize
+5415; 0 20883 TABLE DATA access hru_results r3fix_sanitize
+5417; 0 20895 TABLE DATA access import_runs r3fix_sanitize
+5419; 0 20906 TABLE DATA access rch_results r3fix_sanitize
+5420; 0 20914 TABLE DATA access scenario_metadata r3fix_sanitize
+5422; 0 20927 TABLE DATA access sub_results r3fix_sanitize
+5423; 0 20935 TABLE DATA access variable_dictionary r3fix_sanitize
+5424; 0 20944 TABLE DATA access weather_inputs r3fix_sanitize
+5438; 0 21066 TABLE DATA audit swat_output_archive_rch r3fix_sanitize
+5439; 0 21074 TABLE DATA audit swat_output_archive_sub r3fix_sanitize
+5442; 0 21114 TABLE DATA auth audit_log r3fix_sanitize
+5444; 0 21122 TABLE DATA auth permissions r3fix_sanitize
+5446; 0 21128 TABLE DATA auth role_permissions r3fix_sanitize
+5447; 0 21131 TABLE DATA auth roles r3fix_sanitize
+5449; 0 21137 TABLE DATA auth user_roles r3fix_sanitize
+5450; 0 21140 TABLE DATA auth users r3fix_sanitize
+5432; 0 21012 TABLE DATA core catchments r3fix_sanitize
+5454; 0 21150 TABLE DATA core data_batches r3fix_sanitize
+5455; 0 21158 TABLE DATA core measurement_batches r3fix_sanitize
+5433; 0 21017 TABLE DATA core measurements r3fix_sanitize
+5426; 0 20956 TABLE DATA core model_runs r3fix_sanitize
+5434; 0 21020 TABLE DATA core reaches r3fix_sanitize
+5437; 0 21043 TABLE DATA core reservoir_bathymetry r3fix_sanitize
+5435; 0 21026 TABLE DATA core reservoirs r3fix_sanitize
+5463; 0 21171 TABLE DATA core rivers r3fix_sanitize
+5466; 0 21178 TABLE DATA core station_reach_map r3fix_sanitize
+5468; 0 21189 TABLE DATA core station_subbasin_map r3fix_sanitize
+5430; 0 20990 TABLE DATA core stations r3fix_sanitize
+5472; 0 21204 TABLE DATA core subbasin_metrics_annual r3fix_sanitize
+5436; 0 21032 TABLE DATA core subbasins r3fix_sanitize
+5475; 0 21213 TABLE DATA core swat_entity_map r3fix_sanitize
+5431; 0 20995 TABLE DATA core timeseries r3fix_sanitize
+5440; 0 21090 TABLE DATA geo landcover r3fix_sanitize
+5480; 0 21228 TABLE DATA gis meteo_stations r3fix_sanitize
+5481; 0 21235 TABLE DATA gis reach_shapes r3fix_sanitize
+5482; 0 21242 TABLE DATA gis subbasin_shapes r3fix_sanitize
+5483; 0 21249 TABLE DATA hydro bathymetry_campaigns r3fix_sanitize
+5485; 0 21258 TABLE DATA hydro siltation_evolution r3fix_sanitize
+5487; 0 21267 TABLE DATA hydro siltation_hsv r3fix_sanitize
+5489; 0 21276 TABLE DATA hydro siltation_indicators r3fix_sanitize
+5493; 0 21323 TABLE DATA public module_properties r3fix_sanitize
+5494; 0 21335 TABLE DATA public property_module_override r3fix_sanitize
+4923; 0 20108 TABLE DATA public spatial_ref_sys r3fix_sanitize
+5495; 0 21369 TABLE DATA public users r3fix_sanitize
+5441; 0 21095 TABLE DATA ref communes r3fix_sanitize
+5491; 0 21297 TABLE DATA ref landcover_classes r3fix_sanitize
+5492; 0 21306 TABLE DATA ref landcover_periods r3fix_sanitize
+5428; 0 20970 TABLE DATA ref observed_properties r3fix_sanitize
+5429; 0 20975 TABLE DATA ref property_domain_membership r3fix_sanitize
+5502; 0 21729 TABLE DATA ref property_domains r3fix_sanitize
+5503; 0 21734 TABLE DATA staging limite_raw r3fix_sanitize
+5505; 0 21740 TABLE DATA staging migration_batches r3fix_sanitize
+5506; 0 21747 TABLE DATA staging migration_events r3fix_sanitize
+5508; 0 21754 TABLE DATA staging norm_catchments r3fix_sanitize
+5509; 0 21760 TABLE DATA staging norm_communes r3fix_sanitize
+5510; 0 21766 TABLE DATA staging norm_measurements r3fix_sanitize
+5511; 0 21772 TABLE DATA staging norm_reservoir_bathymetry r3fix_sanitize
+5512; 0 21778 TABLE DATA staging norm_reservoirs r3fix_sanitize
+5513; 0 21784 TABLE DATA staging norm_stations r3fix_sanitize
+5514; 0 21790 TABLE DATA staging raw_adm_communes_abhgzr r3fix_sanitize
+5515; 0 21797 TABLE DATA staging raw_barrages_abhgzr r3fix_sanitize
+5516; 0 21804 TABLE DATA staging raw_bassin_abhgzr r3fix_sanitize
+5517; 0 21811 TABLE DATA staging raw_bathymetries_barrages_abhgzr r3fix_sanitize
+5518; 0 21818 TABLE DATA staging raw_mesures_debits_jr r3fix_sanitize
+5519; 0 21825 TABLE DATA staging raw_mesures_evaporation_m r3fix_sanitize
+5520; 0 21832 TABLE DATA staging raw_mesures_humidite_relative_m r3fix_sanitize
+5521; 0 21839 TABLE DATA staging raw_mesures_lachers_barrages r3fix_sanitize
+5522; 0 21846 TABLE DATA staging raw_mesures_precipitations_jr r3fix_sanitize
+5523; 0 21853 TABLE DATA staging raw_mesures_temperature_jr_pn r3fix_sanitize
+5524; 0 21860 TABLE DATA staging raw_mesures_temperature_m r3fix_sanitize
+5525; 0 21867 TABLE DATA staging raw_mesures_vitesse_vent_m r3fix_sanitize
+5526; 0 21874 TABLE DATA staging raw_stations_abhgzr r3fix_sanitize
+5527; 0 21881 TABLE DATA staging reseau_hydro_import_raw r3fix_sanitize
+5529; 0 21887 TABLE DATA staging reseau_hydrologie_raw r3fix_sanitize
+5531; 0 21893 TABLE DATA staging station_meteo_raw r3fix_sanitize
+5533; 0 21899 TABLE DATA staging swat_mdb_imports r3fix_sanitize
+5536; 0 21918 TABLE DATA staging swat_rch_norm r3fix_sanitize
+5538; 0 21925 TABLE DATA staging swat_rch_raw r3fix_sanitize
+5540; 0 21932 TABLE DATA staging swat_sub_norm r3fix_sanitize
+5542; 0 21939 TABLE DATA staging swat_sub_raw r3fix_sanitize
+5581; 0 0 SEQUENCE SET access hru_results_id_seq r3fix_sanitize
+5582; 0 0 SEQUENCE SET access import_runs_import_id_seq r3fix_sanitize
+5583; 0 0 SEQUENCE SET access scenario_metadata_id_seq r3fix_sanitize
+5584; 0 0 SEQUENCE SET access weather_inputs_id_seq r3fix_sanitize
+5585; 0 0 SEQUENCE SET auth audit_log_audit_id_seq r3fix_sanitize
+5586; 0 0 SEQUENCE SET auth permissions_permission_id_seq r3fix_sanitize
+5587; 0 0 SEQUENCE SET auth roles_role_id_seq r3fix_sanitize
+5588; 0 0 SEQUENCE SET auth users_user_id_seq r3fix_sanitize
+5589; 0 0 SEQUENCE SET core catchments_catchment_id_seq r3fix_sanitize
+5590; 0 0 SEQUENCE SET core catchments_catchment_id_seq1 r3fix_sanitize
+5591; 0 0 SEQUENCE SET core model_runs_run_id_seq r3fix_sanitize
+5592; 0 0 SEQUENCE SET core model_runs_run_id_seq1 r3fix_sanitize
+5593; 0 0 SEQUENCE SET core reaches_reach_id_seq r3fix_sanitize
+5594; 0 0 SEQUENCE SET core reaches_reach_id_seq1 r3fix_sanitize
+5595; 0 0 SEQUENCE SET core reservoir_bathymetry_bathy_id_seq r3fix_sanitize
+5596; 0 0 SEQUENCE SET core reservoirs_reservoir_id_seq r3fix_sanitize
+5597; 0 0 SEQUENCE SET core reservoirs_reservoir_id_seq1 r3fix_sanitize
+5598; 0 0 SEQUENCE SET core rivers_river_id_seq r3fix_sanitize
+5599; 0 0 SEQUENCE SET core rivers_river_id_seq1 r3fix_sanitize
+5600; 0 0 SEQUENCE SET core station_reach_map_id_seq r3fix_sanitize
+5601; 0 0 SEQUENCE SET core station_subbasin_map_id_seq r3fix_sanitize
+5602; 0 0 SEQUENCE SET core stations_station_id_seq r3fix_sanitize
+5603; 0 0 SEQUENCE SET core stations_station_id_seq1 r3fix_sanitize
+5604; 0 0 SEQUENCE SET core subbasins_subbasin_id_seq r3fix_sanitize
+5605; 0 0 SEQUENCE SET core subbasins_subbasin_id_seq1 r3fix_sanitize
+5606; 0 0 SEQUENCE SET core timeseries_ts_id_seq r3fix_sanitize
+5607; 0 0 SEQUENCE SET core timeseries_ts_id_seq1 r3fix_sanitize
+5608; 0 0 SEQUENCE SET geo landcover_lc_id_seq r3fix_sanitize
+5609; 0 0 SEQUENCE SET geo landcover_lc_id_seq1 r3fix_sanitize
+5610; 0 0 SEQUENCE SET hydro bathymetry_campaigns_campaign_id_seq r3fix_sanitize
+5611; 0 0 SEQUENCE SET hydro siltation_evolution_evolution_id_seq r3fix_sanitize
+5612; 0 0 SEQUENCE SET hydro siltation_hsv_hsv_id_seq r3fix_sanitize
+5613; 0 0 SEQUENCE SET hydro siltation_indicators_indicator_id_seq r3fix_sanitize
+5614; 0 0 SEQUENCE SET ref landcover_classes_class_id_seq r3fix_sanitize
+5615; 0 0 SEQUENCE SET ref landcover_classes_class_id_seq1 r3fix_sanitize
+5616; 0 0 SEQUENCE SET ref landcover_periods_lc_period_id_seq r3fix_sanitize
+5617; 0 0 SEQUENCE SET ref landcover_periods_lc_period_id_seq1 r3fix_sanitize
+5618; 0 0 SEQUENCE SET ref observed_properties_property_id_seq r3fix_sanitize
+5619; 0 0 SEQUENCE SET ref observed_properties_property_id_seq1 r3fix_sanitize
+5620; 0 0 SEQUENCE SET staging limite_raw_gid_seq r3fix_sanitize
+5621; 0 0 SEQUENCE SET staging migration_events_event_id_seq r3fix_sanitize
+5622; 0 0 SEQUENCE SET staging reseau_hydro_import_raw_gid_seq r3fix_sanitize
+5623; 0 0 SEQUENCE SET staging reseau_hydrologie_raw_gid_seq r3fix_sanitize
+5624; 0 0 SEQUENCE SET staging station_meteo_raw_gid_seq r3fix_sanitize
+5625; 0 0 SEQUENCE SET staging swat_mdb_imports_id_seq r3fix_sanitize
+5626; 0 0 SEQUENCE SET staging swat_mdb_imports_import_batch_id_seq r3fix_sanitize
+5627; 0 0 SEQUENCE SET staging swat_rch_norm_norm_id_seq r3fix_sanitize
+5628; 0 0 SEQUENCE SET staging swat_rch_raw_raw_id_seq r3fix_sanitize
+5629; 0 0 SEQUENCE SET staging swat_sub_norm_norm_id_seq r3fix_sanitize
+5630; 0 0 SEQUENCE SET staging swat_sub_raw_raw_id_seq r3fix_sanitize
+5122; 2606 22929 CONSTRAINT core data_batches pk_data_batches r3fix_sanitize
+5131; 2606 22931 CONSTRAINT core swat_entity_map pk_swat_entity_map r3fix_sanitize
+5135; 2606 22933 CONSTRAINT hydro bathymetry_campaigns bathymetry_campaigns_pkey r3fix_sanitize
+5141; 2606 22935 CONSTRAINT hydro siltation_evolution siltation_evolution_pkey r3fix_sanitize
+5146; 2606 22937 CONSTRAINT hydro siltation_hsv siltation_hsv_pkey r3fix_sanitize
+5151; 2606 22939 CONSTRAINT hydro siltation_indicators siltation_indicators_pkey r3fix_sanitize
+5138; 2606 22941 CONSTRAINT hydro bathymetry_campaigns uq_bathymetry_campaigns r3fix_sanitize
+5143; 2606 22943 CONSTRAINT hydro siltation_evolution uq_siltation_evolution r3fix_sanitize
+5148; 2606 22945 CONSTRAINT hydro siltation_hsv uq_siltation_hsv r3fix_sanitize
+5153; 2606 22947 CONSTRAINT hydro siltation_indicators uq_siltation_indicators r3fix_sanitize
+5116; 1259 22948 INDEX access idx_access_sub_results_sub_code_scenario_period_syld_not_null r3fix_sanitize
+5115; 1259 22949 INDEX access idx_hru_results_scenario_sub_code_period r3fix_sanitize
+5120; 1259 22950 INDEX core idx_core_measurements_ts_id_datetime r3fix_sanitize
+5123; 1259 22951 INDEX core idx_measurement_batches_batch r3fix_sanitize
+5124; 1259 22952 INDEX core idx_station_reach_map_reach_active r3fix_sanitize
+5125; 1259 22953 INDEX core idx_station_subbasin_map_active r3fix_sanitize
+5126; 1259 22954 INDEX core idx_station_subbasin_map_station_id r3fix_sanitize
+5127; 1259 22955 INDEX core idx_station_subbasin_map_subbasin_active r3fix_sanitize
+5128; 1259 22956 INDEX core idx_station_subbasin_map_subbasin_id r3fix_sanitize
+5117; 1259 22957 INDEX core idx_stations_code r3fix_sanitize
+5129; 1259 22958 INDEX core idx_swat_entity_map_lookup r3fix_sanitize
+5118; 1259 22959 INDEX core idx_timeseries_lookup r3fix_sanitize
+5119; 1259 22960 INDEX core idx_timeseries_run r3fix_sanitize
+5132; 1259 22961 INDEX gis idx_reach_shapes_reach_id r3fix_sanitize
+5133; 1259 22962 INDEX gis idx_subbasin_shapes_subbasin_id r3fix_sanitize
+5136; 1259 22963 INDEX hydro idx_bathymetry_campaigns_dam_campaign r3fix_sanitize
+5139; 1259 22964 INDEX hydro idx_siltation_evolution_dam_year r3fix_sanitize
+5144; 1259 22965 INDEX hydro idx_siltation_hsv_dam_campaign r3fix_sanitize
+5149; 1259 22966 INDEX hydro idx_siltation_indicators_dam_code r3fix_sanitize
+5154; 1259 22967 INDEX staging idx_swat_rch_norm_batch r3fix_sanitize
+5155; 1259 22968 INDEX staging idx_swat_rch_raw_batch r3fix_sanitize
+5156; 1259 22969 INDEX staging idx_swat_sub_norm_batch r3fix_sanitize
+5157; 1259 22970 INDEX staging idx_swat_sub_raw_batch r3fix_sanitize
+5158; 2620 22971 TRIGGER hydro bathymetry_campaigns trg_bathymetry_campaigns_updated_at r3fix_sanitize
+5159; 2620 22972 TRIGGER hydro siltation_evolution trg_siltation_evolution_updated_at r3fix_sanitize
+5160; 2620 22973 TRIGGER hydro siltation_hsv trg_siltation_hsv_updated_at r3fix_sanitize
+5161; 2620 22974 TRIGGER hydro siltation_indicators trg_siltation_indicators_updated_at r3fix_sanitize
+5427; 0 20963 MATERIALIZED VIEW DATA api mv_scenario_catalog r3fix_sanitize

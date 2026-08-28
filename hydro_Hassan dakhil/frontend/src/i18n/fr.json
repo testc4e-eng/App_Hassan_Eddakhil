@@ -166,6 +166,7 @@
     "simulatedData": "Gestion de donnée",
     "scan": "Scan de donnees",
     "reports": "Rapport & Carte",
+    "interventionProgram": "Programme d'intervention",
     "footerTitle": "Dashboard Hydrologique",
     "footerSubtitle": "Barrage Hassan Addakhil"
   },
@@ -178,6 +179,7 @@
     "simulatedData": "Data : Donnees simulees",
     "scan": "Scan de donnees",
     "reports": "Rapport & Carte",
+    "interventionProgram": "Programme d'intervention prioritaire",
     "projectName": "Barrage Hassan Addakhil",
     "projectLocation": "Bassin versant Guir-Ziz-Rheris",
     "loadingCatalog": "Chargement du catalog (runs/modules)…",
@@ -325,6 +327,182 @@
       "subbasins": "Sous-bassins",
       "reach": "Reach / reseau hydro",
       "hruSummary": "Synthèse HRU dominante"
+    }
+  },
+  "interventionProgram": {
+    "title": "Programme d'intervention prioritaire",
+    "subtitle": "Plan d'actions 2027-2031 pour la lutte anti-erosive dans le bassin versant du barrage Hassan Addakhil",
+    "programBadge": "PAP 2027-2031",
+    "infoTooltip": "Ce programme traduit les resultats de l'analyse hydro-sedimentaire en actions concretes de lutte contre l'erosion et l'envasement.",
+    "openSource": "Ouvrir la source PDF",
+    "viewSourceDocuments": "Documents sources",
+    "seeClassification": "Voir la classification",
+    "viewActions": "Voir les actions",
+    "tabs": {
+      "overview": "Vue d'ensemble",
+      "classification": "Classification des zones",
+      "matrix": "Matrice de priorisation",
+      "actions": "Programme d'actions",
+      "calendar": "Calendrier 2027-2031",
+      "budgets": "Budgets & couts",
+      "documents": "Documents sources"
+    },
+    "sections": {
+      "budgetDistribution": "Repartition du budget par axe",
+      "budgetDistributionDescription": "Ventilation automatique des montants retenus a partir des valeurs extraites du PDF metier.",
+      "globalSchedule": "Calendrier global 2027-2031",
+      "globalScheduleDescription": "Lecture synthetique de l'activation des axes par annee, d'apres le calendrier du PAP.",
+      "axisSummary": "Synthese des axes d'intervention",
+      "axisSummaryDescription": "Chaque axe reste rattache aux actions, surfaces et budgets explicitement documentes dans le PDF."
+    },
+    "kpis": {
+      "totalBudget": {
+        "title": "Budget global",
+        "subtitle": "Sur 5 ans - 2027 a 2031",
+        "description": "Valeur retenue selon le tableau budgetaire final du PDF."
+      },
+      "axes": {
+        "title": "Axes d'intervention",
+        "subtitle": "5 axes d'intervention",
+        "description": "Travaux biologiques, travaux mecaniques, gestion hydraulique, suivi et gouvernance."
+      },
+      "actions": {
+        "title": "Actions principales",
+        "subtitle": "Reparties sur les 5 axes",
+        "description": "Nombre calcule automatiquement a partir des actions detaillees extraites du PDF."
+      },
+      "reforestation": {
+        "title": "Surface reboisee",
+        "subtitle": "Surface de reboisement prioritaire",
+        "description": "Zones P1 - valeur explicitement documentee pour l'action 1.2."
+      },
+      "exclosure": {
+        "title": "Mise en defens pastorale",
+        "subtitle": "Zones P1 et P2",
+        "description": "Surface explicitement documentee pour l'action 1.3."
+      }
+    },
+    "classification": {
+      "title": "Classification des zones prioritaires",
+      "description": "La methode croise la degradation specifique moyenne des HRU avec la distance a l'exutoire du barrage.",
+      "degradationTitle": "Critere 1 - Degradation specifique moyenne",
+      "degradationDescription": "Classes reprises du tableau 21 du PDF, avec leur signification operationnelle.",
+      "distanceTitle": "Critere 2 - Distance a l'exutoire du barrage",
+      "distanceDescription": "Classes de distance reprises du tableau de decoupage spatial du PDF.",
+      "criterionDegradation": "Degradation specifique",
+      "criterionDistance": "Distance au barrage",
+      "priorityResult": "Classe de priorite P0 a P5",
+      "resultExplanation": "Plus une zone est fortement erosive et proche du barrage, plus son niveau de priorite est eleve."
+    },
+    "matrix": {
+      "title": "Matrice de priorisation P0 a P5",
+      "description": "Reproduction du tableau 23 du PDF, sans alteration des regles metier."
+    },
+    "actions": {
+      "title": "Programme d'actions detaille",
+      "description": "Toutes les actions sont structurees a partir des fiches et du tableau budgetaire du PDF metier.",
+      "viewDetails": "Voir les details",
+      "notSpecified": "Non precise"
+    },
+    "calendar": {
+      "timelineTitle": "Timeline des axes",
+      "timelineDescription": "Vue Gantt simplifiee construite a partir des annees d'activation des actions.",
+      "documentedHighlights": "Reperes documentes",
+      "actionsPlanned": "Actions prevues",
+      "continuousAction": "Action continue"
+    },
+    "budgets": {
+      "kpiTotal": "Budget global",
+      "kpiTotalSubtitle": "Montant affiche dans le PDF",
+      "kpiTotalDescription": "Le tableau 27 annonce un total general de 116 MDH sur 5 ans.",
+      "kpiAxis": "Axes finances",
+      "kpiAxisSubtitle": "Axes documentes dans le PAP",
+      "kpiAxisDescription": "Chaque axe conserve sa ventilation budgetaire dans le fichier de donnees centralise.",
+      "kpiActions": "Actions budgetees",
+      "kpiActionsSubtitle": "Actions detaillees retenues",
+      "kpiActionsDescription": "Les budgets sont relies a chaque action pour eviter toute duplication manuelle des chiffres.",
+      "kpiAverage": "Budget moyen par action",
+      "kpiAverageSubtitle": "Lecture indicative",
+      "kpiAverageDescription": "Indicateur derive du budget global et du nombre d'actions retenues.",
+      "axisDistributionTitle": "Donut - budget par axe",
+      "axisDistributionDescription": "Pourcentages calcules automatiquement a partir des budgets retenus.",
+      "annualDistributionTitle": "Histogramme - budget par annee",
+      "annualDistributionDescription": "Distribution annuelle issue du tableau 27 du PDF.",
+      "axisBarTitle": "Histogramme compare des axes",
+      "axisBarDescription": "Comparaison directe des montants retenus par axe.",
+      "detailedTableTitle": "Tableau detaille des budgets par action",
+      "detailedTableDescription": "Chaque ligne renvoie vers l'action correspondante et sa ventilation dans le dashboard."
+    },
+    "documents": {
+      "title": "Documents sources",
+      "description": "Reference PDF, chemin relatif, metadonnees d'integration et arbitrages de qualite des donnees.",
+      "adminNotice": "Les observations techniques detaillees sur la qualite des donnees sont reservees aux administrateurs.",
+      "qualityTitle": "Observations sur la qualite des donnees",
+      "qualityDescription": "Les arbitrages documentent les incoherences reperees dans le PDF metier sans les masquer.",
+      "sourceLabel": "Valeur source",
+      "retainedLabel": "Valeur retenue",
+      "reasonLabel": "Raison"
+    },
+    "common": {
+      "total": "Total",
+      "actions": "Actions",
+      "actionsCount": "{{count}} actions",
+      "active": "Actives",
+      "noDocumentedAction": "Aucune action documentee.",
+      "enlarge": "Agrandir",
+      "enlargeMapAria": "Agrandir la carte",
+      "download": "Telecharger",
+      "sourcePdf": "Source PDF",
+      "specificDegradation": "Degradation specifique",
+      "degradation": "Degradation",
+      "distance": "Distance",
+      "interpretation": "Interpretation",
+      "objective": "Objectif",
+      "target": "Cible",
+      "period": "Periode",
+      "interventionType": "Type",
+      "targetZone": "Zone cible",
+      "budget": "Budget",
+      "surfaceOrQuantity": "Surface / quantite",
+      "unitCost": "Cout unitaire",
+      "yearlyBreakdown": "Decoupage annuel",
+      "relatedSpecies": "Essences associees",
+      "watchouts": "Points d'attention",
+      "pagesCount": "{{count}} pages",
+      "view": "Voir",
+      "filteredActions": "{{filtered}} / {{total}} actions",
+      "keyMetric": "Indicateur",
+      "programInfoAria": "Informations sur le programme",
+      "annualBudget": "Budget annuel",
+      "pdfPage": "PDF p.{{page}}",
+      "pageReference": "p.{{page}}"
+    },
+    "filters": {
+      "axis": "Axe",
+      "allAxes": "Tous les axes",
+      "priority": "Priorite",
+      "allPriorities": "Toutes les priorites",
+      "year": "Annee",
+      "allYears": "Toutes les annees",
+      "type": "Type d'intervention",
+      "allTypes": "Tous les types",
+      "zone": "Zone cible",
+      "allZones": "Toutes les zones",
+      "budget": "Budget",
+      "reset": "Reinitialiser",
+      "budgetBands": {
+        "all": "Tous les budgets",
+        "lt1": "< 1 MDH",
+        "oneToFive": "1 a 5 MDH",
+        "gt5": "> 5 MDH"
+      }
+    },
+    "tableHeaders": {
+      "action": "Action",
+      "axis": "Axe",
+      "budget": "Budget",
+      "years": "Annees",
+      "share": "Part"
     }
   }
 }

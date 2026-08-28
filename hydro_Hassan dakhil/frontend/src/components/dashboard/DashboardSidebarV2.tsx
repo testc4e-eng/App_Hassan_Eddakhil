@@ -9,6 +9,7 @@ import {
   Mountain,
   MapPin,
   FileText,
+  Target,
   ChevronLeft,
   ChevronRight,
   Users,
@@ -79,6 +80,12 @@ export function DashboardSidebarV2({
         { id: "climate", label: t("sidebar.climate"), icon: Cloud, color: "text-sky-400" },
         { id: "hydraulic", label: t("sidebar.hydraulic"), icon: Droplets, color: "text-cyan-400" },
         { id: "sediment", label: t("sidebar.erosion"), icon: Mountain, color: "text-amber-400" },
+        {
+          id: "interventionProgram",
+          label: t("sidebar.interventionProgram"),
+          icon: Target,
+          color: "text-teal-400",
+        },
       ],
     },
     {

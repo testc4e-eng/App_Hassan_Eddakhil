@@ -209,7 +209,7 @@ function formatAny(v: any) {
   }
 }
 
-function subBasinPopupHtml(feature: any) {
+function _subBasinPopupHtml(feature: any) {
   const p: any = feature?.properties || {};
   const name = getFeatureName(feature);
   const id = p?.id ?? p?.subbasin_id ?? feature?.id ?? "—";
@@ -262,6 +262,10 @@ function subBasinPopupHtml(feature: any) {
       </div>
     </div>
   </div>`;
+}
+
+function logHydroMapCleanupIssue(scope: string, error: unknown) {
+  console.debug("[hydro-map] cleanup issue", { scope, error });
 }
 
 function reachPopupHtml(feature: any) {
@@ -677,7 +681,9 @@ function ClickLocationMarker({
       if (markerRef.current) {
         try {
           map.removeLayer(markerRef.current);
-        } catch {}
+        } catch (error) {
+          logHydroMapCleanupIssue("click-location-marker/remove-marker", error);
+        }
         markerRef.current = null;
       }
 
@@ -794,13 +800,17 @@ function MeasureTool({ activeTool }: { activeTool?: "distance" | "area" | null }
     if (layerRef.current) {
       try {
         map.removeLayer(layerRef.current);
-      } catch {}
+      } catch (error) {
+        logHydroMapCleanupIssue("measure-tool/reset-layer", error);
+      }
       layerRef.current = null;
     }
     if (resultRef.current) {
       try {
         map.closePopup(resultRef.current);
-      } catch {}
+      } catch (error) {
+        logHydroMapCleanupIssue("measure-tool/reset-popup", error);
+      }
       resultRef.current = null;
     }
 
@@ -822,7 +832,9 @@ function MeasureTool({ activeTool }: { activeTool?: "distance" | "area" | null }
       if (layerRef.current) {
         try {
           map.removeLayer(layerRef.current);
-        } catch {}
+        } catch (error) {
+          logHydroMapCleanupIssue("measure-tool/replace-layer", error);
+        }
         layerRef.current = null;
       }
 
@@ -850,7 +862,9 @@ function MeasureTool({ activeTool }: { activeTool?: "distance" | "area" | null }
       if (resultRef.current) {
         try {
           map.closePopup(resultRef.current);
-        } catch {}
+        } catch (error) {
+          logHydroMapCleanupIssue("measure-tool/replace-popup", error);
+        }
         resultRef.current = null;
       }
 
@@ -890,7 +904,9 @@ function MeasureTool({ activeTool }: { activeTool?: "distance" | "area" | null }
       if (layerRef.current) {
         try {
           map.removeLayer(layerRef.current);
-        } catch {}
+        } catch (error) {
+          logHydroMapCleanupIssue("measure-tool/clear-layer", error);
+        }
         layerRef.current = null;
       }
     };
@@ -906,7 +922,9 @@ function MeasureTool({ activeTool }: { activeTool?: "distance" | "area" | null }
       if (resultRef.current) {
         try {
           map.closePopup(resultRef.current);
-        } catch {}
+        } catch (error) {
+          logHydroMapCleanupIssue("measure-tool/cleanup-popup", error);
+        }
         resultRef.current = null;
       }
     };
@@ -1100,9 +1118,6 @@ export function HydroMap({
       const p: any = feature?.properties || {};
       const name = p?.reach_name ?? p?.name ?? p?.reach_code ?? `Reach ${p?.id ?? "—"}`;
       const code = p?.reach_code ?? "—";
-      const subbasinId = p?.subbasin_id ?? "—";
-      const catchmentId = p?.catchment_id ?? "—";
-
       (layer as any).bindTooltip(`${name} • ${code}`, {
         sticky: true,
         direction: "top",

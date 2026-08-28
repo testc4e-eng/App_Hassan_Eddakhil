@@ -10,6 +10,10 @@ import {
   NORMALIZED_SWAT_SCENARIO_SET,
 } from "../constants/swatScenarios";
 import {
+  SWAT_REACH_SPATIAL_VARIABLES,
+  getSwatPropertyDefinition,
+} from "../constants/swatDataSources";
+import {
   resolveSelectableAggregations,
   type NativeGranularity,
 } from "../utils/aggregationAvailability";
@@ -87,6 +91,7 @@ export class SpatialService {
   private db = new DatabaseService();
   private timeseriesCache = new TtlCache<SpatialTimeseriesResponse | null>();
   private scenarioAvailabilityCache = new TtlCache<SpatialScenariosAvailabilityResponse | null>();
+  private reachCatalogCache = new TtlCache<any[]>();
   private readonly timeseriesCacheTtlMs = 5 * 60 * 1000;
 
   private normalizeAggregation(value?: string): AggregationKey {
@@ -243,13 +248,10 @@ export class SpatialService {
     const subCode = await this.getReachSubCode(reachId);
     if (subCode == null) return null;
 
-    const columnByVariable: Record<string, { accessColumn: string; standardName: string }> = {
-      SED_OUT: { accessColumn: "sed_out_tons", standardName: "SWAT_SED_TONS" },
-      SED_IN: { accessColumn: "sed_in_tons", standardName: "SWAT_SED_IN_TONS" },
-      FLOW_OUT: { accessColumn: "flow_out_cms", standardName: "SWAT_FLOW_M3S" },
-      FLOW_IN: { accessColumn: "flow_in_cms", standardName: "SWAT_FLOW_M3S" },
-    };
-    const selected = columnByVariable[variable] || columnByVariable.SED_OUT;
+    const selected =
+      SWAT_REACH_SPATIAL_VARIABLES[
+        variable as keyof typeof SWAT_REACH_SPATIAL_VARIABLES
+      ] || SWAT_REACH_SPATIAL_VARIABLES.SED_OUT;
     const availableCodes = new Set<string>();
 
     if (await this.db.relationExists("access.rch_results")) {
@@ -300,7 +302,10 @@ export class SpatialService {
     const subbasinStationId = await this.resolveSubbasinStationId(subbasinId);
     if (!subbasinStationId) return null;
 
-    const standardName = variable === "SYLDT" || variable === "SYLDT_HA" ? "SWAT_SYLDT_HA" : variable;
+    const standardName =
+      variable === "SYLDT" || variable === "SYLDT_HA"
+        ? "SWAT_SYLDT_HA"
+        : variable;
     const availabilityRows = await erosionSwatSeriesService.getSubbasinAvailability(subbasinStationId);
     const availableCodes = new Set<string>();
 
@@ -889,60 +894,137 @@ export class SpatialService {
     return uniqueBy(rows, (row) => row.id);
   }
 
-  async getReaches(subbasinId?: number, catchmentId?: number) {
-    let q = `
-      WITH rch_summary AS (
+  async getReaches(
+    subbasinId?: number,
+    catchmentId?: number,
+    options: { includeSummary?: boolean } = {}
+  ) {
+    const includeSummary = options.includeSummary ?? true;
+    const cacheKey = `reaches:${subbasinId ?? "all"}:${catchmentId ?? "all"}:${includeSummary}`;
+
+    return this.reachCatalogCache.getOrSet(cacheKey, this.timeseriesCacheTtlMs, async () => {
+      const params: any[] = [];
+      const where = ["r.geom IS NOT NULL"];
+
+      if (catchmentId) {
+        params.push(catchmentId);
+        where.push(`r.catchment_id = $${params.length}`);
+      }
+      if (subbasinId) {
+        params.push(subbasinId);
+        where.push(`r.subbasin_id = $${params.length}`);
+      }
+
+      const baseRows = await this.db.query<
+        SpatialRow & {
+          reach_code: number | null;
+          subbasin_id: number | null;
+          catchment_id: number;
+          length_m: number | null;
+          slope_pct: number | null;
+          drainage_area_km2: number | null;
+          sub_code: number | null;
+        }
+      >(
+        `
         SELECT
-          sub_code,
-          scenario_code,
-          MIN(year) AS period_start,
-          MAX(year) AS period_end,
-          AVG(area_km2) AS drainage_area_km2,
-          AVG(flow_out_cms) AS flow_out_cms,
-          AVG(flow_in_cms) AS flow_in_cms,
-          AVG(sed_out_tons) AS sed_out_tons,
-          AVG(sed_in_tons) AS sed_in_tons
-        FROM access.rch_results
-        WHERE scenario_code = 'etat_actuel'
-        GROUP BY sub_code, scenario_code
-      )
-      SELECT
-        r.reach_id AS id,
-        r.reach_code,
-        r.subbasin_id,
-        r.catchment_id,
-        r.length_m,
-        r.slope_pct,
-        COALESCE(rs.scenario_code, 'etat_actuel') AS scenario_code,
-        rs.period_start,
-        rs.period_end,
-        COALESCE(rs.drainage_area_km2, sb.area_m2 / 1000000.0) AS drainage_area_km2,
-        rs.flow_out_cms,
-        rs.flow_in_cms,
-        rs.sed_out_tons,
-        rs.sed_in_tons,
-        ST_AsGeoJSON(r.geom)::json AS geometry
-      FROM gis.reach_shapes r
-      LEFT JOIN gis.subbasin_shapes sb
-        ON sb.subbasin_id = r.subbasin_id
-      LEFT JOIN rch_summary rs
-        ON rs.sub_code = COALESCE(r.subbasin_id, r.reach_id, r.reach_code)
-      WHERE r.geom IS NOT NULL
-    `;
-    const params: any[] = [];
+          r.reach_id AS id,
+          r.reach_code,
+          r.subbasin_id,
+          r.catchment_id,
+          r.length_m,
+          r.slope_pct,
+          sb.area_m2 / 1000000.0 AS drainage_area_km2,
+          COALESCE(r.subbasin_id, r.reach_id, r.reach_code) AS sub_code,
+          ST_AsGeoJSON(r.geom)::json AS geometry
+        FROM gis.reach_shapes r
+        LEFT JOIN gis.subbasin_shapes sb
+          ON sb.subbasin_id = r.subbasin_id
+        WHERE ${where.join(" AND ")}
+        ORDER BY r.reach_id
+        `,
+        params
+      );
 
-    if (catchmentId) {
-      params.push(catchmentId);
-      q += ` AND r.catchment_id = $${params.length}`;
-    }
-    if (subbasinId) {
-      params.push(subbasinId);
-      q += ` AND r.subbasin_id = $${params.length}`;
-    }
+      if (!includeSummary || !baseRows.length) {
+        return uniqueBy(
+          baseRows.map((row) => ({
+            ...row,
+            scenario_code: "etat_actuel",
+            period_start: null,
+            period_end: null,
+            flow_out_cms: null,
+            flow_in_cms: null,
+            sed_out_tons: null,
+            sed_in_tons: null,
+          })),
+          (row) => row.id
+        );
+      }
 
-    q += ` ORDER BY r.reach_id`;
-    const rows = await this.db.query(q, params);
-    return uniqueBy(rows, (row) => row.id);
+      const subCodes = Array.from(
+        new Set(
+          baseRows
+            .map((row) => Number(row.sub_code))
+            .filter((value) => Number.isFinite(value))
+        )
+      );
+
+      const summaryRows = subCodes.length
+        ? await this.db.query<{
+            sub_code: number;
+            scenario_code: string;
+            period_start: number | null;
+            period_end: number | null;
+            drainage_area_km2: number | null;
+            flow_out_cms: number | null;
+            flow_in_cms: number | null;
+            sed_out_tons: number | null;
+            sed_in_tons: number | null;
+          }>(
+            `
+            SELECT
+              sub_code,
+              'etat_actuel'::text AS scenario_code,
+              MIN(year)::int AS period_start,
+              MAX(year)::int AS period_end,
+              AVG(area_km2)::double precision AS drainage_area_km2,
+              AVG(flow_out_cms)::double precision AS flow_out_cms,
+              AVG(flow_in_cms)::double precision AS flow_in_cms,
+              AVG(sed_out_tons)::double precision AS sed_out_tons,
+              AVG(sed_in_tons)::double precision AS sed_in_tons
+            FROM access.rch_results
+            WHERE scenario_code = 'etat_actuel'
+              AND sub_code = ANY($1::int[])
+            GROUP BY sub_code
+            `,
+            [subCodes]
+          )
+        : [];
+
+      const summaryBySubCode = new Map<number, (typeof summaryRows)[number]>();
+      for (const row of summaryRows) {
+        summaryBySubCode.set(Number(row.sub_code), row);
+      }
+
+      return uniqueBy(
+        baseRows.map((row) => {
+          const summary = row.sub_code != null ? summaryBySubCode.get(Number(row.sub_code)) : undefined;
+          return {
+            ...row,
+            scenario_code: summary?.scenario_code ?? "etat_actuel",
+            period_start: summary?.period_start ?? null,
+            period_end: summary?.period_end ?? null,
+            drainage_area_km2: summary?.drainage_area_km2 ?? row.drainage_area_km2 ?? null,
+            flow_out_cms: summary?.flow_out_cms ?? null,
+            flow_in_cms: summary?.flow_in_cms ?? null,
+            sed_out_tons: summary?.sed_out_tons ?? null,
+            sed_in_tons: summary?.sed_in_tons ?? null,
+          };
+        }),
+        (row) => row.id
+      );
+    });
   }
 
   async getReachTimeseries(
@@ -1189,11 +1271,30 @@ export class SpatialService {
     if (!response) return null;
 
     const variable = String(args.variable || "SED_OUT").toUpperCase();
-    const mapping: Record<string, { key: keyof ReachTimeseriesRow; unit: string; label: string }> = {
-      SED_OUT: { key: "sed_out_tons", unit: "tons", label: "Sediment (t)" },
-      SED_IN: { key: "sed_in_tons", unit: "tons", label: "SED_IN" },
-      FLOW_OUT: { key: "flow_out_cms", unit: "m3/s", label: "Débits m³/s" },
-      FLOW_IN: { key: "flow_in_cms", unit: "m3/s", label: "FLOW_IN" },
+    const mapping: Record<
+      string,
+      { key: keyof ReachTimeseriesRow; unit: string; label: string }
+    > = {
+      SED_OUT: {
+        key: "sed_out_tons",
+        unit: SWAT_REACH_SPATIAL_VARIABLES.SED_OUT.unit,
+        label: SWAT_REACH_SPATIAL_VARIABLES.SED_OUT.label,
+      },
+      SED_IN: {
+        key: "sed_in_tons",
+        unit: SWAT_REACH_SPATIAL_VARIABLES.SED_IN.unit,
+        label: SWAT_REACH_SPATIAL_VARIABLES.SED_IN.label,
+      },
+      FLOW_OUT: {
+        key: "flow_out_cms",
+        unit: SWAT_REACH_SPATIAL_VARIABLES.FLOW_OUT.unit,
+        label: SWAT_REACH_SPATIAL_VARIABLES.FLOW_OUT.label,
+      },
+      FLOW_IN: {
+        key: "flow_in_cms",
+        unit: SWAT_REACH_SPATIAL_VARIABLES.FLOW_IN.unit,
+        label: SWAT_REACH_SPATIAL_VARIABLES.FLOW_IN.label,
+      },
     };
     const selected = mapping[variable] || mapping.SED_OUT;
     const data = response.series.map((row) => ({
@@ -1243,7 +1344,9 @@ export class SpatialService {
 
     const byMatchers: Record<string, (item: { standard_name: string | null; property_name: string }) => boolean> = {
       debit_observed: (item) => String(item.standard_name || "").toUpperCase() === "STREAMFLOW",
-      debit_simulated: (item) => String(item.standard_name || "").toUpperCase() === "SWAT_FLOW_M3S",
+      debit_simulated: (item) =>
+        String(item.standard_name || "").toUpperCase() ===
+        (getSwatPropertyDefinition("SWAT_FLOW_M3S")?.standard_name || "SWAT_FLOW_M3S"),
       precipitation: (item) => {
         const standard = String(item.standard_name || "").toLowerCase();
         const name = String(item.property_name || "").toLowerCase();

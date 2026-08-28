@@ -1,7 +1,13 @@
+import fs from "fs";
 import { spawn } from "child_process";
 import path from "path";
 import { Pool, PoolClient } from "pg";
 import db from "../config/database.config";
+import {
+  resolveDefaultSwatRunCode,
+  validateSwatImportCodes,
+} from "../constants/swatScenarios";
+import { AppError } from "../middleware/errorHandler";
 import {
   SwatAvailabilityRow,
   SwatBatchRow,
@@ -113,15 +119,47 @@ export class SwatIngestionService {
     if (process.env.SWAT_IMPORT_SCRIPT_PATH?.trim()) {
       return process.env.SWAT_IMPORT_SCRIPT_PATH.trim();
     }
-    return path.resolve(process.cwd(), "..", "..", "scripts", "swat-import", "import_swat_output.ps1");
+
+    const candidates = [
+      path.resolve(process.cwd(), "..", "..", "scripts", "swat-import", "import_swat_output.ps1"),
+      path.resolve(process.cwd(), "scripts", "swat-import", "import_swat_output.ps1"),
+      path.resolve(__dirname, "..", "..", "..", "..", "scripts", "swat-import", "import_swat_output.ps1"),
+      path.resolve(__dirname, "..", "..", "..", "..", "..", "scripts", "swat-import", "import_swat_output.ps1"),
+    ];
+
+    return candidates.find((candidate) => fs.existsSync(candidate)) ?? candidates[0];
   }
 
-  private runPowerShellScript(args: string[]): Promise<{ exitCode: number; logs: string[] }> {
+  private ensureExternalImportSupport(importMode: "import" | "reload" | "preview"): string {
+    if (process.platform !== "win32") {
+      throw new AppError(
+        `SWAT MDB mode "${importMode}" is only supported on a local Windows backend. Use skipAccess in Docker/Linux.`,
+        400
+      );
+    }
+
+    const importScriptPath = this.resolveImportScriptPath();
+    if (!fs.existsSync(importScriptPath)) {
+      throw new AppError(`SWAT import script not found: ${importScriptPath}`, 500);
+    }
+
+    return importScriptPath;
+  }
+
+  private runPowerShellScript(
+    scriptPath: string,
+    scriptArgs: string[]
+  ): Promise<{ exitCode: number; logs: string[] }> {
     return new Promise((resolve, reject) => {
       const logs: string[] = [];
-      const child = spawn("powershell", ["-ExecutionPolicy", "Bypass", "-File", ...args], {
-        shell: true,
-      });
+      const child = spawn(
+        "powershell.exe",
+        ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath, ...scriptArgs],
+        {
+          shell: false,
+          windowsHide: true,
+        }
+      );
 
       child.stdout.on("data", (chunk: Buffer) => {
         logs.push(chunk.toString());
@@ -132,6 +170,36 @@ export class SwatIngestionService {
       child.on("error", (error) => reject(error));
       child.on("close", (code) => resolve({ exitCode: code ?? -1, logs }));
     });
+  }
+
+  private summarizeScriptLogs(logs: string[]): string {
+    const lines = logs
+      .flatMap((chunk) => chunk.split(/\r?\n/))
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    return lines.slice(-8).join(" | ");
+  }
+
+  private buildScriptFailureError(exitCode: number, logs: string[]): AppError {
+    const rawDetail = logs.join("\n");
+    const detail = this.summarizeScriptLogs(logs);
+
+    if (/Impossible de trouver SWATOutput\.mdb/i.test(rawDetail)) {
+      return new AppError(
+        detail
+          ? `SWAT MDB source unavailable. ${detail}`
+          : "SWAT MDB source unavailable. Configure SWAT_MDB_PATH or SWAT_DATA_ROOT with a valid Hassan Addakhil SWATOutput.mdb.",
+        412
+      );
+    }
+
+    return new AppError(
+      detail
+        ? `SWAT Access import script failed (exit=${exitCode}). ${detail}`
+        : `SWAT Access import script failed (exit=${exitCode}).`,
+      500
+    );
   }
 
   private async ensureInfrastructure(client: Queryable): Promise<void> {
@@ -789,18 +857,41 @@ export class SwatIngestionService {
         FROM union_rows
         GROUP BY ts_id, dt
       ),
-      upserted AS (
+      updated AS (
+        UPDATE core.measurements m
+        SET value = d.val
+        FROM deduped_rows d
+        WHERE m.ts_id = d.ts_id
+          AND m.datetime = d.dt
+        RETURNING m.ts_id, m.datetime
+      ),
+      inserted AS (
         INSERT INTO core.measurements (ts_id, datetime, value, quality_flag)
         SELECT d.ts_id, d.dt, d.val, NULL::smallint
         FROM deduped_rows d
-        ON CONFLICT (ts_id, datetime) DO UPDATE
-        SET value = EXCLUDED.value
+        WHERE NOT EXISTS (
+          SELECT 1
+          FROM core.measurements m
+          WHERE m.ts_id = d.ts_id
+            AND m.datetime = d.dt
+        )
         RETURNING ts_id, datetime
+      ),
+      touched AS (
+        SELECT ts_id, datetime FROM updated
+        UNION
+        SELECT ts_id, datetime FROM inserted
       )
       INSERT INTO core.measurement_batches (ts_id, datetime, batch_id)
-      SELECT DISTINCT u.ts_id, u.datetime, $1
-      FROM upserted u
-      ON CONFLICT DO NOTHING
+      SELECT t.ts_id, t.datetime, $1
+      FROM touched t
+      WHERE NOT EXISTS (
+        SELECT 1
+        FROM core.measurement_batches mb
+        WHERE mb.ts_id = t.ts_id
+          AND mb.datetime = t.datetime
+          AND mb.batch_id = $1
+      )
       `,
       [batchId, propertyIds.flow_m3s, propertyIds.sed_tons, propertyIds.syldt_ha, runId],
       client
@@ -811,25 +902,30 @@ export class SwatIngestionService {
 
   async importSwat(payload: SwatImportPayload): Promise<Record<string, unknown>> {
     const scenarioCode = payload.scenarioCode?.trim() || "etat_actuel";
-    const runCode = payload.runCode?.trim() || `SWAT_${scenarioCode}`;
+    const runCode = payload.runCode?.trim() || resolveDefaultSwatRunCode(scenarioCode);
     const runName = payload.runName?.trim() || `SWAT ${scenarioCode}`;
     const dryRun = payload.dryRun === true;
     const importMode = payload.importMode ?? "skipAccess";
     const batchId = this.newBatchId();
     const logs: string[] = [];
     const isScenarioFolderRun = /^scenario_[1-4]$/i.test(scenarioCode);
+    const codeErrors = validateSwatImportCodes(scenarioCode, runCode);
+
+    if (codeErrors.length > 0) {
+      throw new AppError(`Invalid SWAT import codes. ${codeErrors.join(" ")}`, 400);
+    }
 
     if (importMode !== "skipAccess") {
-      const importScriptPath = this.resolveImportScriptPath();
-      const args = [importScriptPath, "-Mode", importMode];
+      const importScriptPath = this.ensureExternalImportSupport(importMode);
+      const scriptArgs = ["-Mode", importMode];
       if (payload.mdbPath?.trim()) {
-        args.push("-MdbPath", payload.mdbPath.trim());
+        scriptArgs.push("-MdbPath", payload.mdbPath.trim());
       }
 
-      const scriptResult = await this.runPowerShellScript(args);
+      const scriptResult = await this.runPowerShellScript(importScriptPath, scriptArgs);
       logs.push(...scriptResult.logs);
       if (scriptResult.exitCode !== 0) {
-        throw new Error(`SWAT Access import script failed (exit=${scriptResult.exitCode}).`);
+        throw this.buildScriptFailureError(scriptResult.exitCode, scriptResult.logs);
       }
       if (importMode === "preview") {
         return { mode: "preview", logs };

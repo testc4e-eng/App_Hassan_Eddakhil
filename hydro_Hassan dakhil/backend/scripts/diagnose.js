@@ -1,5 +1,5 @@
 const { Pool } = require("pg");
-require("dotenv").config();
+require("./load-env");
 
 async function diagnoseDatabase() {
   console.log("🔍 Diagnostic de la base de données hydro_hd\n");
@@ -7,9 +7,9 @@ async function diagnoseDatabase() {
   const pool = new Pool({
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
-    database: process.env.DB_NAME,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME || process.env.HDI_DB_NAME,
+    user: process.env.DB_USER || process.env.POSTGRES_USER,
+    password: process.env.DB_PASSWORD || process.env.POSTGRES_PASSWORD,
   });
 
   try {

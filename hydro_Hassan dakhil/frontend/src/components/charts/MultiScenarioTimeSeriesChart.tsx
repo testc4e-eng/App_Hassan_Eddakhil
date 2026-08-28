@@ -155,9 +155,8 @@ export function MultiScenarioTimeSeriesChart({
 
       setLoading(true);
       try {
-        const map = new Map<number, { date: string; v: number | null }[]>();
-
-        for (const runId of uniqueRunIds) {
+        const results = await Promise.all(
+          uniqueRunIds.map(async (runId) => {
           const effectivePropertyId = Number(
             propertyIdByRun?.get(runId) ?? propertyId
           );
@@ -188,8 +187,7 @@ export function MultiScenarioTimeSeriesChart({
 
           // si plage invalide => pas de données
           if (effStart && effEnd && effStart > effEnd) {
-            map.set(runId, []);
-            continue;
+            return [runId, [] as Array<{ date: string; v: number | null }>] as const;
           }
 
           const json = (await timeseriesApi.bundle({
@@ -199,6 +197,8 @@ export function MultiScenarioTimeSeriesChart({
             agg,
             startDate: effStart || undefined,
             endDate: effEnd || undefined,
+            propertyIds: [effectivePropertyId],
+            maxPoints: 1200,
           })) as BundleResponse;
 
           // trouver ts_id de la variable
@@ -230,11 +230,12 @@ export function MultiScenarioTimeSeriesChart({
             pointsCount: pts.length,
           });
 
-          map.set(runId, pts);
-        }
+            return [runId, pts] as const;
+          })
+        );
 
         if (!alive) return;
-        setSeriesByRun(map);
+        setSeriesByRun(new Map(results));
       } catch (e: any) {
         if (!alive) return;
         setError(String(e?.message || e));

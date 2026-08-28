@@ -1,0 +1,16 @@
+node_modules
+dist
+coverage
+.env
+.env.*
+*.log
+npm-debug.log*
+*.tsbuildinfo
+.git
+.gitignore
+tests
+README.md
+setup.bat
+.eslintrc.js
+eslint.config.js
+bun.lockb

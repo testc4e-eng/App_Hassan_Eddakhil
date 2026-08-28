@@ -69,6 +69,14 @@ const App = () => (
                 }
               />
               <Route
+                path="/dashboard/intervention-program"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/dashboard"
                 element={
                   <ProtectedRoute>

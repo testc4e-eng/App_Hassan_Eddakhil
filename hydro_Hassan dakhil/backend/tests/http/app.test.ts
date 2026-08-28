@@ -1,8 +1,6 @@
 import request from "supertest";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import app from "../../src/app";
-import { AppError } from "../../src/middleware/errorHandler";
-import { swatIngestionService } from "../../src/services/swatIngestion.service";
 
 describe("backend http/app", () => {
   afterEach(() => {
@@ -14,7 +12,8 @@ describe("backend http/app", () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({
-      message: "🌊 Hydro HD API",
+      success: true,
+      message: "Hydro HD API",
       version: "1.0.0",
     });
   });
@@ -69,19 +68,15 @@ describe("backend http/app", () => {
     });
   });
 
-  it("returns the structured SWAT error contract when the service rejects", async () => {
-    vi.spyOn(swatIngestionService, "importSwat").mockRejectedValueOnce(
-      new AppError("SWAT MDB source unavailable.", 412)
-    );
-
+  it("returns 401 on /api/v1/hydro/swat/import when no token is provided", async () => {
     const response = await request(app)
       .post("/api/v1/hydro/swat/import")
       .send({ importMode: "preview" });
 
-    expect(response.status).toBe(412);
+    expect(response.status).toBe(401);
     expect(response.body).toMatchObject({
       success: false,
-      error: "SWAT MDB source unavailable.",
+      error: "Non autorisé",
     });
   });
 

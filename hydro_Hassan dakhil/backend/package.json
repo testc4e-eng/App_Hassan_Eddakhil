@@ -40,8 +40,8 @@
     "compression": "^1.8.1",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
-    "express": "^4.22.1",
-    "express-rate-limit": "^8.2.1",
+    "express": "^4.22.2",
+    "express-rate-limit": "^8.6.2",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "pdfkit": "^0.19.1",
@@ -49,5 +49,10 @@
     "wkt": "^0.1.1",
     "xlsx": "^0.18.5",
     "zod": "^4.3.6"
+  },
+  "overrides": {
+    "express": {
+      "path-to-regexp": "0.1.13"
+    }
   }
 }

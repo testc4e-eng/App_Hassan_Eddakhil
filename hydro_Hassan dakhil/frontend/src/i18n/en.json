@@ -166,6 +166,7 @@
     "simulatedData": "Data Management",
     "scan": "Data Scan",
     "reports": "Reports & Maps",
+    "interventionProgram": "Intervention Program",
     "footerTitle": "Hydrological Dashboard",
     "footerSubtitle": "Hassan Addakhil Dam"
   },
@@ -178,6 +179,7 @@
     "simulatedData": "Data: Simulated Data",
     "scan": "Data Scan",
     "reports": "Reports & Maps",
+    "interventionProgram": "Priority Intervention Program",
     "projectName": "Hassan Addakhil Dam",
     "projectLocation": "Guir-Ziz-Rheris Watershed",
     "loadingCatalog": "Loading catalog (runs/modules)…",
@@ -325,6 +327,182 @@
       "subbasins": "Subbasins",
       "reach": "Reach / hydro network",
       "hruSummary": "Dominant HRU summary"
+    }
+  },
+  "interventionProgram": {
+    "title": "Priority intervention program",
+    "subtitle": "2027-2031 action plan for anti-erosion works in the Hassan Addakhil dam watershed",
+    "programBadge": "PAP 2027-2031",
+    "infoTooltip": "This program turns hydro-sedimentary analysis results into concrete actions against erosion and siltation.",
+    "openSource": "Open source PDF",
+    "viewSourceDocuments": "Source documents",
+    "seeClassification": "See classification",
+    "viewActions": "View actions",
+    "tabs": {
+      "overview": "Overview",
+      "classification": "Zone classification",
+      "matrix": "Prioritization matrix",
+      "actions": "Action program",
+      "calendar": "Calendar 2027-2031",
+      "budgets": "Budgets & costs",
+      "documents": "Source documents"
+    },
+    "sections": {
+      "budgetDistribution": "Budget distribution by axis",
+      "budgetDistributionDescription": "Automatic split of retained amounts from the business PDF values.",
+      "globalSchedule": "Global schedule 2027-2031",
+      "globalScheduleDescription": "Synthetic reading of axis activation by year based on the PAP schedule.",
+      "axisSummary": "Axis summary",
+      "axisSummaryDescription": "Each axis remains tied to the actions, surfaces, and budgets explicitly documented in the PDF."
+    },
+    "kpis": {
+      "totalBudget": {
+        "title": "Global budget",
+        "subtitle": "Over 5 years - 2027 to 2031",
+        "description": "Retained from the final budget table in the PDF."
+      },
+      "axes": {
+        "title": "Intervention axes",
+        "subtitle": "5 intervention axes",
+        "description": "Biological works, mechanical works, hydraulic management, monitoring, and governance."
+      },
+      "actions": {
+        "title": "Main actions",
+        "subtitle": "Distributed across the 5 axes",
+        "description": "Count computed automatically from the detailed actions extracted from the PDF."
+      },
+      "reforestation": {
+        "title": "Reforested area",
+        "subtitle": "Priority reforestation surface",
+        "description": "P1 zones - value explicitly documented for action 1.2."
+      },
+      "exclosure": {
+        "title": "Pastoral exclosure",
+        "subtitle": "P1 and P2 zones",
+        "description": "Surface explicitly documented for action 1.3."
+      }
+    },
+    "classification": {
+      "title": "Priority zone classification",
+      "description": "The method crosses mean HRU specific degradation with distance to the dam outlet.",
+      "degradationTitle": "Criterion 1 - Mean specific degradation",
+      "degradationDescription": "Classes reproduced from table 21 of the PDF with their operational meaning.",
+      "distanceTitle": "Criterion 2 - Distance to the dam outlet",
+      "distanceDescription": "Distance classes reproduced from the PDF spatial breakdown table.",
+      "criterionDegradation": "Specific degradation",
+      "criterionDistance": "Distance to the dam",
+      "priorityResult": "Priority class P0 to P5",
+      "resultExplanation": "The more erosive and closer to the dam a zone is, the higher its priority level."
+    },
+    "matrix": {
+      "title": "P0 to P5 prioritization matrix",
+      "description": "Reproduction of table 23 from the PDF without altering business rules."
+    },
+    "actions": {
+      "title": "Detailed action program",
+      "description": "All actions are structured from the action sheets and budget table of the business PDF.",
+      "viewDetails": "View details",
+      "notSpecified": "Not specified"
+    },
+    "calendar": {
+      "timelineTitle": "Axis timeline",
+      "timelineDescription": "Simplified Gantt view built from action activation years.",
+      "documentedHighlights": "Documented highlights",
+      "actionsPlanned": "Planned actions",
+      "continuousAction": "Continuous action"
+    },
+    "budgets": {
+      "kpiTotal": "Global budget",
+      "kpiTotalSubtitle": "Amount shown in the PDF",
+      "kpiTotalDescription": "Table 27 announces a 116 MDH total over five years.",
+      "kpiAxis": "Funded axes",
+      "kpiAxisSubtitle": "Axes documented in the PAP",
+      "kpiAxisDescription": "Each axis keeps its budget split in the centralized data file.",
+      "kpiActions": "Budgeted actions",
+      "kpiActionsSubtitle": "Retained detailed actions",
+      "kpiActionsDescription": "Budgets stay attached to each action to avoid manual duplication of figures.",
+      "kpiAverage": "Average budget per action",
+      "kpiAverageSubtitle": "Indicative reading",
+      "kpiAverageDescription": "Derived indicator based on the global budget and retained action count.",
+      "axisDistributionTitle": "Donut - budget by axis",
+      "axisDistributionDescription": "Percentages are calculated automatically from retained budgets.",
+      "annualDistributionTitle": "Bar chart - budget by year",
+      "annualDistributionDescription": "Annual split taken from table 27 of the PDF.",
+      "axisBarTitle": "Axis comparison bar chart",
+      "axisBarDescription": "Direct comparison of retained amounts by axis.",
+      "detailedTableTitle": "Detailed budget table by action",
+      "detailedTableDescription": "Each row links back to the corresponding action and its budget split in the dashboard."
+    },
+    "documents": {
+      "title": "Source documents",
+      "description": "Reference PDF, relative path, integration metadata, and documented data quality arbitrations.",
+      "adminNotice": "Detailed technical data-quality observations are available to administrators only.",
+      "qualityTitle": "Data quality observations",
+      "qualityDescription": "These notes document the inconsistencies found in the business PDF and the arbitration retained in the dashboard.",
+      "sourceLabel": "Source value",
+      "retainedLabel": "Retained value",
+      "reasonLabel": "Reason"
+    },
+    "common": {
+      "total": "Total",
+      "actions": "Actions",
+      "actionsCount": "{{count}} actions",
+      "active": "Active",
+      "noDocumentedAction": "No documented action.",
+      "enlarge": "Enlarge",
+      "enlargeMapAria": "Enlarge the map",
+      "download": "Download",
+      "sourcePdf": "Source PDF",
+      "specificDegradation": "Specific degradation",
+      "degradation": "Degradation",
+      "distance": "Distance",
+      "interpretation": "Interpretation",
+      "objective": "Objective",
+      "target": "Target",
+      "period": "Period",
+      "interventionType": "Type",
+      "targetZone": "Target zone",
+      "budget": "Budget",
+      "surfaceOrQuantity": "Area / quantity",
+      "unitCost": "Unit cost",
+      "yearlyBreakdown": "Yearly breakdown",
+      "relatedSpecies": "Related species",
+      "watchouts": "Watchouts",
+      "pagesCount": "{{count}} pages",
+      "view": "View",
+      "filteredActions": "{{filtered}} / {{total}} actions",
+      "keyMetric": "Key metric",
+      "programInfoAria": "Program information",
+      "annualBudget": "Annual budget",
+      "pdfPage": "PDF p.{{page}}",
+      "pageReference": "p.{{page}}"
+    },
+    "filters": {
+      "axis": "Axis",
+      "allAxes": "All axes",
+      "priority": "Priority",
+      "allPriorities": "All priorities",
+      "year": "Year",
+      "allYears": "All years",
+      "type": "Intervention type",
+      "allTypes": "All types",
+      "zone": "Target zone",
+      "allZones": "All zones",
+      "budget": "Budget",
+      "reset": "Reset",
+      "budgetBands": {
+        "all": "All budgets",
+        "lt1": "< 1 MDH",
+        "oneToFive": "1 to 5 MDH",
+        "gt5": "> 5 MDH"
+      }
+    },
+    "tableHeaders": {
+      "action": "Action",
+      "axis": "Axis",
+      "budget": "Budget",
+      "years": "Years",
+      "share": "Share"
     }
   }
 }

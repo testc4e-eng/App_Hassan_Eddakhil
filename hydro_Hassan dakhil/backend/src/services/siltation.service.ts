@@ -219,7 +219,7 @@ export class SiltationService {
     return [...OFFICIAL_CAMPAIGN_YEARS];
   }
 
-  async getIndicators(damCode = "HASSAN_ADDAKHIL"): Promise<SiltationIndicatorRow[]> {
+  private async getStoredIndicators(damCode: string): Promise<SiltationIndicatorRow[]> {
     return this.db.query<SiltationIndicatorRow>(
       `
       SELECT *
@@ -229,6 +229,24 @@ export class SiltationService {
       `,
       [damCode]
     );
+  }
+
+  private async resolveIndicators(damCode: string): Promise<SiltationIndicatorRow | null> {
+    const [bathyPackage, storedIndicator] = await Promise.all([
+      this.getBathymetryCampaignsPackage(damCode),
+      this.getStoredIndicators(damCode).then((rows) => rows[0] ?? null),
+    ]);
+
+    if (bathyPackage) {
+      return this.buildIndicatorsFromBathyCampaigns(bathyPackage.campaigns, storedIndicator ?? undefined);
+    }
+
+    return storedIndicator;
+  }
+
+  async getIndicators(damCode = "HASSAN_ADDAKHIL"): Promise<SiltationIndicatorRow[]> {
+    const indicator = await this.resolveIndicators(damCode);
+    return indicator ? [indicator] : [];
   }
 
   async getHsv(damCode = "HASSAN_ADDAKHIL"): Promise<SiltationHsvRow[]> {
@@ -335,7 +353,7 @@ export class SiltationService {
 
   async getSummary(damCode = "HASSAN_ADDAKHIL") {
     const [indicator, bathyPackage, hsv, evolutionCount, hsvCount] = await Promise.all([
-      this.getIndicators(damCode).then((rows) => rows[0]),
+      this.resolveIndicators(damCode),
       this.getBathymetryCampaignsPackage(damCode),
       this.getHsv(damCode),
       this.db.queryOne<{ count: string }>(
@@ -348,14 +366,10 @@ export class SiltationService {
       ),
     ]);
 
-    const dynamicIndicator = bathyPackage
-      ? this.buildIndicatorsFromBathyCampaigns(bathyPackage.campaigns, indicator)
-      : null;
-
     return {
       dam_code: damCode,
       dam_name: bathyPackage?.dam_name ?? indicator?.dam_name ?? "HASSAN ADDAKHIL",
-      indicators: dynamicIndicator,
+      indicators: indicator,
       data_source: bathyPackage ? "bathy_had" : "legacy",
       evolution_rows: Number(evolutionCount?.count ?? 0),
       hsv_rows: bathyPackage ? hsv.length : Number(hsvCount?.count ?? 0),

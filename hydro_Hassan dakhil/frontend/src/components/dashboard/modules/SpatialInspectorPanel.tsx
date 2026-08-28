@@ -202,7 +202,6 @@ function EntityPropertiesGrid({
     if (length) items.push({ label: "Longueur", value: displayValue(length.value) });
     if (slope) items.push({ label: "Pente %", value: displayValue(slope.value) });
   } else if (kind === "barrage") {
-    const name = properties.name ?? properties.nom_barrage;
     const type = properties.type_barrage;
     if (type) items.push({ label: "Type", value: displayValue(type) });
   }

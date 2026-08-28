@@ -4,9 +4,14 @@ import { erosionSwatSeriesService } from "./erosionSwatSeries.service";
 import { hydroSwatSeriesService } from "./hydroSwatSeries.service";
 import {
   LEGACY_SWAT_SCENARIO_CODES,
-  NORMALIZED_SWAT_SCENARIO_CODES,
-  NORMALIZED_SWAT_SCENARIOS,
 } from "../constants/swatScenarios";
+import {
+  LEGACY_SWAT_REACH_STANDARD_NAMES,
+  VISIBLE_SWAT_SCENARIO_CODES,
+  buildSwatSortCaseSql,
+  buildSwatStandardNameSqlCondition,
+  getLegacyCatalogBackedSwatProperties,
+} from "../constants/swatDataSources";
 import { isStandardNameVisibleForModule } from "../constants/moduleVariables";
 import { uniqueBy } from "../utils/deduplicate";
 
@@ -37,9 +42,59 @@ export type CatalogStation = {
 };
 
 const CANONICAL_SWAT_SCENARIOS = [
-  ...NORMALIZED_SWAT_SCENARIO_CODES,
+  ...VISIBLE_SWAT_SCENARIO_CODES,
   ...LEGACY_SWAT_SCENARIO_CODES,
 ];
+
+const CATALOG_RUN_ORDER = new Map<string, number>([
+  ["OBSERVED", 0] as const,
+  ...VISIBLE_SWAT_SCENARIO_CODES.map((scenarioCode, index) => [
+    scenarioCode,
+    index + 1,
+  ] as const),
+]);
+
+function compareCatalogRuns(a: CatalogRun, b: CatalogRun) {
+  if (a.is_observed !== b.is_observed) {
+    return a.is_observed ? -1 : 1;
+  }
+
+  const rankA = CATALOG_RUN_ORDER.get(String(a.scenario_code)) ?? 999;
+  const rankB = CATALOG_RUN_ORDER.get(String(b.scenario_code)) ?? 999;
+  if (rankA !== rankB) return rankA - rankB;
+
+  return Number(a.run_id) - Number(b.run_id);
+}
+
+function normalizeVisibleRuns(rows: CatalogRun[]) {
+  return uniqueBy(
+    rows
+      .filter(
+        (row) => !LEGACY_SWAT_SCENARIO_CODES.has(String(row.scenario_code))
+      )
+      .slice()
+      .sort(compareCatalogRuns),
+    (row) => row.scenario_code
+  );
+}
+
+function getLegacyCatalogSwatSql(moduleCode: string) {
+  const properties = getLegacyCatalogBackedSwatProperties(moduleCode);
+  const standardNames = properties.map((property) => property.standard_name);
+
+  return {
+    standardNames,
+    sortCaseSql: buildSwatSortCaseSql("p.standard_name", properties),
+    propertyFilterSql: buildSwatStandardNameSqlCondition(
+      "p.standard_name",
+      standardNames
+    ),
+    catalogFilterSql: buildSwatStandardNameSqlCondition(
+      "c.standard_name",
+      standardNames
+    ),
+  };
+}
 
 export class CatalogService {
   private db = new DatabaseService();
@@ -54,6 +109,7 @@ export class CatalogService {
   }
 
   async getModuleProperties(moduleCode: string): Promise<CatalogProperty[]> {
+    const legacySwatSql = getLegacyCatalogSwatSql(moduleCode);
     const q = `
       SELECT
         mp.module_code,
@@ -76,21 +132,14 @@ export class CatalogService {
         p.property_id,
         true AS is_enabled,
         CASE
-          WHEN p.standard_name = 'SWAT_FLOW_M3S' THEN 9001
-          WHEN p.standard_name = 'SWAT_SED_TONS' THEN 9002
-          WHEN p.standard_name = 'SWAT_SYLDT_HA' THEN 9003
-          ELSE 9999
+          ${legacySwatSql.sortCaseSql}
         END AS sort_order,
         p.name,
         p.unit,
         p.standard_name,
         NULL::text AS description
       FROM ref.observed_properties p
-      WHERE
-        (
-          ($1 = 'hydro' AND p.standard_name = 'SWAT_FLOW_M3S')
-          OR ($1 = 'erosion' AND p.standard_name IN ('SWAT_SED_TONS', 'SWAT_SYLDT_HA'))
-        )
+      WHERE ${legacySwatSql.propertyFilterSql}
         AND EXISTS (
           SELECT 1
           FROM public.v_ts_catalog_enriched c
@@ -162,17 +211,6 @@ export class CatalogService {
   }
 
   async getRuns(): Promise<CatalogRun[]> {
-    const virtualSwatRuns = NORMALIZED_SWAT_SCENARIOS.map((scenario) => ({
-      run_id: scenario.run_id,
-      scenario_code: scenario.scenario_code,
-      scenario_name: scenario.scenario_name,
-      description: "Scénario SWAT exposé depuis les résultats importés SWAT_OUTPUT.",
-      is_observed: false,
-      created_at: new Date(0).toISOString(),
-    }));
-    const hideTechnicalSwatRuns = (rows: CatalogRun[]) =>
-      rows.filter((row) => !LEGACY_SWAT_SCENARIO_CODES.has(String(row.scenario_code)));
-
     if (await this.db.relationExists("api.mv_scenario_catalog")) {
       const rows = await this.db.query<CatalogRun & { is_visible: boolean }>(
         `
@@ -192,9 +230,8 @@ export class CatalogService {
           run_id
         `
       );
-      return uniqueBy(
-        [...hideTechnicalSwatRuns(rows.map(({ is_visible: _isVisible, ...row }) => row)), ...virtualSwatRuns],
-        (row) => row.run_id
+      return normalizeVisibleRuns(
+        rows.map(({ is_visible: _isVisible, ...row }) => row)
       );
     }
 
@@ -217,9 +254,8 @@ export class CatalogService {
         array_position($1::text[], scenario_code),
         run_id
     `;
-    return uniqueBy(
-      [...hideTechnicalSwatRuns(await this.db.query<CatalogRun>(q, [CANONICAL_SWAT_SCENARIOS])), ...virtualSwatRuns],
-      (row) => row.run_id
+    return normalizeVisibleRuns(
+      await this.db.query<CatalogRun>(q, [CANONICAL_SWAT_SCENARIOS])
     );
   }
 
@@ -227,6 +263,8 @@ export class CatalogService {
     moduleCode: string,
     runId: number
   ): Promise<CatalogStation[]> {
+    const legacySwatSql = getLegacyCatalogSwatSql(moduleCode);
+
     if (moduleCode === "hydro") {
       const scenario = await hydroSwatSeriesService.resolveHydroScenario(runId);
       if (scenario) {
@@ -282,7 +320,7 @@ export class CatalogService {
         JOIN core.stations rs
           ON rs.station_id = m.station_id
         WHERE c.source_type = 'simulated'
-          AND c.standard_name IN ('SWAT_FLOW_M3S', 'SWAT_SED_TONS')
+          AND c.standard_name IN (${LEGACY_SWAT_REACH_STANDARD_NAMES.map((name) => `'${name}'`).join(", ")})
       )
       SELECT DISTINCT
         c.station_id,
@@ -298,10 +336,7 @@ export class CatalogService {
           mp.property_id IS NOT NULL
           OR (
             c.source_type = 'simulated'
-            AND (
-              ($1 = 'hydro' AND c.standard_name = 'SWAT_FLOW_M3S')
-              OR ($1 = 'erosion' AND c.standard_name IN ('SWAT_SED_TONS', 'SWAT_SYLDT_HA'))
-            )
+            AND ${legacySwatSql.catalogFilterSql}
           )
         )
       ORDER BY c.station_name

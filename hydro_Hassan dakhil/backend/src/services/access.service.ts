@@ -1,4 +1,3 @@
-import { Pool } from "pg";
 import Database from "../config/database.config";
 
 type EntityType = "sub" | "rch";

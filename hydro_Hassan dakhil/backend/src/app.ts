@@ -4,7 +4,7 @@ import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
-import dotenv from "dotenv";
+import { loadBackendEnv } from "./config/loadEnv";
 
 import hydroRoutes from "./routes/hydroRoutes";
 import timeseriesRoutes from "./routes/timeseriesRoutes";
@@ -24,52 +24,63 @@ import adminRoutes from "./routes/adminRoutes";
 import adminDbConfigRoutes from "./routes/adminDbConfig.routes";
 import stationSimulationRoutes from "./routes/stationSimulationRoutes";
 import siltationRoutes from "./routes/siltationRoutes";
-dotenv.config();
+
+loadBackendEnv();
 
 const app = express();
 app.set("trust proxy", 1);
+app.disable("x-powered-by");
+
+const isProd = process.env.NODE_ENV === "production";
 
 const envCorsOrigins =
   process.env.CORS_ORIGIN?.split(",")
     .map((s) => s.trim())
     .filter(Boolean) ?? [];
 
-const devCorsOrigins = [
-  "http://localhost:8090",
-  "http://127.0.0.1:8090",
-  "http://localhost:8089",
-  "http://127.0.0.1:8089",
-  "http://localhost:3001",
-  "http://127.0.0.1:3001",
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
-  "http://localhost:5174",
-  "http://127.0.0.1:5174",
-  "http://localhost:8080",
-  "http://127.0.0.1:8080",
-];
+const devCorsOrigins = isProd
+  ? []
+  : [
+      "http://localhost:8090",
+      "http://127.0.0.1:8090",
+      "http://localhost:8089",
+      "http://127.0.0.1:8089",
+      "http://localhost:3001",
+      "http://127.0.0.1:3001",
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+      "http://localhost:5174",
+      "http://127.0.0.1:5174",
+      "http://localhost:8080",
+      "http://127.0.0.1:8080",
+    ];
 
 const allowedOrigins = Array.from(new Set([...devCorsOrigins, ...envCorsOrigins]));
 
-app.use(helmet());
-app.use(compression());
+const corsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(null, false);
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  optionsSuccessStatus: 204,
+};
 
 app.use(
-  cors({
-    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-      return callback(new Error(`Not allowed by CORS: ${origin}`));
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    referrerPolicy: { policy: "no-referrer" },
   })
 );
+app.use(compression());
 
-app.options("/*", cors());
+app.use(cors(corsOptions));
 
-const isProd = process.env.NODE_ENV === "production";
+app.options("/*", cors(corsOptions));
+
 const isLocalhostRequest = (req: Request) => {
   const host = String(req.headers.host || req.hostname || "").toLowerCase();
   const origin = String(req.headers.origin || "").toLowerCase();
@@ -119,21 +130,9 @@ app.use("/api/v1/admin", adminDbConfigRoutes);
 
 app.get("/", (req: Request, res: Response) => {
   res.json({
-    message: "🌊 Hydro HD API",
+    success: true,
+    message: "Hydro HD API",
     version: "1.0.0",
-    endpoints: [
-      "/api/v1/hydro",
-      "/api/v1/timeseries",
-      "/api/v1/catalog",
-      "/api/v1/stations/:stationId/simulations",
-      "/api/v1/catalog/availability",
-      "/api/v1/solid-yield",
-      "/api/v1/data-scan",
-      "/api/v1/scan",
-      "/api/auth",
-      "/api/admin",
-    ],
-    corsAllowed: allowedOrigins,
   });
 });
 

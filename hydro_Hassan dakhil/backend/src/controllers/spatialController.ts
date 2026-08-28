@@ -73,8 +73,14 @@ export class SpatialController {
     try {
       const subbasinId = req.query.subbasinId ? Number(req.query.subbasinId) : undefined;
       const catchmentId = req.query.catchmentId ? Number(req.query.catchmentId) : undefined;
+      const includeSummary =
+        req.query.summary === undefined
+          ? true
+          : !["false", "0", "no"].includes(String(req.query.summary).toLowerCase());
 
-      const rows = await spatialService.getReaches(subbasinId, catchmentId);
+      const rows = await spatialService.getReaches(subbasinId, catchmentId, {
+        includeSummary,
+      });
 
       res.json({
         success: true,

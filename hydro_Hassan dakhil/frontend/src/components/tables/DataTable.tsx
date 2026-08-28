@@ -1,61 +1,34 @@
-// frontend/src/components/tables/DataTable.tsx
 import { useEffect, useMemo, useState } from "react";
 import {
-  ChevronUp,
   ChevronDown,
-  Download,
-  Search,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
+  Download,
   Loader2,
+  Search,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { FilterState } from "@/types/hydro";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { timeseriesApi, type TimeseriesTableResponse } from "@/api/timeseries";
 import { useHydroData } from "@/contexts/HydroDataContext";
-import { useTranslation } from "react-i18next";
-import {
-  formatDateByAggregation,
-} from "@/lib/seriesGranularity";
-import { timeseriesApi } from "@/api/timeseries";
+import { formatDateByAggregation } from "@/lib/seriesGranularity";
 import { isModulePropertyVisibleForModule } from "@/constants/moduleVariables";
+import { cn } from "@/lib/utils";
 
 interface DataTableProps {
   moduleCode: "climat" | "hydro" | "erosion";
   filters: FilterState;
 }
 
-const ROWS_PER_PAGE = 15;
+const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 
-type BundleCatalogItem = {
-  ts_id: number;
-  station_id: number;
-  run_id: number;
-  property_id: number;
-  property_name?: string;
-  unit?: string | null;
-  start_date?: string | null;
-  end_date?: string | null;
-};
-
-type AggRow = {
-  period: string; // ISO date-time (date_trunc)
-  avg_value: number;
-  min_value: number;
-  max_value: number;
-  count?: number;
-  n?: number;
-};
-
-type BundleResponse = {
-  stationId: number;
-  runId: number;
-  module: string;
-  catalog: BundleCatalogItem[];
-  aggregated?: Record<string, AggRow[]>;
-  error?: string;
-};
+function csvEscape(value: unknown) {
+  const text = value === null || value === undefined ? "" : String(value);
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
 
 export function DataTable({ moduleCode, filters }: DataTableProps) {
   const { t } = useTranslation();
@@ -63,16 +36,20 @@ export function DataTable({ moduleCode, filters }: DataTableProps) {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const [bundleCatalog, setBundleCatalog] = useState<BundleCatalogItem[]>([]);
-  const [bundleAgg, setBundleAgg] = useState<Record<string, AggRow[]>>({});
-
-  const [sortColumn, setSortColumn] = useState<string>("date");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [sortColumn, setSortColumn] = useState("date");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(25);
+  const [tableData, setTableData] = useState<TimeseriesTableResponse>({
+    items: [],
+    page: 1,
+    page_size: 25,
+    total: 0,
+    total_pages: 1,
+  });
 
-  // variables sélectionnées = property_id (chez toi filters.variables = number[])
   const selectedPropertyIds = useMemo(
     () => Array.from(new Set(filters.variables ?? [])),
     [filters.variables]
@@ -83,78 +60,90 @@ export function DataTable({ moduleCode, filters }: DataTableProps) {
   const runId = (filters as any).runId;
 
   const aggInterval = useMemo(() => {
-    // on map "resolution" UI vers agg backend (day/month/year)
-    // ton timeseriesController supporte "day|month|year"
     if (filters.resolution === "month") return "month";
     if (filters.resolution === "year") return "year";
-    // "instant" => fallback day (temporaire)
     return "day";
   }, [filters.resolution]);
 
   const displayAgg = aggInterval;
 
-  // Fetch bundle (catalog + aggregated)
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setDebouncedSearch(searchTerm.trim());
+    }, 250);
+    return () => window.clearTimeout(timeout);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    moduleCode,
+    stationId,
+    runId,
+    aggInterval,
+    filters.startDate,
+    filters.endDate,
+    selectedPropertyIds.join(","),
+    debouncedSearch,
+    sortColumn,
+    sortDirection,
+    pageSize,
+  ]);
+
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
       setError(null);
 
-      // Pré-conditions
-      if (!stationId || !runId) {
-        setBundleCatalog([]);
-        setBundleAgg({});
-        return;
-      }
-      if (!selectedPropertyIds.length) {
-        setBundleCatalog([]);
-        setBundleAgg({});
+      if (!stationId || !runId || !selectedPropertyIds.length) {
+        setTableData({
+          items: [],
+          page: 1,
+          page_size: pageSize,
+          total: 0,
+          total_pages: 1,
+        });
         return;
       }
 
       try {
         setLoading(true);
-
-        // 1) bundle du module via cache partagé
-        const json = (await timeseriesApi.bundle({
+        const next = await timeseriesApi.table({
           stationId,
           runId,
           module: moduleCode,
           agg: aggInterval,
           startDate: filters.startDate || undefined,
           endDate: filters.endDate || undefined,
-        })) as BundleResponse;
-
-        // 2) filtrer le catalog sur variables sélectionnées
-        const filteredCatalog = json.catalog.filter((c) =>
-          selectedPropertyIds.includes(c.property_id)
-        );
-
-        // 3) filtrer aggregated sur ts_id présents
-        const filteredAgg: Record<string, AggRow[]> = {};
-        const agg = json.aggregated || {};
-        for (const c of filteredCatalog) {
-          const key = String(c.ts_id);
-          if (agg[key]) filteredAgg[key] = agg[key];
-        }
+          propertyIds: selectedPropertyIds,
+          page: currentPage,
+          page_size: pageSize,
+          search: debouncedSearch || undefined,
+          sortColumn,
+          sortDirection,
+        });
 
         if (!cancelled) {
-          setBundleCatalog(filteredCatalog);
-          setBundleAgg(filteredAgg);
-          setCurrentPage(1);
+          setTableData(next);
         }
-      } catch (e: any) {
+      } catch (nextError: any) {
         if (!cancelled) {
-          setError(e?.message || String(e));
-          setBundleCatalog([]);
-          setBundleAgg({});
+          setError(nextError?.message || String(nextError));
+          setTableData({
+            items: [],
+            page: 1,
+            page_size: pageSize,
+            total: 0,
+            total_pages: 1,
+          });
         }
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
 
-    load();
+    void load();
     return () => {
       cancelled = true;
     };
@@ -166,121 +155,94 @@ export function DataTable({ moduleCode, filters }: DataTableProps) {
     filters.startDate,
     filters.endDate,
     selectedPropertyIds.join(","),
+    debouncedSearch,
+    sortColumn,
+    sortDirection,
+    currentPage,
+    pageSize,
   ]);
 
-  // Colonnes : Date + variables sélectionnées (depuis moduleProperties)
   const tableColumns = useMemo(() => {
-    const props = (moduleProperties[moduleCode] || []).filter((p) =>
-      isModulePropertyVisibleForModule(moduleCode, p.standard_name)
+    const props = (moduleProperties[moduleCode] || []).filter((property) =>
+      isModulePropertyVisibleForModule(moduleCode, property.standard_name)
     );
-    const selectedProps = props.filter((p) =>
-      selectedPropertyIds.includes(p.property_id)
+    const selectedProps = props.filter((property) =>
+      selectedPropertyIds.includes(property.property_id)
     );
 
     return [
       { key: "date", label: "Date" },
-      ...selectedProps.map((p) => ({
-        key: `p_${p.property_id}`,
-        label: `${p.name}${p.unit ? ` (${p.unit})` : ""}`,
+      ...selectedProps.map((property) => ({
+        key: `p_${property.property_id}`,
+        label: `${property.name}${property.unit ? ` (${property.unit})` : ""}`,
       })),
     ];
   }, [moduleCode, moduleProperties, selectedPropertyIds]);
 
-  // Construire rows multi-colonnes à partir de bundleAgg (fusion par period)
-  const tableRows = useMemo(() => {
-    if (!bundleCatalog.length) return [];
-
-    // map period -> row
-    const map = new Map<string, Record<string, string | number>>();
-
-    for (const ts of bundleCatalog) {
-      const tsKey = String(ts.ts_id);
-      const series = bundleAgg[tsKey] || [];
-      const colKey = `p_${ts.property_id}`;
-
-      for (const r of series) {
-        const period = r.period;
-        const existing = map.get(period) || { date: period };
-        existing[colKey] = r.avg_value;
-        map.set(period, existing);
-      }
-    }
-
-    // tri naturel date desc par défaut
-    return Array.from(map.values());
-  }, [bundleCatalog, bundleAgg]);
-
-  const sortedAndFilteredData = useMemo(() => {
-    let data = [...tableRows];
-
-    // Filter
-    if (searchTerm) {
-      const s = searchTerm.toLowerCase();
-      data = data.filter((row) =>
-        Object.values(row).some((val) => String(val).toLowerCase().includes(s))
-      );
-    }
-
-    // Sort
-    data.sort((a, b) => {
-      const aVal = a[sortColumn];
-      const bVal = b[sortColumn];
-
-      if (sortColumn === "date") {
-        const dateA = new Date(String(aVal)).getTime();
-        const dateB = new Date(String(bVal)).getTime();
-        return sortDirection === "asc" ? dateA - dateB : dateB - dateA;
-      }
-
-      const numA = Number(aVal) || 0;
-      const numB = Number(bVal) || 0;
-      return sortDirection === "asc" ? numA - numB : numB - numA;
-    });
-
-    return data;
-  }, [tableRows, sortColumn, sortDirection, searchTerm]);
-
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * ROWS_PER_PAGE;
-    return sortedAndFilteredData.slice(start, start + ROWS_PER_PAGE);
-  }, [sortedAndFilteredData, currentPage]);
-
-  const totalPages = Math.max(
-    1,
-    Math.ceil(sortedAndFilteredData.length / ROWS_PER_PAGE)
-  );
+  const totalPages = Math.max(1, tableData.total_pages || 1);
+  const currentItems = tableData.items || [];
 
   const handleSort = (column: string) => {
     if (sortColumn === column) {
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      setSortColumn(column);
-      setSortDirection("desc");
+      setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
+      return;
     }
+
+    setSortColumn(column);
+    setSortDirection(column === "date" ? "desc" : "asc");
   };
 
-  const exportCSV = () => {
-    const headers = tableColumns.map((c) => c.label);
-    const rows = sortedAndFilteredData.map((row) =>
-      tableColumns.map((c) =>
-        c.key === "date"
-          ? formatDateByAggregation(String(row[c.key] ?? ""), displayAgg)
-          : row[c.key] ?? ""
-      )
-    );
+  const exportCSV = async () => {
+    if (!stationId || !runId || !selectedPropertyIds.length) return;
 
-    const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
+    const headers = tableColumns.map((column) => column.label);
+    const rows: Array<Array<string | number | null>> = [];
+    let page = 1;
+
+    while (true) {
+      const response = await timeseriesApi.table({
+        stationId,
+        runId,
+        module: moduleCode,
+        agg: aggInterval,
+        startDate: filters.startDate || undefined,
+        endDate: filters.endDate || undefined,
+        propertyIds: selectedPropertyIds,
+        page,
+        page_size: 100,
+        search: debouncedSearch || undefined,
+        sortColumn,
+        sortDirection,
+      });
+
+      for (const row of response.items) {
+        rows.push(
+          tableColumns.map((column) =>
+            column.key === "date"
+              ? formatDateByAggregation(String(row[column.key] ?? ""), displayAgg)
+              : (row[column.key] ?? "")
+          )
+        );
+      }
+
+      if (page >= response.total_pages) break;
+      page += 1;
+    }
+
+    const csv = [headers, ...rows]
+      .map((row) => row.map(csvEscape).join(","))
+      .join("\n");
+    const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `hydro_table_${moduleCode}_station_${stationId ?? "NA"}_run_${
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `hydro_table_${moduleCode}_station_${stationId ?? "NA"}_run_${
       runId ?? "NA"
     }_${filters.startDate}_${filters.endDate}.csv`;
-    a.click();
+    anchor.click();
+    URL.revokeObjectURL(url);
   };
 
-  // États UI
   if (!selectedPropertyIds.length) {
     return (
       <div className="hydro-card h-full flex items-center justify-center">
@@ -307,31 +269,42 @@ export function DataTable({ moduleCode, filters }: DataTableProps) {
         <h3 className="font-semibold">Données Tabulaires (API)</h3>
 
         <div className="flex items-center gap-3">
-          {loading && (
+          {loading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="w-4 h-4 animate-spin" />
-              Chargement…
+              Chargement...
             </div>
-          )}
+          ) : null}
 
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Rechercher..."
               value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
+              onChange={(event) => setSearchTerm(event.target.value)}
               className="pl-9 w-48"
             />
           </div>
 
+          <select
+            className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+            value={String(pageSize)}
+            onChange={(event) =>
+              setPageSize(Number(event.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])
+            }
+          >
+            {PAGE_SIZE_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option} / page
+              </option>
+            ))}
+          </select>
+
           <Button
             variant="outline"
             size="sm"
-            onClick={exportCSV}
-            disabled={!sortedAndFilteredData.length}
+            onClick={() => void exportCSV()}
+            disabled={!tableData.total}
           >
             <Download className="w-4 h-4 mr-2" />
             Export CSV
@@ -339,9 +312,9 @@ export function DataTable({ moduleCode, filters }: DataTableProps) {
         </div>
       </div>
 
-      {error && (
+      {error ? (
         <div className="px-5 py-3 text-sm text-destructive">{error}</div>
-      )}
+      ) : null}
 
       <div className="max-h-[420px] overflow-auto rounded-xl border border-border/60">
         <table className="data-table">
@@ -351,7 +324,7 @@ export function DataTable({ moduleCode, filters }: DataTableProps) {
                 <th
                   key={column.key}
                   onClick={() => handleSort(column.key)}
-                  className="sticky top-0 z-10 cursor-pointer bg-muted/90 backdrop-blur hover:bg-muted transition-colors py-2"
+                  className="sticky top-0 z-10 cursor-pointer bg-muted/90 py-2 backdrop-blur hover:bg-muted transition-colors"
                 >
                   <div className="flex items-center gap-1.5">
                     <span className="truncate">{column.label}</span>
@@ -380,12 +353,15 @@ export function DataTable({ moduleCode, filters }: DataTableProps) {
           </thead>
 
           <tbody>
-            {paginatedData.map((row, i) => (
-              <tr key={i} className={i % 2 === 0 ? "bg-background" : "bg-muted/20"}>
+            {currentItems.map((row, index) => (
+              <tr
+                key={`${row.date ?? "row"}-${index}`}
+                className={index % 2 === 0 ? "bg-background" : "bg-muted/20"}
+              >
                 {tableColumns.map((column) => (
-                <td key={column.key} className="font-mono text-xs py-2">
+                  <td key={column.key} className="font-mono text-xs py-2">
                     {column.key === "date"
-                      ? formatDateByAggregation(String(row[column.key]), displayAgg)
+                      ? formatDateByAggregation(String(row[column.key] ?? ""), displayAgg)
                       : typeof row[column.key] === "number"
                       ? Number(row[column.key]).toFixed(2)
                       : row[column.key] ?? "-"}
@@ -394,7 +370,7 @@ export function DataTable({ moduleCode, filters }: DataTableProps) {
               </tr>
             ))}
 
-            {!loading && !paginatedData.length && (
+            {!loading && !currentItems.length ? (
               <tr>
                 <td
                   colSpan={tableColumns.length}
@@ -403,31 +379,31 @@ export function DataTable({ moduleCode, filters }: DataTableProps) {
                   Aucune donnée (vérifie station/run/variables)
                 </td>
               </tr>
-            )}
+            ) : null}
           </tbody>
         </table>
       </div>
 
-      {/* Pagination */}
       <div className="px-4 py-3 border-t border-border flex items-center justify-between">
         <div className="text-xs text-muted-foreground">
-          {sortedAndFilteredData.length} enregistrements • Page {currentPage} /{" "}
-          {totalPages}
+          {tableData.total} enregistrements • Page {tableData.page} / {totalPages}
         </div>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+            disabled={tableData.page <= 1}
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
+            onClick={() =>
+              setCurrentPage((page) => Math.min(totalPages, page + 1))
+            }
+            disabled={tableData.page >= totalPages}
           >
             <ChevronRight className="w-4 h-4" />
           </Button>

@@ -22,7 +22,7 @@ function getEnvConfig(): DbConfig {
   return {
     host: process.env.DB_HOST || "",
     port: Number(process.env.DB_PORT || "0"),
-    database: process.env.DB_NAME || "",
+    database: process.env.HDI_DB_NAME || process.env.DB_NAME || "",
     user: process.env.DB_USER || "",
     password: process.env.DB_PASSWORD || "",
     ssl: process.env.DB_SSL === "true",
@@ -54,17 +54,16 @@ export class AdminDbConfigService {
 
     try {
       const client = await pool.connect();
-      const result = await client.query("SELECT NOW() AS now");
+      await client.query("SELECT NOW() AS now");
       client.release();
       return {
         success: true,
-        message: `Connexion réussie à ${config.database} sur ${config.host}:${config.port} (serveur: ${result.rows[0]?.now})`,
+        message: "Connexion reussie.",
       };
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Erreur inconnue";
       return {
         success: false,
-        message: `Échec de connexion : ${message}`,
+        message: "Echec de connexion. Verifiez les parametres saisis et l'accessibilite reseau.",
       };
     } finally {
       await pool.end();

@@ -5,6 +5,7 @@ import type {
   SwatImportPayload,
   SwatSummary,
 } from "@/types/simulatedData";
+import { AUTH_TOKEN_KEY } from "@/api/auth";
 
 type ApiEnvelope<T> = {
   success: boolean;
@@ -15,9 +16,12 @@ type ApiEnvelope<T> = {
 const API_BASE = import.meta.env.VITE_API_BASE ?? "/api/v1";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const token =
+    typeof window === "undefined" ? null : window.localStorage.getItem(AUTH_TOKEN_KEY);
   const response = await fetch(`${API_BASE}${path}`, {
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init?.headers || {}),
     },
     ...init,

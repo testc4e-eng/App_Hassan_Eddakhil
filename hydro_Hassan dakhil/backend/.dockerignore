@@ -1,0 +1,16 @@
+node_modules
+dist
+coverage
+.env
+.env.*
+*.log
+npm-debug.log*
+*.tsbuildinfo
+.git
+.gitignore
+tmp
+temp
+tests
+sql
+scripts/*
+!scripts/check-utf8.mjs

@@ -6,6 +6,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY tsconfig.json server.ts ./
+COPY scripts/check-utf8.mjs ./scripts/check-utf8.mjs
 COPY src ./src
 
 RUN npm run build
@@ -16,7 +17,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev && npm cache clean --force
 
 COPY --from=build /app/dist ./dist
 

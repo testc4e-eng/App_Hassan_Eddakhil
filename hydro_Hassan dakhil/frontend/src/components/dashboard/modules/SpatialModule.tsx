@@ -77,7 +77,7 @@ type ManagedLayerKey = "barrages" | "basins" | "subBasins" | "reach" | "stations
 const ALL = "__ALL__";
 const BARRAGE_NAME = "Barrage Hassan Addakhil";
 const BASEMAP_STORAGE_KEY = "hydro-basemap";
-const PROJECT_STATION_IDS = HASSAN_ADDAKHIL_STATION_IDS;
+const _PROJECT_STATION_IDS = HASSAN_ADDAKHIL_STATION_IDS;
 const PROJECT_BASIN_ID = 1;
 const PROJECT_BASIN_LABEL = "Bassin versant du barrage Hassan Addakhil";
 
@@ -365,7 +365,7 @@ export function OperationalSpatialModule() {
     inspectorPopupRef.current.style.transform = `translate(${x}px, ${y}px) scale(${inspectorPopupScale})`;
   }, [inspectorPopupScale]);
 
-  const focusBasin = (value: string) => {
+  const _focusBasin = (value: string) => {
     setSelectedBasinId(value === ALL ? "" : value);
     setSelectedBarrageId("");
     setSelectedSubBasinId("");
@@ -426,7 +426,7 @@ export function OperationalSpatialModule() {
     resetSelections(value);
   };
 
-  const layerItems = useMemo(
+  const _layerItems = useMemo(
     () => [
       { id: "barrages" as const, label: t("spatial.layers.barrages"), icon: Landmark },
       { id: "basins" as const, label: t("spatial.layers.basins"), icon: Grid3X3 },
@@ -964,7 +964,7 @@ export function OperationalSpatialModule() {
     [availableBarrages]
   );
 
-  const toBasinEntityOptions = useMemo<EntityControlOption[]>(
+  const _toBasinEntityOptions = useMemo<EntityControlOption[]>(
     () =>
       availableBasins.map((basin: any) => ({
         id: basin.id,
@@ -985,13 +985,13 @@ export function OperationalSpatialModule() {
     setLeftSidebarLayers((prev) => (prev[layer] ? prev : { ...prev, [layer]: true }));
   };
 
-  const emphasizeSelection = (layer: ManagedLayerKey, value: string, handler: (value: string) => void) => {
+  const _emphasizeSelection = (layer: ManagedLayerKey, value: string, handler: (value: string) => void) => {
     if (!value) return;
     ensureLayerVisible(layer);
     handler(value);
   };
 
-  const zoomToSelection = (layer: ManagedLayerKey, value: string, handler: (value: string) => void) => {
+  const _zoomToSelection = (layer: ManagedLayerKey, value: string, handler: (value: string) => void) => {
     if (!value) return;
     ensureLayerVisible(layer);
     handler(value);
@@ -1217,7 +1217,7 @@ export function OperationalSpatialModule() {
     </div>
   );
 
-  const toolsPanel = (
+  const _toolsPanel = (
     <>
           {/* Navigation */}
           <div>

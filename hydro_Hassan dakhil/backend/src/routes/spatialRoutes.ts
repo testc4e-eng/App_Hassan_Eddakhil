@@ -1,6 +1,7 @@
-﻿import { Router } from "express";
+import { Router } from "express";
 import { spatialController } from "../controllers/spatialController";
 import { advancedSpatialController } from "../controllers/advancedSpatialController";
+import { requireRole, verifyToken } from "../middleware/auth";
 
 const router = Router();
 
@@ -36,6 +37,8 @@ router.get(
 );
 router.get(
   "/advanced/debug-root",
+  verifyToken,
+  requireRole("ADMIN"),
   advancedSpatialController.debugRoot.bind(advancedSpatialController)
 );
 router.get(

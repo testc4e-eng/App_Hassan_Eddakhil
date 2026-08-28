@@ -37,14 +37,17 @@ export const NORMALIZED_SWAT_SCENARIO_ORDER = new Map<
   number
 >(NORMALIZED_SWAT_SCENARIOS.map((item, index) => [item.code, index] as const));
 
+export const TECHNICAL_SWAT_IMPORT_SCENARIO_CODE = "SWAT_OUTPUT";
+export const TECHNICAL_SWAT_CORE_RUN_CODE = "SWAT_OUTPUT_01";
+
 export const HIDDEN_SCENARIO_CODES = new Set<string>([
-  "SWAT_OUTPUT",
-  "SWAT_OUTPUT_01",
+  TECHNICAL_SWAT_IMPORT_SCENARIO_CODE,
+  TECHNICAL_SWAT_CORE_RUN_CODE,
 ]);
 
 export const LEGACY_SWAT_SCENARIO_CODES = new Set<string>([
-  "SWAT_OUTPUT",
-  "SWAT_OUTPUT_01",
+  TECHNICAL_SWAT_IMPORT_SCENARIO_CODE,
+  TECHNICAL_SWAT_CORE_RUN_CODE,
 ]);
 
 export function isNormalizedSwatScenarioCode(code: string | null | undefined): code is NormalizedSwatScenarioCode {

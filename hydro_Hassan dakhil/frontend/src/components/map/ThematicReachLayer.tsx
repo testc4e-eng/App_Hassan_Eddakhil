@@ -1,6 +1,5 @@
 // frontend/src/components/map/ThematicReachLayer.tsx
 import { GeoJSON } from "react-leaflet";
-import L from "leaflet";
 import type { FeatureCollection } from "@/api/spatial";
 import { valueToColor } from "@/lib/thematicColors";
 

@@ -35,6 +35,16 @@ router.get(
 );
 
 router.get(
+  "/stats",
+  timeseriesController.getStats.bind(timeseriesController)
+);
+
+router.get(
+  "/table",
+  timeseriesController.getTable.bind(timeseriesController)
+);
+
+router.get(
   "/availability",
   timeseriesController.getAggregationAvailability.bind(timeseriesController)
 );

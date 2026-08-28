@@ -115,7 +115,7 @@ export default function DatabaseConfigPage() {
                     id="db-database"
                     value={config.database}
                     onChange={(e) => setConfig({ ...config, database: e.target.value })}
-                    placeholder="hydro_hd_1714"
+                    placeholder="hydro_hd"
                   />
                 </div>
                 <div className="space-y-2">

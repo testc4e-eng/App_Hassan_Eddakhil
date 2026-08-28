@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  TECHNICAL_SWAT_CORE_RUN_CODE,
+  TECHNICAL_SWAT_IMPORT_SCENARIO_CODE,
+} from "@/constants/swatScenarios";
 import { IngestionPageShell } from "./IngestionPageShell";
 
 type ImportMode = "skipAccess" | "import" | "reload" | "preview";
@@ -72,11 +76,9 @@ export function SwatIngestionPage({ onImportComplete }: SwatIngestionPageProps) 
   const [error, setError] = useState<string | null>(null);
 
   const [importMode, setImportMode] = useState<ImportMode>("skipAccess");
-  const [mdbPath, setMdbPath] = useState(
-    "C:\\dev\\Projects\\hydro_HD\\Données_Bge_Hassan_Addakhil\\Access\\SWATOutput.mdb"
-  );
-  const [scenarioCode, setScenarioCode] = useState("SWAT_OUTPUT");
-  const [runCode, setRunCode] = useState("SWAT_OUTPUT_01");
+  const [mdbPath, setMdbPath] = useState("");
+  const [scenarioCode, setScenarioCode] = useState(TECHNICAL_SWAT_IMPORT_SCENARIO_CODE);
+  const [runCode, setRunCode] = useState(TECHNICAL_SWAT_CORE_RUN_CODE);
   const [runName, setRunName] = useState("SWAT simulation - lot 01");
   const [dryRun, setDryRun] = useState(false);
 
@@ -219,7 +221,11 @@ export function SwatIngestionPage({ onImportComplete }: SwatIngestionPageProps) 
         </CardHeader>
         <CardContent className="space-y-4">
           <Field label="Chemin MDB">
-            <Input value={mdbPath} onChange={(e) => setMdbPath(e.target.value)} />
+            <Input
+              value={mdbPath}
+              onChange={(e) => setMdbPath(e.target.value)}
+              placeholder="Laisser vide pour utiliser SWAT_MDB_PATH ou SWAT_DATA_ROOT"
+            />
           </Field>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Table principale">
@@ -240,9 +246,9 @@ export function SwatIngestionPage({ onImportComplete }: SwatIngestionPageProps) 
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
                 <option value="skipAccess">skipAccess</option>
-                <option value="import">import</option>
-                <option value="reload">reload</option>
-                <option value="preview">preview</option>
+                <option value="import">import (backend Windows local uniquement)</option>
+                <option value="reload">reload (backend Windows local uniquement)</option>
+                <option value="preview">preview (backend Windows local uniquement)</option>
               </select>
             </Field>
             <Field label="Option import final">
@@ -252,6 +258,13 @@ export function SwatIngestionPage({ onImportComplete }: SwatIngestionPageProps) 
               </label>
             </Field>
           </div>
+          <p className="text-xs text-muted-foreground">
+            Laissez le chemin MDB vide si le backend Windows local est configure avec SWAT_MDB_PATH ou SWAT_DATA_ROOT.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Les modes MDB preview/import/reload necessitent un backend Windows local avec PowerShell et le provider
+            Access ACE/OLEDB. En environnement Docker/Linux, seul skipAccess est supporte.
+          </p>
         </CardContent>
       </Card>
 
