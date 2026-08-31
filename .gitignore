@@ -39,3 +39,4 @@ tmp/
 
 # Dumps locaux PostgreSQL - ne pas pousser
 /hydro_hd_2808.sql
+LIVRAISON_ZIZ/10_PACKAGE_FINAL/docker-images/*.tar
