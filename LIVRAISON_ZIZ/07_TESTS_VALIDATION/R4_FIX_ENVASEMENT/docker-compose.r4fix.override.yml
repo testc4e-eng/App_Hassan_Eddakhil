@@ -1,3 +1,7 @@
 services:
   backend:
-    image: hassan-addakhil-backend:1.0.0-r4fix
+    image: hassan-addakhil-backend:1.0.0
+    environment:
+      DB_HOST: db
+      HDI_DB_NAME: hydro_hd
+      DB_NAME: hydro_hd

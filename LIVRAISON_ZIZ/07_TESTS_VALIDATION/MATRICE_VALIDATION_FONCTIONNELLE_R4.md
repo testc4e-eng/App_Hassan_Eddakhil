@@ -32,3 +32,18 @@ Tests automatisés complémentaires :
 | Backend | Tests | `npm run test:run` | OK, `31/31` | Aucune |
 | Frontend | Type-check | `npm run type-check` | OK | Aucune |
 | Frontend | Tests | `npm run test:run` | OK, `16/16` | Aucune |
+
+## R4-FIX - ENVASEMENT
+
+| Module | Fonction | Test | Résultat | Gravité anomalie |
+| --- | --- | --- | --- | --- |
+| Envasement | Problème initial | `GET /api/v1/siltation/indicators` sur release `1.0.0` | VIDE, alors que `hydro.bathymetry_campaigns` est la source métier attendue | IMPORTANT |
+| Envasement | Cause exacte | Audit code + DB + documentation projet | Endpoint `/indicators` encore branché sur `hydro.siltation_indicators` vide, alors que `summary` et les docs prévoient un calcul dynamique depuis `hydro.bathymetry_campaigns` | Confirmée |
+| Envasement | Correction backend | Unification du calcul des KPI pour `/indicators` et `summary` | OK en code source, sans frontend modifié | Aucune |
+| Envasement | Tests unitaires ciblés | `tests/services/siltation.service.test.ts` | OK, `4/4` nouveaux tests, total backend `35/35` | Aucune |
+| Envasement | Validation runtime R4-FIX | Stack `hassan-ziz-r4fix-20260831` avec dump officiel restauré | VALIDÉ, DB/backend/frontend healthy, `/indicators` et `/summary` retournent les KPI attendus | Aucune |
+| Envasement | Vérification dump officiel | `hydro_hd_v1.0.0.dump` contrôlé en lecture seule | OK, SHA256 conforme et `6` campagnes `HASSAN_ADDAKHIL` présentes dans `hydro.bathymetry_campaigns` | Aucune |
+| Envasement | Recréation runtime R4-FIX | Suppression du volume temporaire, recréation DB et restauration de `hydro_hd_v1.0.0.dump` | VALIDÉ, 6 campagnes bathymétriques restaurées pour `HASSAN_ADDAKHIL` | Aucune |
+| Envasement | Reprise Docker locale | Docker Desktop relancé puis stack R4-FIX revalidé | VALIDÉ, services healthy et logs sans erreur bloquante | Aucune |
+| Global | R4-RETEST non-régression | Climat, Hydrologie, Spatial, Solid Yield, frontend et logs backend | VALIDÉ, APIs fonctionnelles, frontend HTTP 200 et aucune erreur bloquante | Aucune |
+| Docker release | Image backend officielle `1.0.0` | `hassan-addakhil-backend:1.0.0` retestée après bascule du tag | VALIDÉ, backend healthy et API Envasement retourne les KPI attendus | Aucune |
